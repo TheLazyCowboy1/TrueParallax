@@ -1,0 +1,12 @@
+{
+    "id": "LazyCowboy.TrueParallax",
+    "name": "True Parallax",
+    "version": "0.0.1",
+    "target_game_version": "v1.11",
+    "authors": "TheLazyCowboy1",
+    "description": "Work-in-progress description",
+    "requirements": [ ],
+    "requirements_names": [ ],
+    "tags": [ "Cosmetics", "Base" ],
+    "checksum_override_version": false
+}
