@@ -87,7 +87,7 @@ public class LayerTexCache
             sw.Start();
             Graphics.Blit(levelTex, tex, mat);
             sw.Stop();
-            Plugin.Log("Stopwatch results: " + sw);
+            Plugin.Log("Stopwatch results: " + sw.ElapsedMilliseconds + ":" + sw.ElapsedTicks);
 
             //shift array forward to make room at index 0
             for (int i = idx; i > 0; i--)
