@@ -166,6 +166,8 @@ public class Plugin : SimplerPlugin
                 if (self.SpriteLayerIndex[key] >= hudIdx)
                     self.SpriteLayerIndex[key]++;
             }
+            for (int i = self.SpriteLayers.Length - 1; i > hudIdx; i--) //shift HUD layers right by one
+                self.SpriteLayers[i] = self.SpriteLayers[i - 1];
 
             //create new container
             self.SpriteLayers[hudIdx] = new();
