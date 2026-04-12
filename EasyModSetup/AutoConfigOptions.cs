@@ -205,7 +205,7 @@ public abstract class AutoConfigOptions : OptionInterface
 
                         y -= cInfo.spaceBefore; //add extra space
 
-                        UIelement el;
+                        UIconfig el;
                         if (cInfo.config is Configurable<bool> cb)
                             el = new OpCheckBox(cb, x + tInfo.checkboxOffset, y);
                         else if (cInfo.config is Configurable<float> cf)
@@ -230,7 +230,14 @@ public abstract class AutoConfigOptions : OptionInterface
                         }
                         el.description = cInfo.desc;
 
-                        el.OnChange += () => SetValue(cInfo);
+                        el.OnValueChanged += (UIconfig config, string value, string oldValue) =>
+                        {
+                            try
+                            {
+                                cInfo.config.BoxedValue = config.value;
+                                SetValue(cInfo);
+                            } catch (Exception ex) { SimplerPlugin.Error(ex); }
+                        };
 
                         ConfigUIs.Add(cInfo.config.key, el);
                         Tabs[i].AddItems(new OpLabel(x + t, y, cInfo.label), el);
@@ -277,7 +284,8 @@ public abstract class AutoConfigOptions : OptionInterface
         {
             if (info.enumType != null)
                 type.GetField(info.config.key).SetValue(this, Enum.Parse(info.enumType, info.config.BoxedValue as string));
-            type.GetField(info.config.key).SetValue(this, info.config.BoxedValue);
+            else
+                type.GetField(info.config.key).SetValue(this, info.config.BoxedValue);
         }
         catch (Exception ex) { SimplerPlugin.Error(ex); }
     }

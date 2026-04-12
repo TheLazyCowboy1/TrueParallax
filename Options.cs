@@ -82,7 +82,7 @@ public class Options : AutoConfigOptions
     public static float AntiAliasing = 0.1f;
 
     public enum DepthCurveOptions { EXTREME, PARABOLIC, LINEAR, INVERSE };
-    [Config(ADVANCED, "Depth Curve", "Applies a curve to the room depth - for example, making mid-ground objects appear further away.\nLINEAR recommended. PARABOLIC may be useful if you need a low Effect Strength due to low processing power.")]
+    [Config(ADVANCED, "Depth Curve", "Applies a curve to the room depth - for example, making mid-ground objects appear further away.\nLINEAR recommended. PARABOLIC may be useful if you need a low Effect Strength due to low processing power.", width = 120, spaceAfter = 200)]
     public static DepthCurveOptions DepthCurve = DepthCurveOptions.LINEAR;
 
     [Config(ADVANCED, "Background Depth", "How far away the background (the sky, basically) appears relative to the room geometry. Literally decreases the Effect Strength for everything except the background.\nHIGHLY recommended at 1, because the background is usually a mostly solid color, making this just a waste of resources."), LimitRange(1, 2)]
