@@ -310,7 +310,7 @@ public class Plugin : SimplerPlugin
                 self.fullScreenEffect = null;
                 Log("Removed problematic fullScreenEffect: " + name, 2);
             }
-            else if (warps)
+            else if (!reads) //move most fullScreenEffects to parallax container by default
             {
                 self.fullScreenEffect.RemoveFromContainer();
                 self.ReturnFContainer(PARALLAXCONTAINER).AddChild(self.fullScreenEffect);
