@@ -172,6 +172,8 @@ public class Plugin : SimplerPlugin
             //create new container
             self.SpriteLayers[hudIdx] = new();
             self.SpriteLayerIndex.Add(PARALLAXCONTAINER, hudIdx);
+            //add the container at the HUD container's current index
+            Futile.stage.AddChildAtIndex(self.SpriteLayers[hudIdx], Futile.stage.GetChildIndex(self.SpriteLayers[hudIdx + 1]));
 
             //create the actual sprite
             data.sprite = new(Futile.whiteElement) { shader = TrueParallaxFShader, width = self.sSize.x, height = self.sSize.y, anchorX = 0, anchorY = 0 };
