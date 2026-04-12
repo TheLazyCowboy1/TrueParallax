@@ -161,7 +161,7 @@ public class Plugin : SimplerPlugin
             int hudIdx = self.SpriteLayerIndex["HUD"];
             Array.Resize(ref self.SpriteLayers, self.SpriteLayers.Length + 1);
 
-            foreach (string key in self.SpriteLayerIndex.Keys) //increase HUD layer indices
+            foreach (string key in self.SpriteLayerIndex.Keys.ToArray()) //increase HUD layer indices
             {
                 if (self.SpriteLayerIndex[key] >= hudIdx)
                     self.SpriteLayerIndex[key]++;

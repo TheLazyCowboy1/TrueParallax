@@ -41,6 +41,7 @@ public class RenderTexQueue
             for (int i = idx; i > 0; i--) //shift the array forward to fill in the gap and free up index 0
                 array[i] = array[i - 1];
             array[0] = foundTex; //put it in index 0
+            Plugin.Log($"Found RenderTex at index {idx}: " + array[0].Key, 2);
         }
         else if (idx < 0) //did NOT find the texture, so need to generate it
         {
@@ -60,6 +61,7 @@ public class RenderTexQueue
                 array[i] = array[i - 1];
 
             array[0] = new(key, tex);
+            Plugin.Log("Generated new RenderTex: " + key);
         }
 
         return FixRenderTex(array[0].Value, levelTex);
