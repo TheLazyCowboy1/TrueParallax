@@ -4,8 +4,9 @@ Shader "TheLazyCowboy1/TrueParallax"
 {
 	Properties 
 	{
-		_MainTex ("Base (RGB) Trans (A)", 2D) = "white" {}
+		[MainTexture] _MainTex ("Base (RGB) Trans (A)", 2D) = "white" {}
         //LZC_CamPos ("CamPos", Vector) = (0.5, 0.5)
+		_LZC_Layer2Tex ("Layer2Tex", 2D) = "black" {}
         LZC_ConvergenceScale ("ConvergenceScale", Float) = 1
         LZC_Warp ("Warp", Float) = 100
         LZC_MaxWarp ("MaxWarp", Float) = 1

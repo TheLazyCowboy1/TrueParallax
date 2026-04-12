@@ -108,7 +108,7 @@ public abstract class AutoConfigOptions : OptionInterface
     {
         TabInfos = tabs;
 
-        List<ConfigInfo> configs = new();
+        List<KeyValuePair<string, ConfigInfo>> configs = new();
 
         FieldInfo[] fields = GetType().GetFields();
         foreach (FieldInfo info in fields)
@@ -135,17 +135,17 @@ public abstract class AutoConfigOptions : OptionInterface
                             configBase.info.acceptable = (ConfigAcceptableBase)Activator.CreateInstance(typeof(ConfigAcceptableRange<>).MakeGenericType(info.FieldType), rangeAtt.Min, rangeAtt.Max);
                     }
 
-                    configs.Add(new() { config = configBase, tab = att.Tab, label = att.Label.Length > 0 ? att.Label : FieldNameToLabel(info.Name), desc = att.Desc,
+                    configs.Add(new(info.Name, new() { config = configBase, tab = att.Tab, label = att.Label.Length > 0 ? att.Label : FieldNameToLabel(info.Name), desc = att.Desc,
                         hide = att.hide, rightSide = att.rightSide, width = att.width, spaceBefore = att.spaceBefore,
                         spaceAfter = att.spaceAfter, height = att.height, extraMargin = att.extraMargin,
                         precision = att.precision, dropdownOptions = att.dropdownOptions, enumType = isEnum ? info.FieldType : null
-                    });
+                    }));
                 }
             } catch (Exception ex) { SimplerPlugin.Error(ex); }
         }
 
-        ConfigInfos = configs.ToArray();
-        SimplerPlugin.Log("Found " + ConfigInfos.Length + " configs");
+        ConfigInfos = new(configs);
+        SimplerPlugin.Log("Found " + ConfigInfos.Count + " configs");
     }
 
     private static string FieldNameToLabel(string n)
@@ -172,12 +172,19 @@ public abstract class AutoConfigOptions : OptionInterface
         public Type enumType;
     }
 
-    private ConfigInfo[] ConfigInfos;
+    //private ConfigInfo[] ConfigInfos;
+    private Dictionary<string, ConfigInfo> ConfigInfos;
     public TabInfo[] TabInfos;
-    public Dictionary<string, UIelement> ConfigUIs = new();
+    public Dictionary<string, UIconfig> UIConfigs;
+
+    public OpTab GetTab(string name) => Tabs?.FirstOrDefault(t => t.name == name);
+    public TabInfo GetTabInfo(string name) => TabInfos.FirstOrDefault(i => i.name == name);
 
     public override void Initialize()
     {
+        UIConfigs?.Clear();
+        UIConfigs = new(ConfigInfos.Count);
+
         Tabs = new OpTab[TabInfos.Length];
         for (int i = 0; i < TabInfos.Length; i++)
         {
@@ -188,7 +195,7 @@ public abstract class AutoConfigOptions : OptionInterface
             float y = tInfo.startHeight;
             bool lastWasLeft = false;
 
-            foreach (ConfigInfo cInfo in ConfigInfos)
+            foreach (ConfigInfo cInfo in ConfigInfos.Values)
             {
                 try
                 {
@@ -239,7 +246,7 @@ public abstract class AutoConfigOptions : OptionInterface
                             } catch (Exception ex) { SimplerPlugin.Error(ex); }
                         };
 
-                        ConfigUIs.Add(cInfo.config.key, el);
+                        UIConfigs.Add(cInfo.config.key, el);
                         Tabs[i].AddItems(new OpLabel(x + t, y, cInfo.label), el);
                         y -= tInfo.spacing + cInfo.spaceAfter;
                     }
@@ -294,7 +301,7 @@ public abstract class AutoConfigOptions : OptionInterface
     public void SetAllValues()
     {
         Type type = GetType();
-        foreach (ConfigInfo info in ConfigInfos)
+        foreach (ConfigInfo info in ConfigInfos.Values)
         {
             SetValue(info, type);
         }

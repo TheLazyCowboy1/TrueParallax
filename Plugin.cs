@@ -43,10 +43,11 @@ public class Plugin : SimplerPlugin
 
         LoadAssets();
 
-        ShadCamPos = Shader.PropertyToID("LZC_CamPos");
-        ShadWarp = Shader.PropertyToID("LZC_Warp");
-        ShadTestNum = Shader.PropertyToID("LZC_TestNum");
-        ShadStepSize = Shader.PropertyToID("LZC_StepSize");
+        ShadPropCamPos = Shader.PropertyToID("LZC_CamPos");
+        ShadPropWarp = Shader.PropertyToID("LZC_Warp");
+        ShadPropTestNum = Shader.PropertyToID("LZC_TestNum");
+        ShadPropStepSize = Shader.PropertyToID("LZC_StepSize");
+        ShadPropLayer2Tex = Shader.PropertyToID("_LZC_Layer2Tex");
 
         RemoveLevelHeatAndMelt();
     }
@@ -54,7 +55,7 @@ public class Plugin : SimplerPlugin
     /// <summary>
     /// Index of shader variable LZC_CamPos, used for presumably more efficient access to it
     /// </summary>
-    public static int ShadCamPos = -1, ShadWarp = -1, ShadTestNum = -1, ShadStepSize = -1;
+    public static int ShadPropCamPos = -1, ShadPropWarp = -1, ShadPropTestNum = -1, ShadPropStepSize = -1, ShadPropLayer2Tex = -1;
 
     public static FShader TrueParallaxFShader;
     public static Material ThicknessMapMaterial;
@@ -108,8 +109,11 @@ public class Plugin : SimplerPlugin
 
         On.RoomCamera.MoveCamera_Room_int += RoomCamera_MoveCamera_Room_int;
         On.RoomCamera.WarpMoveCameraActual += RoomCamera_WarpMoveCameraActual;
+        On.RoomCamera.SetUpFullScreenEffect += RoomCamera_SetUpFullScreenEffect;
 
         On.RoomCamera.ApplyPositionChange += RoomCamera_ApplyPositionChange;
+
+        On.RoomCamera.ClearAllSprites += RoomCamera_ClearAllSprites;
     }
 
     public override void RemoveHooks()
@@ -120,12 +124,15 @@ public class Plugin : SimplerPlugin
 
         On.RoomCamera.MoveCamera_Room_int -= RoomCamera_MoveCamera_Room_int;
         On.RoomCamera.WarpMoveCameraActual -= RoomCamera_WarpMoveCameraActual;
+        On.RoomCamera.SetUpFullScreenEffect -= RoomCamera_SetUpFullScreenEffect;
 
         On.RoomCamera.ApplyPositionChange -= RoomCamera_ApplyPositionChange;
+
+        On.RoomCamera.ClearAllSprites -= RoomCamera_ClearAllSprites;
     }
 
 
-    public const string PARALLAXCONTAINER = "HUD";
+    public const string PARALLAXCONTAINER = "PARALLAX";//"HUD";
 
     public static RenderTexture ScreenLevelTex;
 
@@ -139,40 +146,34 @@ public class Plugin : SimplerPlugin
             //create RandomWrite texture
             SetupScreenLevelTex();
 
+            //set keywords (must be done before sprite is initialized)
+            SetKeywords();
+
             //setup CameraData
             CameraData data = self.InstantiateData();
             data.camPos.Set(-1, -1); //don't lerp from previous camera's position
+            data.needSetConstants = true; //can't set them here because the material isn't created yet, so we'll have to wait until it is
 
-            //determine keywords for FShader
-            List<string> keywords = new();
-            if (Options.LimitProjection) keywords.Add("LZC_LIMITPROJECTION");
-            if (Options.DynamicOptimization) keywords.Add("LZC_DYNAMICOPTIMIZATION");
-            if (Options.TwoLayers) keywords.Add("LZC_PROCESSLAYER2");
-            if (Options.BackgroundNoise > 0.001f) keywords.Add("LZC_BACKGROUNDNOISE");
-            switch (Options.DepthCurve)
-            {
-                case Options.DepthCurveOptions.EXTREME: keywords.Add("LZC_DEPTHCURVE"); break;
-                case Options.DepthCurveOptions.PARABOLIC: keywords.Add("LZC_DEPTHCURVE"); keywords.Add("LZC_INVDEPTHCURVE"); break;
-                case Options.DepthCurveOptions.INVERSE: keywords.Add("LZC_INVDEPTHCURVE"); break;
-            }
-            TrueParallaxFShader.keywords = keywords.ToArray();
-
-            //determine keywords for material
-            if (Options.SimplerLayers) ThicknessMapMaterial.EnableKeyword("LZC_SIMPLERLAYERS");
-            else ThicknessMapMaterial.DisableKeyword("LZC_SIMPLERLAYERS");
-
-            //set constants for material
-            ThicknessMapMaterial.SetInt("LZC_BackgroundTestNum", 22);
-            ThicknessMapMaterial.SetFloat("LZC_ProjectionMod", Options.ThicknessMod);
-            ThicknessMapMaterial.SetFloat("LZC_MinObjectDepth", Options.MinObjectThickness);
 
             //add full screen effect to camera
-            //put it in HUD so that it's after all the bloom effects. It's a bit unfortunate, but too many objects in Bloom layer reference the LevelTex
+
+            //resize FContainer array
+            int hudIdx = self.SpriteLayerIndex["HUD"];
+            Array.Resize(ref self.SpriteLayers, self.SpriteLayers.Length + 1);
+
+            foreach (string key in self.SpriteLayerIndex.Keys) //increase HUD layer indices
+            {
+                if (self.SpriteLayerIndex[key] >= hudIdx)
+                    self.SpriteLayerIndex[key]++;
+            }
+
+            //create new container
+            self.SpriteLayers[hudIdx] = new();
+            self.SpriteLayerIndex.Add(PARALLAXCONTAINER, hudIdx);
+
+            //create the actual sprite
             data.sprite = new(Futile.whiteElement) { shader = TrueParallaxFShader, width = self.sSize.x, height = self.sSize.y, anchorX = 0, anchorY = 0 };
             self.ReturnFContainer(PARALLAXCONTAINER).AddChild(data.sprite);
-
-            //setup constants
-            data.needSetConstants = true; //can't set them here because the material isn't created yet, so we'll have to wait until it is
 
             Log("Setup shader constants", 2);
 
@@ -180,13 +181,40 @@ public class Plugin : SimplerPlugin
         catch (Exception ex) { Error(ex); }
     }
 
-    private static void SetCameraConstants(Material mat)
+    private static void SetKeywords()
     {
-        mat.SetFloat(ShadWarp, Options.Warp);
+        //determine keywords for FShader
+        List<string> keywords = new();
+        if (Options.LimitProjection) keywords.Add("LZC_LIMITPROJECTION");
+        if (Options.DynamicOptimization) keywords.Add("LZC_DYNAMICOPTIMIZATION");
+        if (Options.TwoLayers) keywords.Add("LZC_PROCESSLAYER2");
+        if (Options.BackgroundNoise > 0.001f) keywords.Add("LZC_BACKGROUNDNOISE");
+        switch (Options.DepthCurve)
+        {
+            case Options.DepthCurveOptions.EXTREME: keywords.Add("LZC_DEPTHCURVE"); break;
+            case Options.DepthCurveOptions.PARABOLIC: keywords.Add("LZC_DEPTHCURVE"); keywords.Add("LZC_INVDEPTHCURVE"); break;
+            case Options.DepthCurveOptions.INVERSE: keywords.Add("LZC_INVDEPTHCURVE"); break;
+        }
+        TrueParallaxFShader.keywords = keywords.ToArray();
+
+        //determine keywords for material
+        if (Options.SimplerLayers) ThicknessMapMaterial.EnableKeyword("LZC_SIMPLERLAYERS");
+        else ThicknessMapMaterial.DisableKeyword("LZC_SIMPLERLAYERS");
+
+        //set constants for material
+        ThicknessMapMaterial.SetInt("LZC_BackgroundTestNum", 22);
+        ThicknessMapMaterial.SetFloat("LZC_ProjectionMod", Options.ThicknessMod);
+        ThicknessMapMaterial.SetFloat("LZC_MinObjectDepth", Options.MinObjectThickness);
+    }
+
+    private static void SetCameraConstants(CameraData data)
+    {
+        Material mat = data.SpriteMaterial;
+        mat.SetFloat(ShadPropWarp, Options.Warp);
 
         int testNum = Mathf.Max(2, (int)Mathf.Ceil(Mathf.Abs(Options.Warp) * Options.MaxWarp / Options.OptimizationFac));
-        mat.SetInt(ShadTestNum, testNum);
-        mat.SetFloat(ShadStepSize, 1.0f / testNum);
+        mat.SetInt(ShadPropTestNum, testNum);
+        mat.SetFloat(ShadPropStepSize, 1.0f / testNum);
 
         mat.SetFloat("LZC_ConvergenceScale", Options.ConvergenceScale);
         mat.SetFloat("LZC_AntiAliasingFac", Options.AntiAliasing);
@@ -195,6 +223,9 @@ public class Plugin : SimplerPlugin
         mat.SetFloat("LZC_PivotDepth", Options.PivotDepth);
         mat.SetFloat("LZC_Layer30Depth", 1.0f / Options.BackgroundDepth);
         mat.SetFloat("LZC_BackgroundNoise", Options.BackgroundNoise);
+
+        if (Options.TwoLayers && data.layer2Textures.First != null) //also set here in case the material wasn't set up yet when generated
+            mat.SetTexture(ShadPropLayer2Tex, data.layer2Textures.First);
     }
 
     private static void SetupScreenLevelTex()
@@ -222,28 +253,32 @@ public class Plugin : SimplerPlugin
     }
 
 
-    //A couple full screen effects (LevelMelt2, Fog) should be applied AFTER the parallax
-    //Also disable WetTerrain displacing the pixels and causing visual oddities.
-    private void FixFullScreenEffect(RoomCamera self)
-    {
-        //if (self.fullScreenEffect != null && self.fullScreenEffect.container != self.ReturnFContainer("Bloom"))
-        //self.SetUpFullScreenEffect("Bloom");
-        Shader.SetGlobalFloat(RainWorld.ShadPropWetTerrain, 0); //disable wet terrain; it only makes things worse, sadly
-    }
+    //Disable WetTerrain, which displaces the pixels and causes visual artefacts.
+    private void DisableWetTerrain() => Shader.SetGlobalFloat(RainWorld.ShadPropWetTerrain, 0);
     private void RoomCamera_WarpMoveCameraActual(On.RoomCamera.orig_WarpMoveCameraActual orig, RoomCamera self, Room newRoom, int camPos)
     {
         orig(self, newRoom, camPos);
-        FixFullScreenEffect(self);
+        DisableWetTerrain();
     }
     private void RoomCamera_MoveCamera_Room_int(On.RoomCamera.orig_MoveCamera_Room_int orig, RoomCamera self, Room newRoom, int camPos)
     {
         orig(self, newRoom, camPos);
-        FixFullScreenEffect(self);
+        DisableWetTerrain();
     }
 
-    //Actually adds the shader to the LevelTexCombiner whenever the LevelTexCombiner gets cleared
-    //ALSO attempts to resolution scale...
-    //And builds the 2nd and 3rd layers...
+    //Move potentially-problematic full-screen effects to AFTER the parallax sprite
+    private void RoomCamera_SetUpFullScreenEffect(On.RoomCamera.orig_SetUpFullScreenEffect orig, RoomCamera self, string container)
+    {
+        if (container == "Foreground")
+            orig(self, container);
+        else
+        {
+            orig(self, PARALLAXCONTAINER);
+            Log("Moved fullScreenEffect to the Parallax container", 2);
+        }
+    }
+
+    //Sets up layer2
     private void RoomCamera_ApplyPositionChange(On.RoomCamera.orig_ApplyPositionChange orig, RoomCamera self)
     {
         orig(self);
@@ -252,18 +287,15 @@ public class Plugin : SimplerPlugin
         {
             if (!self.TryGetData(out CameraData data)) return;
 
-            data.camPos.Set(-1, -1);
+            if (Options.TransitionsResetCamera)
+                data.camPos.Set(-1, -1); //don't lerp from previous position
 
             if (Options.TwoLayers)
             {
-                Texture lev = LevTex(self);
-                if (data.layer2Textures.temp == null || data.layer2Textures.temp.width != lev.width || data.layer2Textures.temp.height != lev.height)
-                {
-                    data.layer2Textures.temp?.Release();
-                    data.layer2Textures.temp = new(lev.width, lev.height, 0, DefaultFormat.LDR) { filterMode = 0 };
-                }
-                Graphics.Blit(lev, data.layer2Textures.temp, ThicknessMapMaterial);
-                Shader.SetGlobalTexture("_LZC_Layer2Tex", data.layer2Textures.temp);
+                data.layer2Textures.Resize(Options.CachedRenderTextures); //ensure it's the right size
+
+                RenderTexture tex = data.layer2Textures.GetTexture(self.room.abstractRoom.name + ":" + self.currentCameraPosition, LevTex(self));
+                data.SpriteMaterial?.SetTexture(ShadPropLayer2Tex, tex);
             }
         }
         catch (Exception ex) { Error(ex); }
@@ -282,7 +314,7 @@ public class Plugin : SimplerPlugin
 
             if (data.needSetConstants && data.SpriteMaterial != null)
             {
-                SetCameraConstants(data.SpriteMaterial);
+                SetCameraConstants(data);
                 data.needSetConstants = false;
                 Log("Set up camera constants for camera#" + self.cameraNumber, 2);
             }
@@ -343,10 +375,11 @@ public class Plugin : SimplerPlugin
                     );
             }
 
+            //set the CamPos in the actual material
             Material mat = data.SpriteMaterial;
             if (mat != null)
             {
-                mat.SetVector(ShadCamPos, data.camPos);
+                mat.SetVector(ShadPropCamPos, data.camPos);
                 if (Options.DynamicZoom > 0)
                 {
                     Vector2 camDiff2 = data.camPos - new Vector2(0.5f, 0.5f);
@@ -357,11 +390,11 @@ public class Plugin : SimplerPlugin
                     float centerWarpFac = Mathf.LerpUnclamped(1, centerDistance * (2 - centerDistance), Options.DynamicZoom);
 
                     float warp = Options.Warp * centerWarpFac;
-                    mat.SetFloat(ShadWarp, warp);
+                    mat.SetFloat(ShadPropWarp, warp);
 
                     int testNum = Mathf.Max(2, (int)Mathf.Ceil(Mathf.Abs(warp) * Options.MaxWarp / Options.OptimizationFac));
-                    mat.SetInt(ShadTestNum, testNum);
-                    mat.SetFloat(ShadStepSize, 1.0f / testNum);
+                    mat.SetInt(ShadPropTestNum, testNum);
+                    mat.SetFloat(ShadPropStepSize, 1.0f / testNum);
                 }
             }
         }
@@ -404,6 +437,19 @@ public class Plugin : SimplerPlugin
         orig(self);
 
         SetCamPos(self, 0.5f);
+    }
+
+
+    private void RoomCamera_ClearAllSprites(On.RoomCamera.orig_ClearAllSprites orig, RoomCamera self)
+    {
+        orig(self);
+
+        try
+        {
+            if (self.TryGetData(out CameraData data))
+                data.Clear();
+        }
+        catch (Exception ex) { Error(ex); }
     }
 
     #endregion

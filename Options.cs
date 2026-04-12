@@ -15,7 +15,7 @@ public class Options : AutoConfigOptions
 
     public Options() : base(new TabInfo[]
     {
-        new(BASICS) { spacing = 40 },
+        new(BASICS) { spacing = 40, startHeight = 450 },
         new(CAMERA),
         new(LAYER2),
         new(OPTIMIZATION),
@@ -82,7 +82,7 @@ public class Options : AutoConfigOptions
     public static float AntiAliasing = 0.1f;
 
     public enum DepthCurveOptions { EXTREME, PARABOLIC, LINEAR, INVERSE };
-    [Config(ADVANCED, "Depth Curve", "Applies a curve to the room depth - for example, making mid-ground objects appear further away.\nLINEAR recommended. PARABOLIC may be useful if you need a low Effect Strength due to low processing power.", width = 120, spaceAfter = 200)]
+    [Config(ADVANCED, "Depth Curve", "Applies a curve to the room depth - for example, making mid-ground objects appear further away.\nLINEAR recommended. PARABOLIC may be useful if you need a low Effect Strength due to low processing power.", width = 120, spaceAfter = 150)]
     public static DepthCurveOptions DepthCurve = DepthCurveOptions.LINEAR;
 
     [Config(ADVANCED, "Background Depth", "How far away the background (the sky, basically) appears relative to the room geometry. Literally decreases the Effect Strength for everything except the background.\nHIGHLY recommended at 1, because the background is usually a mostly solid color, making this just a waste of resources."), LimitRange(1, 2)]
@@ -102,15 +102,15 @@ public class Options : AutoConfigOptions
 
         try
         {
-            (ConfigUIs[nameof(MaxProjection)] as UIfocusable).greyedOut = !LimitProjection;
-            (ConfigUIs[nameof(CameraMoveSpeed)] as UIfocusable).greyedOut = AlwaysCentered;
+            UIConfigs[nameof(MaxProjection)].greyedOut = !LimitProjection;
+            UIConfigs[nameof(CameraMoveSpeed)].greyedOut = AlwaysCentered;
 
             OpTab layer2 = Tabs.FirstOrDefault(t => t.name == LAYER2);
             if (layer2 != null)
             {
                 foreach (UIelement el in layer2.items)
                 {
-                    if (el is UIfocusable foc) foc.greyedOut = !TwoLayers;
+                    if (el is UIconfig cfg) cfg.greyedOut = !TwoLayers;
                 }
             }
         }

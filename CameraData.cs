@@ -15,9 +15,15 @@ public class CameraData
     public Vector2 camPos;
     public FSprite sprite;
     public bool needSetConstants;
-    public RenderTexQueue layer2Textures = new();
+    public RenderTexQueue layer2Textures = new(0, Plugin.ThicknessMapMaterial);
 
     public Material SpriteMaterial => sprite?._renderLayer?._material;
+
+    public void Clear()
+    {
+        sprite = null;
+        layer2Textures.Clear();
+    }
 }
 
 public static class CameraEXT
