@@ -109,7 +109,7 @@ public class Plugin : SimplerPlugin
 
         On.RoomCamera.MoveCamera_Room_int += RoomCamera_MoveCamera_Room_int;
         On.RoomCamera.WarpMoveCameraActual += RoomCamera_WarpMoveCameraActual;
-        On.RoomCamera.SetUpFullScreenEffect += RoomCamera_SetUpFullScreenEffect;
+        On.RoomCamera.ApplyPalette += RoomCamera_ApplyPalette;
 
         On.RoomCamera.ApplyPositionChange += RoomCamera_ApplyPositionChange;
 
@@ -123,8 +123,8 @@ public class Plugin : SimplerPlugin
         On.RoomCamera.Update -= RoomCamera_Update;
 
         On.RoomCamera.MoveCamera_Room_int -= RoomCamera_MoveCamera_Room_int;
-        On.RoomCamera.WarpMoveCameraActual -= RoomCamera_WarpMoveCameraActual;
-        On.RoomCamera.SetUpFullScreenEffect -= RoomCamera_SetUpFullScreenEffect;
+        On.RoomCamera.WarpMoveCameraActual -= RoomCamera_WarpMoveCameraActual; ;
+        On.RoomCamera.ApplyPalette -= RoomCamera_ApplyPalette;
 
         On.RoomCamera.ApplyPositionChange -= RoomCamera_ApplyPositionChange;
 
@@ -150,7 +150,7 @@ public class Plugin : SimplerPlugin
             SetKeywords();
 
             //setup CameraData
-            CameraData data = self.InstantiateData();
+            CameraData data = self.CreateData();
             data.camPos.Set(-1, -1); //don't lerp from previous camera's position
             data.needSetConstants = true; //can't set them here because the material isn't created yet, so we'll have to wait until it is
 
@@ -270,16 +270,54 @@ public class Plugin : SimplerPlugin
         DisableWetTerrain();
     }
 
-    //Move potentially-problematic full-screen effects to AFTER the parallax sprite
-    private void RoomCamera_SetUpFullScreenEffect(On.RoomCamera.orig_SetUpFullScreenEffect orig, RoomCamera self, string container)
+
+    private static bool ShaderWarpsLevel(string FShaderName) => FShaderName switch
     {
-        if (container == "Foreground")
-            orig(self, container);
-        else
+        "LevelMelt2" => true,
+        "SkyBloom" => false,
+        "LightAndSkyBloom" => false,
+        "LightBloom" => false,
+        "Fog" => false,
+        "Bloom" => false,
+        _ => false
+    };
+    private static bool ShaderReadsLevel(string FShaderName) => FShaderName switch
+    {
+        "LevelMelt2" => false, //surprising!
+        "SkyBloom" => false,
+        "LightAndSkyBloom" => true,
+        "LightBloom" => true,
+        "Fog" => true,
+        "Bloom" => false,
+        _ => false
+    };
+
+    //Move potentially problematic fullScreenEffects to the correct container
+    private void RoomCamera_ApplyPalette(On.RoomCamera.orig_ApplyPalette orig, RoomCamera self)
+    {
+        orig(self);
+
+        try
         {
-            orig(self, PARALLAXCONTAINER);
-            Log("Moved fullScreenEffect to the Parallax container", 2);
+            if (self.fullScreenEffect == null) return;
+
+            string name = self.fullScreenEffect.shader.name;
+            bool reads = ShaderReadsLevel(name);
+            bool warps = ShaderWarpsLevel(name);
+            if (reads && warps)
+            {
+                self.fullScreenEffect.RemoveFromContainer();
+                self.fullScreenEffect = null;
+                Log("Removed problematic fullScreenEffect: " + name, 2);
+            }
+            else if (warps)
+            {
+                self.fullScreenEffect.RemoveFromContainer();
+                self.ReturnFContainer(PARALLAXCONTAINER).AddChild(self.fullScreenEffect);
+                Log("Moved fullScreenEffect to parallax container: " + name, 2);
+            }
         }
+        catch (Exception ex) { Error(ex); }
     }
 
     //Sets up layer2
@@ -298,15 +336,12 @@ public class Plugin : SimplerPlugin
             {
                 data.layer2Textures.Resize(Options.CachedRenderTextures); //ensure it's the right size
 
-                RenderTexture tex = data.layer2Textures.GetTexture(self.room.abstractRoom.name + ":" + self.currentCameraPosition, LevTex(self));
+                RenderTexture tex = data.layer2Textures.GetOrCreateTexture();
                 data.SpriteMaterial?.SetTexture(ShadPropLayer2Tex, tex);
             }
         }
         catch (Exception ex) { Error(ex); }
     }
-
-    //Weird SBCameraScroll practices...
-    private static Texture LevTex(RoomCamera self) => SBCameraScrollEnabled ? self.levelGraphic?._atlas?.texture : self.levelTexture;
 
 
     //Sets the CamPos
