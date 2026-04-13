@@ -61,7 +61,7 @@ public class Options : AutoConfigOptions
     public static float ThicknessMod = 0.65f;
     [Config(LAYER2, "Max Depth Difference", "How severe background interpolation can be. Basically, if this number is too high, things can look stretched; but if it is too low, backgrounds look less smooth.\nRecommended between 0.5 and 1."), LimitRange(0, 10)]
     public static float MaxDepthDifference = 1;
-    [Config(LAYER2, "# of Tests", "How many texture samples are performed when determining the background. Currently cannot exceed 31 due to being only 5-bit.\nRecommended above 20, because 20 = 1 tile."), LimitRange(1, 31)]
+    [Config(LAYER2, "Sample Count", "How many texture samples are performed when determining the background. Currently cannot exceed 31 due to being only 5-bit.\nRecommended above 20, because 20 = 1 tile."), LimitRange(1, 31)]
     public static int BackgroundTestNum = 22;
 
     [Config(LAYER2, "Simpler Layers", "Reduces the lag when changing screens, but loses some finer details in the process. Specifically, halves the number of texture samples.\nRecommended if you notice lag upon screen transitions.", spaceBefore = 15)]

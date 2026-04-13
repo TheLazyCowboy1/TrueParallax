@@ -47,6 +47,7 @@ public class Plugin : SimplerPlugin
         ShadPropWarp = Shader.PropertyToID("LZC_Warp");
         ShadPropTestNum = Shader.PropertyToID("LZC_TestNum");
         ShadPropStepSize = Shader.PropertyToID("LZC_StepSize");
+        ShadPropMoveStepScale = Shader.PropertyToID("LZC_MoveStepScale");
         ShadPropLayer2Tex = Shader.PropertyToID("_LZC_Layer2Tex");
 
         RemoveLevelHeatAndMelt();
@@ -55,7 +56,9 @@ public class Plugin : SimplerPlugin
     /// <summary>
     /// Index of shader variable LZC_CamPos, used for presumably more efficient access to it
     /// </summary>
-    public static int ShadPropCamPos = -1, ShadPropWarp = -1, ShadPropTestNum = -1, ShadPropStepSize = -1, ShadPropLayer2Tex = -1;
+    public static int ShadPropCamPos = -1, ShadPropWarp = -1,
+        ShadPropTestNum = -1, ShadPropStepSize = -1,
+        ShadPropMoveStepScale = -1, ShadPropLayer2Tex = -1;
 
     public static FShader TrueParallaxFShader;
     public static Material ThicknessMapMaterial;
@@ -220,6 +223,8 @@ public class Plugin : SimplerPlugin
         int testNum = Mathf.Max(2, (int)Mathf.Ceil(Mathf.Abs(Options.Warp) * Options.MaxWarp / Options.OptimizationFac));
         mat.SetInt(ShadPropTestNum, testNum);
         mat.SetFloat(ShadPropStepSize, 1.0f / testNum);
+        Vector2 sSize = Custom.rainWorld.screenSize;
+        mat.SetVector(ShadPropMoveStepScale, Options.Warp / testNum * sSize / sSize.x);
 
         mat.SetFloat("LZC_ConvergenceScale", Options.ConvergenceScale);
         mat.SetFloat("LZC_AntiAliasingFac", Options.AntiAliasing);
@@ -435,6 +440,8 @@ public class Plugin : SimplerPlugin
                     int testNum = Mathf.Max(2, (int)Mathf.Ceil(Mathf.Abs(warp) * Options.MaxWarp / Options.OptimizationFac));
                     mat.SetInt(ShadPropTestNum, testNum);
                     mat.SetFloat(ShadPropStepSize, 1.0f / testNum);
+                    Vector2 sSize = Custom.rainWorld.screenSize;
+                    mat.SetVector(ShadPropMoveStepScale, warp / testNum * sSize / sSize.x);
                 }
             }
         }
