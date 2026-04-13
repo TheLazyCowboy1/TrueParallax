@@ -15,7 +15,7 @@ public class Options : AutoConfigOptions
 
     public Options() : base(new TabInfo[]
     {
-        new(BASICS) { spacing = 40, startHeight = 450 },
+        new(BASICS) { spacing = 40, startHeight = 500 },
         new(CAMERA),
         new(LAYER2) { startHeight = 450 },
         new(OPTIMIZATION),
@@ -86,7 +86,7 @@ public class Options : AutoConfigOptions
     public static float AntiAliasing = 0.1f;
 
     public enum DepthCurveOptions { EXTREME, PARABOLIC, LINEAR, INVERSE };
-    [Config(ADVANCED, "Depth Curve", "Applies a curve to the room depth - for example, making mid-ground objects appear further away.\nLINEAR recommended. PARABOLIC may be useful if you need a low Effect Strength due to low processing power.", width = 120, height = 120)]
+    [Config(ADVANCED, "Depth Curve", "Applies a curve to the room depth - for example, making mid-ground objects appear further away.\nLINEAR recommended. PARABOLIC may be useful if you need a low Effect Strength due to low processing power.", width = 120, spaceAfter = 100)]
     public static DepthCurveOptions DepthCurve = DepthCurveOptions.LINEAR;
 
     [Config(ADVANCED, "Background Depth", "How far away the background (the sky, basically) appears relative to the room geometry. Literally decreases the Effect Strength for everything except the background.\nHIGHLY recommended at 1, because the background is usually a mostly solid color, making this just a waste of resources.", spaceBefore = 40), LimitRange(1, 2)]
@@ -106,7 +106,7 @@ public class Options : AutoConfigOptions
         base.MenuInitialized();
 
         GetTab(BASICS).AddItems(
-            new OpLabel(50, 500, "Parallax Effect Settings", true)
+            new OpLabel(50, 550, "Parallax Effect Settings", true)
             );
 
         GetTab(LAYER2).AddItems(
@@ -115,7 +115,7 @@ public class Options : AutoConfigOptions
 
         GetTab(OPTIMIZATION).AddItems(
             new OpLabelLong(new(50, 200), new(400, 150),
-                "If you want to know how expensive the shader is, use this formula:\ncost = EffectStrength * MaxWarp / Optimization\nThus, Effect Strength is the primary factor for performance cost, and Max Warp and Optimization are used to directly reduce it.\nOther optimizations:\nEnabling Dynamic Optimization improves performance by roughly 50%.\nDisabling Second Layer could improve performance by up to 100%, because it is highly expensive.\nDisabling Limit Projection could improve performance by up to 50%; but I recommend keeping it on anyway.\nSetting Background Noise to 0 should improve performance by perhaps 20% (I have not tested it thoroughly)."
+                "If you want to know how expensive the shader is, use this formula:\ncost = EffectStrength * MaxWarp / Optimization\nThus, Effect Strength is the primary factor for performance cost, and Max Warp and Optimization are used to directly reduce it.\nOther optimizations:\nEnabling Dynamic Optimization improves performance by roughly 50%.\nDisabling Second Layer could improve performance by up to 100%, because it is highly expensive.\nDisabling Limit Projection could improve performance by up to 50%; but I recommend keeping it on anyway.\nSetting Background Noise to 0 should improve performance by perhaps 10% (exact improvement is untested)."
                 )
             );
     }
@@ -137,7 +137,7 @@ public class Options : AutoConfigOptions
                     if (el is UIconfig cfg) cfg.greyedOut = !TwoLayers;
                 }
             }
-            layer2Label.Hidden = !TwoLayers;
+            layer2Label.Hidden = TwoLayers;
         }
         catch (Exception ex) { Plugin.Error(ex); }
     }
