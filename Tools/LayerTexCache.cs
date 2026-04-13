@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
+using UnityEngine.Rendering;
 
 namespace TrueParallax.Tools;
 
@@ -82,12 +83,16 @@ public class LayerTexCache
                 tex.width = width;
                 tex.height = height;
             }
-
+            /*
             Stopwatch sw = new();
             sw.Start();
             Graphics.Blit(levelTex, tex, mat);
             sw.Stop();
-            Plugin.Log("Stopwatch results: " + sw.ElapsedMilliseconds + ":" + sw.ElapsedTicks);
+            Plugin.Log("Stopwatch results: " + sw.ElapsedMilliseconds + ":" + sw.ElapsedTicks, 3);
+            */
+            CommandBuffer cmd = new();
+            cmd.Blit(levelTex, tex, mat);
+            Graphics.ExecuteCommandBufferAsync(cmd, ComputeQueueType.Default);
 
             //shift array forward to make room at index 0
             for (int i = idx; i > 0; i--)

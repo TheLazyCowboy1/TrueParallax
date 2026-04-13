@@ -209,6 +209,7 @@ public class Plugin : SimplerPlugin
         ThicknessMapMaterial.SetInt("LZC_BackgroundTestNum", 22);
         ThicknessMapMaterial.SetFloat("LZC_ProjectionMod", Options.ThicknessMod);
         ThicknessMapMaterial.SetFloat("LZC_MinObjectDepth", Options.MinObjectThickness);
+        ThicknessMapMaterial.SetFloat("LZC_MaxDepDiff", Options.MaxDepthDifference);
     }
 
     private static void SetCameraConstants(CameraData data)

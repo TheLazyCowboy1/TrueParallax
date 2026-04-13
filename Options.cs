@@ -59,8 +59,10 @@ public class Options : AutoConfigOptions
     public static float MinObjectThickness = 2;
     [Config(LAYER2, "Thickness Modifier", "How much thicker wide objects (like pipes) are than narrow ones (like poles).\nRecommended between 0.5 and 1."), LimitRange(0, 3)]
     public static float ThicknessMod = 0.65f;
+    [Config(LAYER2, "Max Depth Difference", "How severe background interpolation can be. Basically, if this number is too high, things can look stretched; but if it is too low, backgrounds look less smooth.\nRecommended between 0.5 and 1."), LimitRange(0, 10)]
+    public static float MaxDepthDifference = 1;
 
-    [Config(LAYER2, "Simpler Layers", "Reduces the lag when changing screens, but loses some finer details in the process.\nRecommended if you notice lag upon screen transitions.")]
+    [Config(LAYER2, "Simpler Layers", "Reduces the lag when changing screens, but loses some finer details in the process.\nRecommended if you notice lag upon screen transitions.", spaceBefore = 15)]
     public static bool SimplerLayers = false;
     [Config(LAYER2, "Cached Textures", "How many Layer2 textures are saved. Saves processing when going back to previous screens, at the cost of VRAM.\nRecommended at 1 or 2. Any higher is usually useless."), LimitRange(1, 8)]
     public static int CachedRenderTextures = 2;

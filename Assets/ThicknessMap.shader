@@ -11,6 +11,7 @@ Shader "TheLazyCowboy1/ThicknessMap"
 		LZC_BackgroundTestNum ("BackgroundTestNum", Int) = 22
 		LZC_ProjectionMod ("ProjectionMod", Float) = 0.5
 		LZC_MinObjectDepth ("MinObjectDepth", Float) = 1
+		LZC_MaxDepDiff ("MaxDepDiff", Float) = 1
 	}
 	
 	Category 
@@ -57,6 +58,7 @@ uniform float2 _MainTex_TexelSize;
 uniform int LZC_BackgroundTestNum;
 uniform float LZC_ProjectionMod;
 uniform float LZC_MinObjectDepth;
+uniform float LZC_MaxDepDiff;
 
 struct v2f {
     float4  pos : SV_POSITION;
@@ -168,22 +170,37 @@ float4 frag (v2f i) : SV_Target
 		}
 	}
 
-	if (bestDir < 8) { //no rays had both sides hit
+	if (bestDir < 8) { //a ray had both sides hit
 
-		float layer1thick = ceil(LZC_MinObjectDepth + (lDist[bestDir] + lDist[bestDir]) * 0.5f * LZC_ProjectionMod);
-			//SHOULD PROBABLY HAVE SOME SPECIAL LOGIC IF ONE RAY IS SKY BUT THE OTHER IS NOT
-		float totalDist = lDist[bestDir] + rDist[bestDir];
-		float layer2dep = round((lDep[bestDir] * rDist[bestDir] + rDep[bestDir] * lDist[bestDir]) / totalDist); //basically a weighted average, where the weight of lDep = rDist
+		float dist2 = rDist[bestDir];
+		float layer1thick = clamp(ceil(LZC_MinObjectDepth + (lDist[bestDir] + rDist[bestDir]) * 0.5f * LZC_ProjectionMod), 1, 31);
+		float l2Dep = 0;
+		uint dist1 = lDist[bestDir]; //must be uint so bit operation works
+
+		if (abs(lDep[bestDir] - rDep[bestDir]) <= layer1thick * LZC_MaxDepDiff) {
+			float totalDist = lDist[bestDir] + rDist[bestDir];
+			l2Dep = round((lDep[bestDir] * rDist[bestDir] + rDep[bestDir] * lDist[bestDir]) / totalDist); //basically a weighted average, where the weight of lDep = rDist
+		}
+		else { //the two pixels are too different to interpolate between, so just pick the closest one
+			if (rDist[bestDir] < lDist[bestDir]) { //right is closer
+				dist1 = 0;
+				l2Dep = rDep[bestDir];
+			}
+			else { //left is closer
+				dist2 = 0;
+				l2Dep = lDep[bestDir];
+			}
+		}
 
 		return float4(
-			rDist[bestDir],
-			clamp(layer1thick, 1, 31),
-			layer2dep,
-			lDist[bestDir] | (bestDir << 5)
+			dist2,
+			layer1thick,
+			l2Dep,
+			dist1 | (bestDir << 5)
 		) / 255.0f;
 	}
 
-		//let's see if any rays had at least 1 side hit, though...
+		//no rays hit both sides; let's see if any rays had at least 1 side hit, though
 
 		//find the shortest distance first
 	int minDist = LZC_BackgroundTestNum+1;

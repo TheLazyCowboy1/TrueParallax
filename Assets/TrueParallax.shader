@@ -49,6 +49,8 @@ CGPROGRAM
 
 #pragma multi_compile_local _ LZC_PROCESSLAYER2
 #pragma multi_compile_local _ LZC_LIMITPROJECTION
+#pragma multi_compile_local _ LZC_DEPTHCURVE
+#pragma multi_compile_local _ LZC_INVDEPTHCURVE
 
 #define CreatureSteps 6
 
@@ -57,12 +59,15 @@ CGPROGRAM
 sampler2D _MainTex;
 uniform float2 _MainTex_TexelSize;
 
-sampler2D _LevelTex;
+//sampler2D _LevelTex;
+Texture2D<float4> _LevelTex;
+uniform float2 _LevelTex_TexelSize;
 Texture2D<float4> _PreLevelColorGrab;
 Texture2D<float4> _SlopedTerrainMask;
 
 #if LZC_PROCESSLAYER2
-sampler2D _LZC_Layer2Tex;
+//sampler2D _LZC_Layer2Tex;
+Texture2D<float4> _LZC_Layer2Tex;
 #endif
 
 #if LZC_PROCESSLAYER2
@@ -74,10 +79,13 @@ RWTexture2D<float> _LZC_LevelTex : register(u1);
 uniform float4 _spriteRect;
 uniform float2 _screenSize;
 
+uniform float LZC_Layer30Depth;
+
 struct v2f {
     float4  pos : SV_POSITION;
     float2  uv : TEXCOORD0;
 	float2  suv : TEXCOORD1;
+	float2  luv : TEXCOORD2;
 };
 
 float4 _MainTex_ST;
@@ -88,7 +96,20 @@ v2f vert (appdata_full v)
     o.pos = UnityObjectToClipPos (v.vertex);
     o.uv = TRANSFORM_TEX (v.texcoord, _MainTex);
 	o.suv = o.uv * _screenSize;
+	o.luv = (o.uv - _spriteRect.xy) / ((_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize);
     return o;
+}
+
+inline float depthCurve(float d) {
+#if LZC_DEPTHCURVE && LZC_INVDEPTHCURVE //why not thrown in a 4th, median option??
+	return d*(2 - d); //simple parabola
+#elif LZC_DEPTHCURVE
+	return d*(d*(d - 3) + 3); //much more severe, cubic curve
+#elif LZC_INVDEPTHCURVE
+	return 0.5*d * (d*d + 1); //simply average d^3 with d === (d*d*d + d) / 2
+#else
+	return d; //linear
+#endif
 }
 
 inline uint min(uint a, uint b) {
@@ -104,8 +125,10 @@ inline uint terrainDep(int2 pos) {
 void frag (v2f i)
 {
 		//map screen pos to level tex coord
-	float2 textCoord = (i.uv - _spriteRect.xy) / (_spriteRect.zw - _spriteRect.xy);
-	float lev = tex2D(_LevelTex, textCoord).r;
+	//float2 textCoord = (i.uv - _spriteRect.xy) / (_spriteRect.zw - _spriteRect.xy);
+	int2 textCoord = int2(round(i.luv));
+	//float lev = tex2D(_LevelTex, textCoord).r;
+	float lev = _LevelTex.Load(int3(textCoord, 0));
 
 	int2 checkPos = int2(round(i.suv));
 
@@ -129,6 +152,9 @@ void frag (v2f i)
 		}
 	}
 
+	//float r = d / 255.0f;
+	float r = (d >= 30) ? 1 : depthCurve(d / 30.0f) * LZC_Layer30Depth; //store the depth AFTER the depthCurve instead, as a small optimization
+
 #if LZC_PROCESSLAYER2
 	float g, b, a;
 	if (creatureMask) {
@@ -146,11 +172,12 @@ void frag (v2f i)
 	}
 	else {
 			//read it from background tex, but shift the bits around to pack 'em all in
-		float4 backCol = tex2D(_LZC_Layer2Tex, textCoord);
-		uint4 backColInts = uint4(round(backCol * 255));
+		//float4 backCol = tex2D(_LZC_Layer2Tex, textCoord);
+		float4 backCol = _LZC_Layer2Tex.Load(int3(textCoord, 0));
+		uint4 backColInts = uint4(backCol * 255.99f);
 
 			//check if any creatures are interfering with my background
-		int d = backColInts.w >> 5;
+		uint dirIdx = backColInts.w >> 5;
 		int lDist = backColInts.w & 31;//0b11111;
 		int rDist = backColInts.x;
 
@@ -164,28 +191,28 @@ void frag (v2f i)
 		dir[6] = int2(-1, 2); //-0.5, 1
 		dir[7] = int2(2, -1); //1, -0.5
 
-		int2 lPos = checkPos + (dir[d] * lDist)/2;
-		int2 rPos = checkPos - (dir[d] * rDist)/2;
+		int2 lPos = checkPos + (dir[dirIdx] * lDist)/2;
+		int2 rPos = checkPos - (dir[dirIdx] * rDist)/2;
 		float4 lCritCol = _PreLevelColorGrab.Load(int3(lPos, 0));
 		float4 rCritCol = _PreLevelColorGrab.Load(int3(rPos, 0));
 		bool lCrit = lCritCol.r > 1.0f / 255.0f || lCritCol.g > 0 || lCritCol.b > 0;
 		bool rCrit = rCritCol.r > 1.0f / 255.0f || rCritCol.g > 0 || rCritCol.b > 0;
 		if (lCrit && rCrit) { //can't use this background; creatures obscure it
-			g = backColInts.y / 255.0f; //normal thickness, but rDist = 0
+			g = backCol.y;//backColInts.y / 255.0f; //normal thickness, but rDist = 0
 			b = 0; //no layer2
 			a = 0; //no layer2
 		}
 		else {
 			if (lCrit) { //change dist1
 					//because it's packed in w, just re-pack it with lDist = 0
-				backCol.w = (d << 5) / 255.0f;
+				backCol.w = (dirIdx << 5) / 255.0f;
 			}
 			else if (rCrit) { //change dist2
 				backColInts.x = 0;
 			}
 				//split up the r channel (dist2) and put bottom half in g and top half in b
-			g = (backColInts.y | ((backColInts.x & 7) << 5)) / 255.0f;
-			b = (backColInts.z | ((backColInts.x & 24) << 3)) / 255.0f;
+			g = (backColInts.y | ((backColInts.x & 7) << 5)) / 255.0f; //bottom 3 bits +5
+			b = (backColInts.z | ((backColInts.x & 24) << 3)) / 255.0f; //top 2 bits +3 //24 = 0b11000
 			a = backCol.w;
 		}
 	}
@@ -197,10 +224,10 @@ void frag (v2f i)
 
 	//layer2Tex: r = rDist, g = layer1thick, b = layer2dep, a = lDist, dir
 
-	_LZC_LevelTex[checkPos] = float4(d / 255.0f, g, b, a);
+	_LZC_LevelTex[checkPos] = float4(r, g, b, a);
 
 #else
-	_LZC_LevelTex[checkPos] = d / 255.0f;
+	_LZC_LevelTex[checkPos] = r;
 #endif
 
 }
@@ -341,7 +368,7 @@ half4 frag (v2f i) : SV_Target
 
 		//Do this before scaling values! If it's done afterward, then there will be noticeable lines where totalTests change
 	float noiseOffset = 0;
-	if (LZC_AntiAliasingFac > 0.001f) { //allegedly this if statement should be fast because AntiAliasingFac is a uniform var
+	if (LZC_AntiAliasingFac > 0.001f) { //allegedly, this if statement should be fast because AntiAliasingFac is a uniform var
 		float noiseVal = tex2D(_NoiseTex, i.nuv).x;
 		noiseOffset = LZC_AntiAliasingFac * (noiseVal - 0.2f);// * saturate((noiseVal - 0.3f) * 2);
 	}
@@ -383,13 +410,15 @@ half4 frag (v2f i) : SV_Target
 		int2 checkPos = int2(grabPos);
 #if LZC_PROCESSLAYER2
 		float4 lev = _LZC_LevelTex[checkPos];
-		float currDepth = lev.r * 255.0f / 30.0f;
+		//float currDepth = lev.r * 255.0f / 30.0f;
+		float newDepth = lev.x;
 #else
-		float currDepth = _LZC_LevelTex[checkPos].x * 255.0f / 30.0f;
+		//float currDepth = _LZC_LevelTex[checkPos].x * 255.0f / 30.0f;
+		float newDepth = _LZC_LevelTex[checkPos];
 #endif
-		float newDepth = currDepth >= 1
+		/*float newDepth = currDepth >= 1
 			? 1
-			: depthCurve(currDepth) * LZC_Layer30Depth;
+			: depthCurve(currDepth) * LZC_Layer30Depth;*/
 		float xDistance = percentage - newDepth;
 
 			//CHECK XDISTANCE
@@ -398,7 +427,7 @@ half4 frag (v2f i) : SV_Target
 			//THIS IS GETTING CRAZY
 
 		if (xDistance >= 0) {
-			float thickness = (uint(lev.y * 255) & 31) / 30.0f;
+			float thickness = (uint(lev.y * 255.99f) & 31) / 30.0f;
 			if (xDistance < thickness) {
 				bestGrabPos = checkPos;
 				bestLayer = 1;
@@ -408,19 +437,19 @@ half4 frag (v2f i) : SV_Target
 	#endif
 				break;
 			}
-			uint l2DepInt = uint(lev.z * 255) & 31;
+			uint l2DepInt = uint(lev.z * 255.99f) & 31;
 			if (l2DepInt > 0) { //0 means that there is no layer2 for this texel
-				float l2Dep = l2DepInt >= 30
+				newDepth = l2DepInt >= 30
 					? 1
 					: depthCurve(l2DepInt / 30.0f) * LZC_Layer30Depth;
-				xDistance = percentage - l2Dep;
+				xDistance = percentage - newDepth;
 				if (xDistance >= 0) {
 					if (xDistance < maxXDist) {
 						bestGrabPos = checkPos;
 						bestLayer = 2;
 	#if LZC_BACKGROUNDNOISE
 						bestXDist = xDistance;
-						bestDep = l2Dep;
+						bestDep = newDepth;
 	#endif
 						break;
 					}
@@ -430,7 +459,7 @@ half4 frag (v2f i) : SV_Target
 					bestLayer = 2;
 	#if LZC_BACKGROUNDNOISE
 					bestXDist = min(bestXDist, -xDistance);
-					bestDep = l2Dep;
+					bestDep = newDepth;
 	#endif
 				}
 			}
@@ -469,7 +498,7 @@ half4 frag (v2f i) : SV_Target
 			//BASICALLY LIMITPROJECTION EXCEPT IT USES THICKNESS INSTEAD OF MAXXDIST
 
 		if (xDistance >= 0) {
-			float thickness = (uint(lev.y * 255) & 31) / 30.0f;
+			float thickness = (uint(lev.y * 255.99f) & 31) / 30.0f;
 			if (xDistance < thickness) {
 				bestGrabPos = checkPos;
 				//bestLayer = 1; //in this implementation, bestLayer should always be 1 here anyway
@@ -479,17 +508,17 @@ half4 frag (v2f i) : SV_Target
 	#endif
 				break;
 			}
-			float l2Dep = (uint(lev.z * 255) & 31) / 30.0f;
-			l2Dep = l2Dep >= 1
+			newDepth = (uint(lev.z * 255.99f) & 31) / 30.0f;
+			newDepth = newDepth >= 1
 				? 1
-				: depthCurve(l2Dep) * LZC_Layer30Depth;
-			xDistance = percentage - l2Dep;
-			if (l2Dep > 0 && xDistance >= 0) {
+				: depthCurve(newDepth) * LZC_Layer30Depth;
+			xDistance = percentage - newDepth;
+			if (newDepth > 0 && xDistance >= 0) {
 				bestGrabPos = checkPos;
 				bestLayer = 2;
 	#if LZC_BACKGROUNDNOISE
 				bestXDist = xDistance;
-				bestDep = l2Dep;
+				bestDep = newDepth;
 	#endif
 				break;
 			}
@@ -528,10 +557,10 @@ half4 frag (v2f i) : SV_Target
 #if LZC_PROCESSLAYER2
 	half4 finalCol;
 	if (bestLayer > 1) {
-		int4 lev = int4(_LZC_LevelTex.Load(int3(bestGrabPos, 0)) * 255);
-		int d = lev.w >> 5;
+		uint4 lev = int4(_LZC_LevelTex.Load(int3(bestGrabPos, 0)) * 255.99f);
+		uint d = lev.w >> 5;
 		int lDist = lev.w & 31;//0b11111;
-		int rDist = (lev.y >> 5) | ((lev.z & 224) >> 2); //224 = 0b11100000
+		int rDist = (lev.y >> 5) | ((lev.z & 96) >> 2); //96 = 0b01100000
 
 		int2 dir[8];
 		dir[0] = int2(2, 0);
@@ -543,22 +572,20 @@ half4 frag (v2f i) : SV_Target
 		dir[6] = int2(-1, 2); //-0.5, 1
 		dir[7] = int2(2, -1); //1, -0.5
 
+		int2 lPos = bestGrabPos + (dir[d] * lDist)/2;
+		int2 rPos = bestGrabPos - (dir[d] * rDist)/2;
 		if (lDist > 0 && rDist > 0) { //both are usable, so lerp between the two colors
-			int2 lPos = bestGrabPos + (dir[d] * lDist)/2;
-			int2 rPos = bestGrabPos - (dir[d] * rDist)/2;
 			float4 lCol = _ParallaxGrabTex.Load(int3(lPos, 0));
 			float4 rCol = _ParallaxGrabTex.Load(int3(rPos, 0));
-			finalCol = lerp(lCol, rCol, lDist / float(lDist + rDist));
+			finalCol = (lCol * rDist + rCol * lDist) / (float)(lDist + rDist);//lerp(lCol, rCol, lDist / float(lDist + rDist));
 		}
 		else {
 			int dist3 = 0; //for the noise stuff below
 			if (lDist > 0) { //left is good
-				int2 lPos = bestGrabPos + (dir[d] * lDist)/2;
 				finalCol = _ParallaxGrabTex.Load(int3(lPos, 0)); //so just use left side
 				dist3 = lDist;
 			}
 			else { //right is good
-				int2 rPos = bestGrabPos - (dir[d] * rDist)/2;
 				finalCol = _ParallaxGrabTex.Load(int3(rPos, 0)); //so just use right side
 				dist3 = rDist;
 			}
@@ -569,38 +596,6 @@ half4 frag (v2f i) : SV_Target
 			}
 		#endif
 		}
-
-
-		/*
-		int2 lPos = bestGrabPos + (dir[d] * lDist)/2;
-		int2 rPos = bestGrabPos - (dir[d] * rDist)/2;
-		float4 lCritCol = _PreLevelColorGrab.Load(int3(lPos, 0));
-		float4 rCritCol = _PreLevelColorGrab.Load(int3(rPos, 0));
-		bool lCrit = lCritCol.r > 1.0f / 255.0f || lCritCol.g > 0 || lCritCol.b > 0;
-		bool rCrit = rCritCol.r > 1.0f / 255.0f || rCritCol.g > 0 || rCritCol.b > 0;
-		if (lCrit == rCrit) { //either there's no creatures, or there's creatures on both sides; either way, interpolate the two sides
-			float4 lCol = _ParallaxGrabTex.Load(int3(lPos, 0));
-			float4 rCol = _ParallaxGrabTex.Load(int3(rPos, 0));
-			finalCol = lerp(lCol, rCol, lDist / float(lDist + rDist));
-		}
-		else {
-			int dist3 = 0; //for the noise stuff below
-			if (lCrit) { //left is creature
-				finalCol = _ParallaxGrabTex.Load(int3(rPos, 0)); //so just use right side
-				dist3 = rDist;
-			}
-			else { //right is creature
-				finalCol = _ParallaxGrabTex.Load(int3(lPos, 0)); //so just use left side
-				dist3 = lDist;
-			}
-		#if LZC_BACKGROUNDNOISE
-			if (bestXDist <= stepSize) { //change how the noise is applied
-				bestXDist = dist3 / LZC_Warp; //noise severity = how far away from pixel
-				c = 0; //act like it's LIMITPROJECTION
-			}
-		#endif
-		}
-		*/
 	}
 	else {
 		finalCol = _ParallaxGrabTex.Load(int3(bestGrabPos, 0));
