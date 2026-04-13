@@ -226,13 +226,13 @@ public class Plugin : SimplerPlugin
         Vector2 sSize = Custom.rainWorld.screenSize;
         mat.SetVector(ShadPropMoveStepScale, Options.Warp / testNum * sSize / sSize.x);
 
+        mat.SetFloat("LZC_MaxWarp", Options.MaxWarp);
         mat.SetFloat("LZC_ConvergenceScale", Options.ConvergenceScale);
-        mat.SetFloat("LZC_AntiAliasingFac", Options.AntiAliasing);
-        mat.SetFloat("LZC_MaxProjection", Options.MaxProjection);
-
         mat.SetFloat("LZC_PivotDepth", Options.PivotDepth);
         mat.SetFloat("LZC_Layer30Depth", 1.0f / Options.BackgroundDepth);
+        mat.SetFloat("LZC_AntiAliasingFac", Options.AntiAliasing);
         mat.SetFloat("LZC_BackgroundNoise", Options.BackgroundNoise);
+        mat.SetFloat("LZC_MaxProjection", Options.MaxProjection);
 
         if (Options.TwoLayers && data.layer2Textures.First != null) //also set here in case the material wasn't set up yet when generated
             mat.SetTexture(ShadPropLayer2Tex, data.layer2Textures.First);
