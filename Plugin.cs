@@ -425,6 +425,8 @@ public class Plugin : SimplerPlugin
             if (mat != null)
             {
                 mat.SetVector(ShadPropCamPos, data.camPos);
+
+                float warpMod = 1;
                 if (Options.DynamicZoom > 0)
                 {
                     Vector2 camDiff2 = data.camPos - new Vector2(0.5f, 0.5f);
@@ -434,13 +436,35 @@ public class Plugin : SimplerPlugin
                     centerDistance = 4 * Mathf.LerpUnclamped(camDiff2.x + camDiff2.y, centerDistance, centerDistance); //if centerDistance is low, make it circular rather than square
                     float centerWarpFac = Mathf.LerpUnclamped(1, centerDistance * (2 - centerDistance), Options.DynamicZoom);
 
-                    float warp = Options.Warp * centerWarpFac;
+                    if (Options.DynamicOptimization)
+                    {
+                        float warp = Options.Warp * centerWarpFac;
+                        mat.SetFloat(ShadPropWarp, warp);
+
+                        int testNum = Mathf.Max(2, (int)Mathf.Ceil(Mathf.Abs(warp) * Options.MaxWarp / Options.OptimizationFac));
+                        mat.SetInt(ShadPropTestNum, testNum);
+                        mat.SetFloat(ShadPropStepSize, 1.0f / testNum);
+                        Vector2 sSize = Custom.rainWorld.screenSize;
+                        mat.SetVector(ShadPropMoveStepScale, warp / testNum * sSize / sSize.x);
+                    }
+                    else
+                        warpMod = centerWarpFac;
+                }
+
+                if (!Options.DynamicOptimization) //test a significant optimization (up to half) without using DynamicOptimization
+                {
+                    Vector2 sSize = Custom.rainWorld.screenSize;
+                    Vector2 warpFacs = new(0.5f + Mathf.Abs(data.camPos.x - 0.5f), 0.5f + Mathf.Abs(data.camPos.y - 0.5f));
+                    warpFacs *= sSize / sSize.x; //adjust for aspect ratio
+                    float highestUsedWarp = Mathf.Max(warpFacs.x, warpFacs.y);
+                    float warp = Options.Warp * warpMod;
+                    highestUsedWarp *= warp;
+
                     mat.SetFloat(ShadPropWarp, warp);
 
-                    int testNum = Mathf.Max(2, (int)Mathf.Ceil(Mathf.Abs(warp) * Options.MaxWarp / Options.OptimizationFac));
+                    int testNum = Mathf.Max(2, (int)Mathf.Ceil(Mathf.Abs(highestUsedWarp) * Options.MaxWarp / Options.OptimizationFac));
                     mat.SetInt(ShadPropTestNum, testNum);
                     mat.SetFloat(ShadPropStepSize, 1.0f / testNum);
-                    Vector2 sSize = Custom.rainWorld.screenSize;
                     mat.SetVector(ShadPropMoveStepScale, warp / testNum * sSize / sSize.x);
                 }
             }
