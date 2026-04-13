@@ -577,7 +577,8 @@ half4 frag (v2f i) : SV_Target
 		if (lDist > 0 && rDist > 0) { //both are usable, so lerp between the two colors
 			float4 lCol = _ParallaxGrabTex.Load(int3(lPos, 0));
 			float4 rCol = _ParallaxGrabTex.Load(int3(rPos, 0));
-			finalCol = (lCol * rDist + rCol * lDist) / (float)(lDist + rDist);//lerp(lCol, rCol, lDist / float(lDist + rDist));
+			float totalDist = lDist + rDist;
+			finalCol = (lCol * rDist + rCol * lDist) / totalDist;//lerp(lCol, rCol, lDist / float(lDist + rDist));
 		}
 		else {
 			int dist3 = 0; //for the noise stuff below

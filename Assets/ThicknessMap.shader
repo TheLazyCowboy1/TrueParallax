@@ -172,10 +172,10 @@ float4 frag (v2f i) : SV_Target
 
 	if (bestDir < 8) { //a ray had both sides hit
 
-		float dist2 = rDist[bestDir];
-		float layer1thick = clamp(ceil(LZC_MinObjectDepth + (lDist[bestDir] + rDist[bestDir]) * 0.5f * LZC_ProjectionMod), 1, 31);
-		float l2Dep = 0;
-		uint dist1 = lDist[bestDir]; //must be uint so bit operation works
+		int dist2 = rDist[bestDir];
+		float layer1thick = ceil(LZC_MinObjectDepth + (lDist[bestDir] + rDist[bestDir]) * 0.5f * LZC_ProjectionMod);
+		int l2Dep = 0;
+		int dist1 = lDist[bestDir]; //must be int so bit operation works
 
 		if (abs(lDep[bestDir] - rDep[bestDir]) <= layer1thick * LZC_MaxDepDiff) {
 			float totalDist = lDist[bestDir] + rDist[bestDir];
@@ -194,7 +194,7 @@ float4 frag (v2f i) : SV_Target
 
 		return float4(
 			dist2,
-			layer1thick,
+			clamp(layer1thick, 1, 31),
 			l2Dep,
 			dist1 | (bestDir << 5)
 		) / 255.0f;
