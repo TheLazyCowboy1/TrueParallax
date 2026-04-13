@@ -12,6 +12,7 @@ Shader "TheLazyCowboy1/TrueParallax"
         LZC_MaxWarp ("MaxWarp", Float) = 1
 		LZC_TestNum ("TestNum", Int) = 100
         LZC_StepSize ("StepSize", Float) = 0.01
+        //LZC_MoveStepScale ("StepSize", Vector) = 0.01
         LZC_PivotDepth ("PivotDepth", Float) = 1
         LZC_Layer30Depth ("Layer30Depth", Float) = 1
         LZC_AntiAliasingFac ("AntiAliasingFac", Float) = 0
@@ -283,6 +284,7 @@ uniform float LZC_Warp;
 uniform float LZC_MaxWarp;
 uniform uint LZC_TestNum;
 uniform float LZC_StepSize;
+uniform float2 LZC_MoveStepScale;
 uniform float LZC_PivotDepth;
 uniform float LZC_Layer30Depth;
 uniform float LZC_AntiAliasingFac;
@@ -348,9 +350,6 @@ half4 frag (v2f i) : SV_Target
 
 #if LZC_DYNAMICOPTIMIZATION
 	float2 moveStep = i.posCamDiff;
-	float invWarpFac = min(
-			LZC_MaxWarp / max(abs(moveStep.x), abs(moveStep.y)),
-			0.5f * LZC_TestNum); //can't be less than 2 totalTests
 #else
 	float2 moveStep = float2(
 		clamp(i.posCamDiff.x, -LZC_MaxWarp, LZC_MaxWarp), //clamp it to maxWarp
@@ -359,8 +358,9 @@ half4 frag (v2f i) : SV_Target
 #endif
 
 		//scale moveStep up to its proper size
-	moveStep = moveStep * LZC_Warp * LZC_StepSize
-		* _screenSize / _screenSize.x; //adjust moveStep to respect the fact that the screen ratio is 16:9, not 1:1
+	//moveStep = moveStep * LZC_Warp * LZC_StepSize
+	//	* _screenSize / _screenSize.x; //adjust moveStep to respect the fact that the screen ratio is 16:9, not 1:1
+	moveStep = moveStep * LZC_MoveStepScale; //use a global var to scale it instead
 	float2 unoptimizedMoveStep = moveStep;
 
 	uint totalTests = LZC_TestNum;
@@ -376,11 +376,17 @@ half4 frag (v2f i) : SV_Target
 	float2 initGrabPos = i.suv - moveStep * (totalTests + noiseOffset) * LZC_PivotDepth; //start at the END and then move BACKWARDS
 
 #if LZC_DYNAMICOPTIMIZATION
-	if (invWarpFac > 1) {
-		stepSize = stepSize * invWarpFac;
-		moveStep = moveStep * invWarpFac;
-		totalTests = ceil(totalTests / invWarpFac);
+	float maxCamDiff = max(abs(i.posCamDiff.x), abs(i.posCamDiff.y));
+	//if (invWarpFac > 1) {
+	if (maxCamDiff < LZC_MaxWarp) {
+		float optimization = min(LZC_MaxWarp / maxCamDiff, 0.25f * LZC_TestNum); //can't be less than 4 totalTests
+		stepSize = stepSize * optimization;
+		moveStep = moveStep * optimization;
+		totalTests = ceil(totalTests / optimization);
 	}
+	#if LZC_PROCESSLAYER2
+	float minThickness = stepSize;
+	#endif
 #endif
 
 #if LZC_LIMITPROJECTION
@@ -410,15 +416,10 @@ half4 frag (v2f i) : SV_Target
 		int2 checkPos = int2(grabPos);
 #if LZC_PROCESSLAYER2
 		float4 lev = _LZC_LevelTex[checkPos];
-		//float currDepth = lev.r * 255.0f / 30.0f;
 		float newDepth = lev.x;
 #else
-		//float currDepth = _LZC_LevelTex[checkPos].x * 255.0f / 30.0f;
 		float newDepth = _LZC_LevelTex[checkPos];
 #endif
-		/*float newDepth = currDepth >= 1
-			? 1
-			: depthCurve(currDepth) * LZC_Layer30Depth;*/
 		float xDistance = percentage - newDepth;
 
 			//CHECK XDISTANCE
@@ -428,6 +429,9 @@ half4 frag (v2f i) : SV_Target
 
 		if (xDistance >= 0) {
 			float thickness = (uint(lev.y * 255.99f) & 31) / 30.0f;
+	#if LZC_DYNAMICOPTIMIZATION
+			thickness = max(thickness, minThickness);
+	#endif
 			if (xDistance < thickness) {
 				bestGrabPos = checkPos;
 				bestLayer = 1;
@@ -499,6 +503,9 @@ half4 frag (v2f i) : SV_Target
 
 		if (xDistance >= 0) {
 			float thickness = (uint(lev.y * 255.99f) & 31) / 30.0f;
+	#if LZC_DYNAMICOPTIMIZATION
+			thickness = max(thickness, minThickness);
+	#endif
 			if (xDistance < thickness) {
 				bestGrabPos = checkPos;
 				//bestLayer = 1; //in this implementation, bestLayer should always be 1 here anyway
