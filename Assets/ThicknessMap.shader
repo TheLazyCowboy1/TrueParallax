@@ -177,7 +177,9 @@ float4 frag (v2f i) : SV_Target
 		int l2Dep = 0;
 		int dist1 = lDist[bestDir]; //must be int so bit operation works
 
-		if (abs(lDep[bestDir] - rDep[bestDir]) <= layer1thick * LZC_MaxDepDiff) {
+		bool lSky = lDep[bestDir] >= 30; //don't interpolate between sky and not-sky
+		bool rSky = rDep[bestDir] >= 30;
+		if (abs(lDep[bestDir] - rDep[bestDir]) <= layer1thick * LZC_MaxDepDiff && lSky == rSky) {
 			float totalDist = lDist[bestDir] + rDist[bestDir];
 			l2Dep = round((lDep[bestDir] * rDist[bestDir] + rDep[bestDir] * lDist[bestDir]) / totalDist); //basically a weighted average, where the weight of lDep = rDist
 		}
