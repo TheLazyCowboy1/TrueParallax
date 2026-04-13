@@ -17,7 +17,7 @@ public class Options : AutoConfigOptions
     {
         new(BASICS) { spacing = 40, startHeight = 450 },
         new(CAMERA),
-        new(LAYER2),
+        new(LAYER2) { startHeight = 450 },
         new(OPTIMIZATION),
         new(ADVANCED)
     })
@@ -45,10 +45,10 @@ public class Options : AutoConfigOptions
     [Config(CAMERA, "Transitions Reset Camera", "Instantly snaps the camera into place whenever going through screen transitions. If disabled, the camera will often pan across the entire screen upon screen transitions.\nHIGHLY recommended, especially if you are prone to motion-sickness. But personally, I think it looks cool when this option is disabled.")]
     public static bool TransitionsResetCamera = true;
 
-    [Config(CAMERA, "Mouse Sensitivity", "How much the camera moves when the mouse is moved. If 0, mouse movement does not affect the camera.", precision = 1), LimitRange(-10, 10)]
+    [Config(CAMERA, "Mouse Sensitivity", "How much the camera moves when the mouse is moved. If 0, mouse movement does not affect the camera.", precision = 1, spaceBefore = 10), LimitRange(-10, 10)]
     public static float MouseSensitivity = 0;
 
-    [Config(CAMERA, "Invert Position", "Makes the camera think the player is on the opposite end of the room; thus, camera motion is opposite player motion.\nNOT recommended.")]
+    [Config(CAMERA, "Invert Position", "Makes the camera think the player is on the opposite end of the room; thus, camera motion is opposite player motion.\nNOT recommended.", spaceBefore = 10)]
     public static bool InvertPos = false;
     [Config(CAMERA, "Dynamic Zoom", "How much the camera zooms out when moving towards the center of the screen.\nNOT recommended; keep at 0."), LimitRange(0, 1)]
     public static float DynamicZoom = 0;
@@ -73,32 +73,52 @@ public class Options : AutoConfigOptions
 
     [Config(OPTIMIZATION, "Optimization", "Reduces processing costs, at the risk of visual artefacts due to \"skipping over\" pixels.\nRecommended between 1 and 2. A good compromise is 1.5."), LimitRange(0.25f, 4)]
     public static float OptimizationFac = 1;
-    [Config(OPTIMIZATION, "Dynamic Optimization", "Reduces processing costs for pixels closer to the camera (by about 50% on average), but can cause some visual artefacts.\nRecommended to EITHER set Optimization to 1.5, OR enable this and use Max Warp.")]
+    [Config(OPTIMIZATION, "Dynamic Optimization", "Reduces processing costs for pixels closer to the camera (by about 50% on average), but can cause some minor visual artefacts (serrated edges).\nRecommended to EITHER set Optimization to 1.5, OR enable this and use Max Warp.")]
     public static bool DynamicOptimization = false;
-    [Config(OPTIMIZATION, "Max Warp", "Caps the strength of the parallax effect, only affecting the further parts of the screen.\nIF using Dynamic Optimization, recommended between 0.6 and 0.9. OTHERWISE, keep at 1."), LimitRange(0, 1)]
+    [Config(OPTIMIZATION, "Max Warp", "Caps the strength of the parallax effect, only affecting the further parts of the screen. This can significantly improve performance.\nIF using Dynamic Optimization, recommended between 0.5 and 0.8. OTHERWISE, keep above 0.8."), LimitRange(0, 1)]
     public static float MaxWarp = 1;
 
     //ADVANCED
 
     [Config(ADVANCED, "Background Noise", "Applies noise to areas that look stretched. There is a performance benefit if this is 0.\nRecommended value = 1."), LimitRange(0, 4)]
     public static float BackgroundNoise = 1;
-    [Config(ADVANCED, "Anti-Aliasing", "Attempts to break up straight lines that are noticable when moving the camera slowly. (Not really anti-aliasing).\nRecommended below 0.5."), LimitRange(0, 1)]
+    [Config(ADVANCED, "Anti-Aliasing", "Attempts to break up straight lines that are noticable when moving the camera slowly. (Not really anti-aliasing). Has a minimal effect when the Effect Strength is high.\nRecommended below 0.5."), LimitRange(0, 1)]
     public static float AntiAliasing = 0.1f;
 
     public enum DepthCurveOptions { EXTREME, PARABOLIC, LINEAR, INVERSE };
-    [Config(ADVANCED, "Depth Curve", "Applies a curve to the room depth - for example, making mid-ground objects appear further away.\nLINEAR recommended. PARABOLIC may be useful if you need a low Effect Strength due to low processing power.", width = 120, spaceAfter = 150)]
+    [Config(ADVANCED, "Depth Curve", "Applies a curve to the room depth - for example, making mid-ground objects appear further away.\nLINEAR recommended. PARABOLIC may be useful if you need a low Effect Strength due to low processing power.", width = 120, height = 120)]
     public static DepthCurveOptions DepthCurve = DepthCurveOptions.LINEAR;
 
-    [Config(ADVANCED, "Background Depth", "How far away the background (the sky, basically) appears relative to the room geometry. Literally decreases the Effect Strength for everything except the background.\nHIGHLY recommended at 1, because the background is usually a mostly solid color, making this just a waste of resources."), LimitRange(1, 2)]
+    [Config(ADVANCED, "Background Depth", "How far away the background (the sky, basically) appears relative to the room geometry. Literally decreases the Effect Strength for everything except the background.\nHIGHLY recommended at 1, because the background is usually a mostly solid color, making this just a waste of resources.", spaceBefore = 40), LimitRange(1, 2)]
     public static float BackgroundDepth = 1; //1.0 / Layer30Depth
     [Config(ADVANCED, "Pivot Depth", "What depth stays fixed in place. Decreasing this decreases zoom and causes an inverse parallax effect, where the background moves but the foreground does not.\nHIGHLY recommended at 1, because lower values look weird."), LimitRange(0, 1)]
     public static float PivotDepth = 1;
     [Config(ADVANCED, "Convergence Scale", "Essentially how \"zoomed in\" the camera appears.\nHIGHLY recommended at 1, because lower values cause black bars on the side, and higher values feel like a waste of resources."), LimitRange(-5, 5)]
     public static float ConvergenceScale = 1;
 
-    [Config(ADVANCED, "Log Level", "When this number is higher, less important logs are displayed."), LimitRange(0, 3)]
+    [Config(ADVANCED, "Log Level", "When this number is higher, less important logs are displayed.", spaceBefore = 10), LimitRange(0, 3)]
     public static int LogLevel = 1;
 
+
+    OpLabel layer2Label;
+    public override void MenuInitialized()
+    {
+        base.MenuInitialized();
+
+        GetTab(BASICS).AddItems(
+            new OpLabel(50, 500, "Parallax Effect Settings", true)
+            );
+
+        GetTab(LAYER2).AddItems(
+            layer2Label = new(50, 500, $"Enable \"Second Layer\" in {BASICS} tab to configure these settings.")
+            );
+
+        GetTab(OPTIMIZATION).AddItems(
+            new OpLabelLong(new(50, 200), new(400, 150),
+                "If you want to know how expensive the shader is, use this formula:\ncost = EffectStrength * MaxWarp / Optimization\nThus, Effect Strength is the primary factor for performance cost, and Max Warp and Optimization are used to directly reduce it.\nOther optimizations:\nEnabling Dynamic Optimization improves performance by roughly 50%.\nDisabling Second Layer could improve performance by up to 100%, because it is highly expensive.\nDisabling Limit Projection could improve performance by up to 50%; but I recommend keeping it on anyway.\nSetting Background Noise to 0 should improve performance by perhaps 20% (I have not tested it thoroughly)."
+                )
+            );
+    }
 
     public override void Update()
     {
@@ -117,6 +137,7 @@ public class Options : AutoConfigOptions
                     if (el is UIconfig cfg) cfg.greyedOut = !TwoLayers;
                 }
             }
+            layer2Label.Hidden = !TwoLayers;
         }
         catch (Exception ex) { Plugin.Error(ex); }
     }
