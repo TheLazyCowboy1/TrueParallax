@@ -456,13 +456,13 @@ public class Plugin : SimplerPlugin
                     Vector2 sSize = Custom.rainWorld.screenSize;
                     Vector2 warpFacs = new(0.5f + Mathf.Abs(data.camPos.x - 0.5f), 0.5f + Mathf.Abs(data.camPos.y - 0.5f));
                     warpFacs *= sSize / sSize.x; //adjust for aspect ratio
-                    float highestUsedWarp = Mathf.Max(warpFacs.x, warpFacs.y);
+
                     float warp = Options.Warp * warpMod;
-                    highestUsedWarp *= warp;
+                    float highestUsedWarp = warp * Mathf.Min(Options.MaxWarp, Mathf.Max(warpFacs.x, warpFacs.y));
 
                     mat.SetFloat(ShadPropWarp, warp);
 
-                    int testNum = Mathf.Max(2, (int)Mathf.Ceil(Mathf.Abs(highestUsedWarp) * Options.MaxWarp / Options.OptimizationFac));
+                    int testNum = Mathf.Max(2, (int)Mathf.Ceil(Mathf.Abs(highestUsedWarp) / Options.OptimizationFac));
                     mat.SetInt(ShadPropTestNum, testNum);
                     mat.SetFloat(ShadPropStepSize, 1.0f / testNum);
                     mat.SetVector(ShadPropMoveStepScale, warp / testNum * sSize / sSize.x);
