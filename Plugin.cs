@@ -206,7 +206,7 @@ public class Plugin : SimplerPlugin
         else ThicknessMapMaterial.DisableKeyword("LZC_SIMPLERLAYERS");
 
         //set constants for material
-        ThicknessMapMaterial.SetInt("LZC_BackgroundTestNum", 22);
+        ThicknessMapMaterial.SetInt("LZC_BackgroundTestNum", Options.BackgroundTestNum);
         ThicknessMapMaterial.SetFloat("LZC_ProjectionMod", Options.ThicknessMod);
         ThicknessMapMaterial.SetFloat("LZC_MinObjectDepth", Options.MinObjectThickness);
         ThicknessMapMaterial.SetFloat("LZC_MaxDepDiff", Options.MaxDepthDifference);
