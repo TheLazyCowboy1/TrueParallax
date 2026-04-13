@@ -226,7 +226,8 @@ public class Plugin : SimplerPlugin
         Vector2 sSize = Custom.rainWorld.screenSize;
         mat.SetVector(ShadPropMoveStepScale, Options.Warp / testNum * sSize / sSize.x);
 
-        mat.SetFloat("LZC_MaxWarp", Options.MaxWarp);
+        //mat.SetFloat("LZC_MaxWarp", Options.MaxWarp);
+        mat.SetVector("LZC_MaxWarp", Options.MaxWarp * new Vector2(1, sSize.x / sSize.y)); //increase MaxWarp.y due to aspect ratio
         mat.SetFloat("LZC_ConvergenceScale", Options.ConvergenceScale);
         mat.SetFloat("LZC_PivotDepth", Options.PivotDepth);
         mat.SetFloat("LZC_Layer30Depth", 1.0f / Options.BackgroundDepth);

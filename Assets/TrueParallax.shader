@@ -9,7 +9,7 @@ Shader "TheLazyCowboy1/TrueParallax"
 		_LZC_Layer2Tex ("Layer2Tex", 2D) = "black" {}
         LZC_ConvergenceScale ("ConvergenceScale", Float) = 1
         LZC_Warp ("Warp", Float) = 100
-        LZC_MaxWarp ("MaxWarp", Float) = 1
+        //LZC_MaxWarp ("MaxWarp", Vector) = 1
 		LZC_TestNum ("TestNum", Int) = 100
         LZC_StepSize ("StepSize", Float) = 0.01
         //LZC_MoveStepScale ("StepSize", Vector) = 0.01
@@ -281,7 +281,7 @@ Texture2D<float4> _PreLevelColorGrab;
 uniform float2 LZC_CamPos;
 uniform float LZC_ConvergenceScale;
 uniform float LZC_Warp;
-uniform float LZC_MaxWarp;
+uniform float2 LZC_MaxWarp;
 uniform uint LZC_TestNum;
 uniform float LZC_StepSize;
 uniform float2 LZC_MoveStepScale;
@@ -351,10 +351,11 @@ half4 frag (v2f i) : SV_Target
 #if LZC_DYNAMICOPTIMIZATION
 	float2 moveStep = i.posCamDiff;
 #else
-	float2 moveStep = float2(
-		clamp(i.posCamDiff.x, -LZC_MaxWarp, LZC_MaxWarp), //clamp it to maxWarp
-		clamp(i.posCamDiff.y, -LZC_MaxWarp, LZC_MaxWarp)
-		);
+	/*float2 moveStep = float2(
+		clamp(i.posCamDiff.x, -LZC_MaxWarp.x, LZC_MaxWarp.x), //clamp it to maxWarp
+		clamp(i.posCamDiff.y, -LZC_MaxWarp.y, LZC_MaxWarp.y)
+		);*/
+	float2 moveStep = clamp(i.posCamDiff, -LZC_MaxWarp, LZC_MaxWarp);
 #endif
 
 		//scale moveStep up to its proper size
@@ -376,10 +377,12 @@ half4 frag (v2f i) : SV_Target
 	float2 initGrabPos = i.suv - moveStep * (totalTests + noiseOffset) * LZC_PivotDepth; //start at the END and then move BACKWARDS
 
 #if LZC_DYNAMICOPTIMIZATION
-	float maxCamDiff = max(abs(i.posCamDiff.x), abs(i.posCamDiff.y));
-	//if (invWarpFac > 1) {
-	if (maxCamDiff < LZC_MaxWarp) {
-		float optimization = min(LZC_MaxWarp / maxCamDiff, 0.25f * LZC_TestNum); //can't be less than 4 totalTests
+	float2 absCamDiff = abs(i.posCamDiff);
+	//float maxCamDiff = max(abs(i.posCamDiff.x), abs(i.posCamDiff.y));
+	//if (maxCamDiff < LZC_MaxWarp.x) {
+	if (absCamDiff.x < LZC_MaxWarp.x && absCamDiff.y < LZC_MaxWarp.y) {
+		float2 adjustedDiff = LZC_MaxWarp / absCamDiff;
+		float optimization = min(min(adjustedDiff.x, adjustedDiff.y), 0.25f * LZC_TestNum); //can't be less than 4 totalTests
 		stepSize = stepSize * optimization;
 		moveStep = moveStep * optimization;
 		totalTests = ceil(totalTests / optimization);
