@@ -5,11 +5,8 @@ using System.Security;
 using System.Security.Permissions;
 using BepInEx;
 using EasyModSetup;
-using Unity.Mathematics;
-using UnityEngine.Rendering;
 using UnityEngine;
 using RWCustom;
-using UnityEngine.Experimental.Rendering;
 
 #pragma warning disable CS0618
 
@@ -196,12 +193,13 @@ public class Plugin : SimplerPlugin
         if (Options.DynamicOptimization) keywords.Add("LZC_DYNAMICOPTIMIZATION");
         if (Options.TwoLayers) keywords.Add("LZC_PROCESSLAYER2");
         if (Options.BackgroundNoise > 0.001f) keywords.Add("LZC_BACKGROUNDNOISE");
-        switch (Options.DepthCurve)
+        keywords.Add(Options.DepthCurve switch
         {
-            case Options.DepthCurveOptions.EXTREME: keywords.Add("LZC_DEPTHCURVE"); break;
-            case Options.DepthCurveOptions.PARABOLIC: keywords.Add("LZC_DEPTHCURVE"); keywords.Add("LZC_INVDEPTHCURVE"); break;
-            case Options.DepthCurveOptions.INVERSE: keywords.Add("LZC_INVDEPTHCURVE"); break;
-        }
+            Options.DepthCurveOptions.CUBED => "LZC_CUBEDEPTH",
+            Options.DepthCurveOptions.SQUARED => "LZC_SQUAREDEPTH",
+            Options.DepthCurveOptions.INVERSE => "LZC_INVERSEDEPTH",
+            _ => "LZC_LINEARDEPTH"
+        });
         TrueParallaxFShader.keywords = keywords.ToArray();
 
         //determine keywords for material

@@ -50,10 +50,11 @@ CGPROGRAM
 
 #pragma multi_compile_local _ LZC_PROCESSLAYER2
 #pragma multi_compile_local _ LZC_LIMITPROJECTION
-#pragma multi_compile_local _ LZC_DEPTHCURVE
-#pragma multi_compile_local _ LZC_INVDEPTHCURVE
-
-#define CreatureSteps 6
+//#pragma multi_compile_local _ LZC_DEPTHCURVE
+//#pragma multi_compile_local _ LZC_INVDEPTHCURVE
+#if LZC_PROCESSLAYER2
+	#pragma multi_compile_local LZC_LINEARDEPTH LZC_SQUAREDEPTH LZC_CUBEDEPTH LZC_INVERSEDEPTH
+#endif
 
 #include "UnityCG.cginc"
 
@@ -101,15 +102,34 @@ v2f vert (appdata_full v)
     return o;
 }
 
+#if LZC_PROCESSLAYER2
+
+inline int depthOfTexel(int2 pos) {
+	float4 c = _PreLevelColorGrab.Load(int3(pos, 0));
+	if (c.r > 1.0f / 255.0f || c.g > 0 || c.b > 0) {
+		return 5;
+	}
+
+	int2 textCoord = int2(round((pos - _screenSize * _spriteRect.xy) / (_spriteRect.zw - _spriteRect.xy)));
+	float r = _LevelTex.Load(int3(textCoord, 0)).r;
+	return (r < 0.997f) ? ((uint(r*255.99f) - 1) % 30) : 30;
+}
+
+#define dirCount 2
+#define EXPONENTIALTESTS
+#include "BackgroundBuilder.cginc"
+
+#endif //LZC_PROCESSLAYER2
+
 inline float depthCurve(float d) {
-#if LZC_DEPTHCURVE && LZC_INVDEPTHCURVE //why not thrown in a 4th, median option??
-	return d*(2 - d); //simple parabola
-#elif LZC_DEPTHCURVE
-	return d*(d*(d - 3) + 3); //much more severe, cubic curve
-#elif LZC_INVDEPTHCURVE
-	return 0.5*d * (d*d + 1); //simply average d^3 with d === (d*d*d + d) / 2
-#else
-	return d; //linear
+#if LZC_SQUAREDEPTH
+	return d*d;
+#elif LZC_CUBEDEPTH
+	return d*d*d;
+#elif LZC_INVERSEDEPTH
+	return d*(2-d);
+#else //LZC_LINEARDEPTH
+	return d;
 #endif
 }
 
@@ -128,8 +148,7 @@ void frag (v2f i)
 		//map screen pos to level tex coord
 	//float2 textCoord = (i.uv - _spriteRect.xy) / (_spriteRect.zw - _spriteRect.xy);
 	int2 textCoord = int2(round(i.luv));
-	//float lev = tex2D(_LevelTex, textCoord).r;
-	float lev = _LevelTex.Load(int3(textCoord, 0));
+	float lev = _LevelTex.Load(int3(textCoord, 0)).r;
 
 	int2 checkPos = int2(round(i.suv));
 
@@ -159,12 +178,17 @@ void frag (v2f i)
 #if LZC_PROCESSLAYER2
 	float g, b, a;
 	if (creatureMask) {
-
-			//TODO: ADD CODE TO TEST HOW BIG THE CREATURE IS AND MAKE THICKNESS ACCORDINGLY
-
+		/*
 		g = 1 / 255.0f; //thickness = 1
 		b = 0; //layer2 = idk so just don't use it ig
 		a = 0; //distance = 0
+		*/
+		float4 backCol = GenerateBackground(checkPos, 6, 0, 0, 0, 1);
+		uint4 backColInts = uint4(backCol * 255.99f);
+			//pack in bytes, same as below
+		g = (backColInts.y | ((backColInts.x & 7) << 5)) / 255.0f; //bottom 3 bits +5
+		b = (backColInts.z | ((backColInts.x & 24) << 3)) / 255.0f; //top 2 bits +3 //24 = 0b11000
+		a = backCol.w;
 	}
 	else if (terrainMask) {
 		g = 31 / 255.0f; //thickness = maximum, so no layer2
@@ -182,15 +206,7 @@ void frag (v2f i)
 		int lDist = backColInts.w & 31;//0b11111;
 		int rDist = backColInts.x;
 
-		int2 dir[8];
-		dir[0] = int2(2, 0);
-		dir[1] = int2(0, 2);
-		dir[2] = int2(2, 2);
-		dir[3] = int2(2, -2); //(equivalent to -1,1)
-		dir[4] = int2(2, 1); //1, 0.5
-		dir[5] = int2(1, 2); //0.5, 1
-		dir[6] = int2(-1, 2); //-0.5, 1
-		dir[7] = int2(2, -1); //1, -0.5
+		fullDirDef //see DirectionDefinitions.cginc
 
 		int2 lPos = checkPos + (dir[dirIdx] * lDist)/2;
 		int2 rPos = checkPos - (dir[dirIdx] * rDist)/2;
@@ -244,12 +260,14 @@ CGPROGRAM
 #pragma vertex vert
 #pragma fragment frag
 
-#pragma multi_compile_local _ LZC_DEPTHCURVE
-#pragma multi_compile_local _ LZC_INVDEPTHCURVE
 #pragma multi_compile_local _ LZC_LIMITPROJECTION
 #pragma multi_compile_local _ LZC_DYNAMICOPTIMIZATION
 #pragma multi_compile_local _ LZC_PROCESSLAYER2
 #pragma multi_compile_local _ LZC_BACKGROUNDNOISE
+#if LZC_PROCESSLAYER2
+	#pragma multi_compile_local LZC_LINEARDEPTH LZC_SQUAREDEPTH LZC_CUBEDEPTH LZC_INVERSEDEPTH
+	#include "DirectionDefinitions.cginc"
+#endif
 
 #include "UnityCG.cginc"
 
@@ -317,14 +335,14 @@ v2f vert (appdata_full v)
 }
 
 inline float depthCurve(float d) {
-#if LZC_DEPTHCURVE && LZC_INVDEPTHCURVE //why not thrown in a 4th, median option??
-	return d*(2 - d); //simple parabola
-#elif LZC_DEPTHCURVE
-	return d*(d*(d - 3) + 3); //much more severe, cubic curve
-#elif LZC_INVDEPTHCURVE
-	return 0.5*d * (d*d + 1); //simply average d^3 with d === (d*d*d + d) / 2
-#else
-	return d; //linear
+#if LZC_SQUAREDEPTH
+	return d*d;
+#elif LZC_CUBEDEPTH
+	return d*d*d;
+#elif LZC_INVERSEDEPTH
+	return d*(2-d);
+#else //LZC_LINEARDEPTH
+	return d;
 #endif
 }
 
@@ -351,18 +369,12 @@ half4 frag (v2f i) : SV_Target
 #if LZC_DYNAMICOPTIMIZATION
 	float2 moveStep = i.posCamDiff;
 #else
-	/*float2 moveStep = float2(
-		clamp(i.posCamDiff.x, -LZC_MaxWarp.x, LZC_MaxWarp.x), //clamp it to maxWarp
-		clamp(i.posCamDiff.y, -LZC_MaxWarp.y, LZC_MaxWarp.y)
-		);*/
 	float2 moveStep = clamp(i.posCamDiff, -LZC_MaxWarp, LZC_MaxWarp);
 #endif
 
 		//scale moveStep up to its proper size
-	//moveStep = moveStep * LZC_Warp * LZC_StepSize
-	//	* _screenSize / _screenSize.x; //adjust moveStep to respect the fact that the screen ratio is 16:9, not 1:1
 	moveStep = moveStep * LZC_MoveStepScale; //use a global var to scale it instead
-	float2 unoptimizedMoveStep = moveStep;
+	float2 unoptimizedMoveStep = moveStep; //not changed by DYNAMICOPTIMIZATION
 
 	uint totalTests = LZC_TestNum;
 	float stepSize = LZC_StepSize;
@@ -378,9 +390,7 @@ half4 frag (v2f i) : SV_Target
 
 #if LZC_DYNAMICOPTIMIZATION
 	float2 absCamDiff = abs(i.posCamDiff);
-	//float maxCamDiff = max(abs(i.posCamDiff.x), abs(i.posCamDiff.y));
-	//if (maxCamDiff < LZC_MaxWarp.x) {
-	if (absCamDiff.x < LZC_MaxWarp.x && absCamDiff.y < LZC_MaxWarp.y) {
+	if (absCamDiff.x < LZC_MaxWarp.x && absCamDiff.y < LZC_MaxWarp.y) { //don't optimize above MaxWarp, because those wouldn't actually be optimizations
 		float2 adjustedDiff = LZC_MaxWarp / absCamDiff;
 		float optimization = min(min(adjustedDiff.x, adjustedDiff.y), 0.25f * LZC_TestNum); //can't be less than 4 totalTests
 		stepSize = stepSize * optimization;
@@ -388,7 +398,7 @@ half4 frag (v2f i) : SV_Target
 		totalTests = ceil(totalTests / optimization);
 	}
 	#if LZC_PROCESSLAYER2
-	float minThickness = stepSize;
+	float minThickness = stepSize; //otherwise, layer1 can seemingly just disappear when stepSize is high
 	#endif
 #endif
 
@@ -572,15 +582,7 @@ half4 frag (v2f i) : SV_Target
 		int lDist = lev.w & 31;//0b11111;
 		int rDist = (lev.y >> 5) | ((lev.z & 96) >> 2); //96 = 0b01100000
 
-		int2 dir[8];
-		dir[0] = int2(2, 0);
-		dir[1] = int2(0, 2);
-		dir[2] = int2(2, 2);
-		dir[3] = int2(2, -2); //(equivalent to -1,1)
-		dir[4] = int2(2, 1); //1, 0.5
-		dir[5] = int2(1, 2); //0.5, 1
-		dir[6] = int2(-1, 2); //-0.5, 1
-		dir[7] = int2(2, -1); //1, -0.5
+		fullDirDef //see DirectionDefinitions.cginc
 
 		int2 lPos = bestGrabPos + (dir[d] * lDist)/2;
 		int2 rPos = bestGrabPos - (dir[d] * rDist)/2;

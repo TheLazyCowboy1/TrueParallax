@@ -97,7 +97,7 @@ public abstract class AutoConfigOptions : OptionInterface
         public string name;
         public float startHeight = 550f, spacing = 40f, leftMargin = 50f,
             textOffset = 90f, updownWidth = 80f, checkboxOffset = 50f,
-            rightMargin = 300f, defaultHeight = 25f;
+            rightMargin = 300f, defaultHeight = 25f, minSpacing = 10f;
         public TabInfo(string name)
         {
             this.name = name;
@@ -194,6 +194,8 @@ public abstract class AutoConfigOptions : OptionInterface
 
             float y = tInfo.startHeight;
             bool lastWasLeft = false;
+            int counterSinceSpace = 0;
+            float nextSpace = 0;
 
             foreach (ConfigInfo cInfo in ConfigInfos.Values)
             {
@@ -206,8 +208,11 @@ public abstract class AutoConfigOptions : OptionInterface
                         float h = cInfo.height >= 0 ? cInfo.height : tInfo.defaultHeight;
                         float t = tInfo.textOffset + w - tInfo.updownWidth; //updownWidth is the default
 
-                        if (lastWasLeft && cInfo.rightSide)
-                            y += tInfo.spacing; //keep on same height... a janky method to do so, but oh well
+                        if (lastWasLeft == cInfo.rightSide || ++counterSinceSpace > 2) //on the same side as the last one
+                        {
+                            y -= nextSpace;
+                            nextSpace = 0;
+                        }
                         lastWasLeft = !cInfo.rightSide;
 
                         y -= cInfo.spaceBefore; //add extra space
@@ -248,13 +253,13 @@ public abstract class AutoConfigOptions : OptionInterface
 
                         UIConfigs.Add(cInfo.config.key, el);
                         Tabs[i].AddItems(new OpLabel(x + t, y, cInfo.label), el);
-                        y -= tInfo.spacing + cInfo.spaceAfter;
+
+                        nextSpace = Mathf.Max(nextSpace, Mathf.Max(tInfo.spacing, el.size.y + tInfo.minSpacing) + cInfo.spaceAfter);
                     }
                 }
                 catch (Exception ex) { SimplerPlugin.Error("Error with " + cInfo.label); SimplerPlugin.Error(ex); }
             }
 
-            //Tabs[i].items = Tabs[i].items.Reverse().ToHashSet(); //attempt to make dropdowns not be behind the configs
             //move comboBoxes to the front
             foreach (UIelement el in Tabs[i].items)
             {
