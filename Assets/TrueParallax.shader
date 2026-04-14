@@ -18,6 +18,7 @@ Shader "TheLazyCowboy1/TrueParallax"
         LZC_AntiAliasingFac ("AntiAliasingFac", Float) = 0
         LZC_BackgroundNoise ("BackgroundNoise", Float) = 0
         LZC_MaxProjection ("MaxProjection", Float) = 0.05
+        LZC_CreatureBackgroundTests ("CreatureBackgroundTests", Int) = 10
 	}
 	
 	Category 
@@ -50,10 +51,9 @@ CGPROGRAM
 
 #pragma multi_compile_local _ LZC_PROCESSLAYER2
 #pragma multi_compile_local _ LZC_LIMITPROJECTION
-//#pragma multi_compile_local _ LZC_DEPTHCURVE
-//#pragma multi_compile_local _ LZC_INVDEPTHCURVE
+#pragma multi_compile_local LZC_LINEARDEPTH LZC_PARABOLICDEPTH LZC_EXTREMEDEPTH LZC_INVERSEDEPTH
 #if LZC_PROCESSLAYER2
-	#pragma multi_compile_local LZC_LINEARDEPTH LZC_SQUAREDEPTH LZC_CUBEDEPTH LZC_INVERSEDEPTH
+	#pragma multi_compile_local _ LZC_BUILDCREATUREBACKGROUND
 #endif
 
 #include "UnityCG.cginc"
@@ -115,21 +115,23 @@ inline int depthOfTexel(int2 pos) {
 	return (r < 0.997f) ? ((uint(r*255.99f) - 1) % 30) : 30;
 }
 
+uniform int LZC_CreatureBackgroundTests;
+
 #define dirCount 2
-#define EXPONENTIALTESTS
+//#define EXPONENTIALTESTS
 #include "BackgroundBuilder.cginc"
 
 #endif //LZC_PROCESSLAYER2
 
-inline float depthCurve(float d) {
-#if LZC_SQUAREDEPTH
-	return d*d;
-#elif LZC_CUBEDEPTH
-	return d*d*d;
+inline half depthCurve(half d) {
+#if LZC_PARABOLICDEPTH
+	return d*(2 - d); //simple parabola
+#elif LZC_EXTREMEDEPTH
+	return d*(d*(d - 3) + 3); //much more severe, cubic curve
 #elif LZC_INVERSEDEPTH
-	return d*(2-d);
-#else //LZC_LINEARDEPTH
-	return d;
+	return d*d; //squared
+#else
+	return d; //linear
 #endif
 }
 
@@ -178,17 +180,17 @@ void frag (v2f i)
 #if LZC_PROCESSLAYER2
 	float g, b, a;
 	if (creatureMask) {
-		/*
-		g = 1 / 255.0f; //thickness = 1
-		b = 0; //layer2 = idk so just don't use it ig
-		a = 0; //distance = 0
-		*/
-		float4 backCol = GenerateBackground(checkPos, 6, 0, 0, 0, 1);
-		uint4 backColInts = uint4(backCol * 255.99f);
+	#if LZC_BUILDCREATUREBACKGROUND
+		uint4 backColInts = GenerateBackground(checkPos, LZC_CreatureBackgroundTests, 0, 0, 10, 1);
 			//pack in bytes, same as below
 		g = (backColInts.y | ((backColInts.x & 7) << 5)) / 255.0f; //bottom 3 bits +5
 		b = (backColInts.z | ((backColInts.x & 24) << 3)) / 255.0f; //top 2 bits +3 //24 = 0b11000
-		a = backCol.w;
+		a = backColInts.w / 255.0f;
+	#else
+		g = 1 / 255.0f; //thickness = 1
+		b = 0; //layer2 = none
+		a = 0; //distance = 0
+	#endif
 	}
 	else if (terrainMask) {
 		g = 31 / 255.0f; //thickness = maximum, so no layer2
@@ -265,7 +267,7 @@ CGPROGRAM
 #pragma multi_compile_local _ LZC_PROCESSLAYER2
 #pragma multi_compile_local _ LZC_BACKGROUNDNOISE
 #if LZC_PROCESSLAYER2
-	#pragma multi_compile_local LZC_LINEARDEPTH LZC_SQUAREDEPTH LZC_CUBEDEPTH LZC_INVERSEDEPTH
+	#pragma multi_compile_local LZC_LINEARDEPTH LZC_PARABOLICDEPTH LZC_EXTREMEDEPTH LZC_INVERSEDEPTH
 	#include "DirectionDefinitions.cginc"
 #endif
 
@@ -334,15 +336,15 @@ v2f vert (appdata_full v)
     return o;
 }
 
-inline float depthCurve(float d) {
-#if LZC_SQUAREDEPTH
-	return d*d;
-#elif LZC_CUBEDEPTH
-	return d*d*d;
+inline half depthCurve(half d) {
+#if LZC_PARABOLICDEPTH
+	return d*(2 - d); //simple parabola
+#elif LZC_EXTREMEDEPTH
+	return d*(d*(d - 3) + 3); //much more severe, cubic curve
 #elif LZC_INVERSEDEPTH
-	return d*(2-d);
-#else //LZC_LINEARDEPTH
-	return d;
+	return d*d; //squared
+#else
+	return d; //linear
 #endif
 }
 

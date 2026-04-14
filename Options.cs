@@ -2,6 +2,7 @@
 using Menu.Remix.MixedUI;
 using System;
 using System.Linq;
+using UnityEngine;
 
 namespace TrueParallax;
 
@@ -69,6 +70,11 @@ public class Options : AutoConfigOptions
     [Config(LAYER2, "Cached Textures", "How many Layer2 textures are saved. Saves processing when going back to previous screens, at the cost of VRAM.\nRecommended at 1 or 2. Any higher is usually useless."), LimitRange(1, 8)]
     public static int CachedRenderTextures = 2;
 
+    [Config(LAYER2, "Build Creature Backgrounds", "Attempts to infer the room geometry behind creatures by checking the pixels around them. Has a significant performance cost.\nRecommended if you are using a high Effect Strength and have a stable framerate.", spaceBefore = 15)]
+    public static bool BuildCreatureBackground = false;
+    [Config(LAYER2, "Creature Background Tests", "How many pixels around the creature are checked. \nRecommended at 1 or 2. Any higher is usually useless."), LimitRange(1, 8)]
+    public static int CreatureBackgroundTests = 10;
+
     //OPTIMIZATION
 
     [Config(OPTIMIZATION, "Optimization", "Reduces processing costs, at the risk of visual artefacts due to \"skipping over\" pixels.\nRecommended between 1 and 2. A good compromise is 1.5."), LimitRange(0.25f, 4)]
@@ -82,11 +88,11 @@ public class Options : AutoConfigOptions
 
     [Config(ADVANCED, "Background Noise", "Applies noise to areas that look stretched. There is a performance benefit if this is 0.\nRecommended value = 1."), LimitRange(0, 4)]
     public static float BackgroundNoise = 1;
-    [Config(ADVANCED, "Anti-Aliasing", "Attempts to break up straight lines that are noticable when moving the camera slowly. (Not really anti-aliasing). Has a minimal effect when the Effect Strength is high.\nRecommended below 0.5."), LimitRange(0, 1)]
+    [Config(ADVANCED, "Anti-Aliasing", "Attempts to break up straight lines that are noticable when moving the camera slowly. (Not really anti-aliasing). Has a minimal effect when the Effect Strength is high.\nRecommended below 1."), LimitRange(0, 10)]
     public static float AntiAliasing = 0.1f;
 
-    public enum DepthCurveOptions { INVERSE, LINEAR, SQUARED, CUBED };
-    [Config(ADVANCED, "Depth Curve", "Applies a curve to the room depth - for example, making mid-ground objects appear closer.\nLINEAR recommended. SQUARED may be useful if you need a low Effect Strength due to low processing power.", width = 120, spaceAfter = 100)]
+    public enum DepthCurveOptions { INVERSE, LINEAR, PARABOLIC, EXTREME };
+    [Config(ADVANCED, "Depth Curve", "Applies a curve to the room depth - for example, making mid-ground objects appear closer.\nLINEAR recommended. PARABOLIC may be useful if you need a low Effect Strength due to low processing power.", width = 120, spaceAfter = 100)]
     public static DepthCurveOptions DepthCurve = DepthCurveOptions.LINEAR;
 
     [Config(ADVANCED, "Background Depth", "How far away the background (the sky, basically) appears relative to the room geometry. Literally decreases the Effect Strength for everything except the background.\nHIGHLY recommended at 1, because the background is usually a mostly solid color, making this just a waste of resources.", spaceBefore = 40), LimitRange(1, 2)]
@@ -99,6 +105,49 @@ public class Options : AutoConfigOptions
     [Config(ADVANCED, "Log Level", "When this number is higher, less important logs are displayed.", spaceBefore = 10), LimitRange(0, 3)]
     public static int LogLevel = 1;
 
+
+    private class OptimizationLabel : OpLabelLong
+    {
+        private readonly record struct MyBools {
+            public readonly bool dynamicOptimization = !Options.DynamicOptimization,
+                secondLayer = Options.TwoLayers,
+                limitProjection = Options.LimitProjection,
+                backgroundNoise = Options.BackgroundNoise > 0,
+                buildCreatureBackgrounds = Options.TwoLayers && Options.BuildCreatureBackground;
+            public MyBools() { }
+        }
+        private MyBools myBools = new();
+        public OptimizationLabel(Vector2 pos) : base(pos, new(400, 150), "PLACEHOLDER")
+        {
+            UpdateText();
+        }
+
+        private void UpdateText()
+        {
+            this.text =
+                "If you want to know how expensive the shader is, use this basic formula:\n" +
+                "cost = EffectStrength * MaxWarp / Optimization\n" +
+                "Thus, Effect Strength is the primary factor for performance cost, and Max Warp and Optimization are used to directly reduce it.\n" +
+                "Other optimizations:\n" +
+                (myBools.dynamicOptimization ? "Enabling Dynamic Optimization improves performance by roughly 50%.\n" : "") +
+                (myBools.secondLayer ? "Disabling Second Layer could improve performance by 50-100%, because it is highly expensive.\n" : "") +
+                (myBools.limitProjection ? "Disabling Limit Projection could improve performance by up to 50%; but I recommend keeping it on anyway.\n" : "") +
+                (myBools.backgroundNoise ? "Setting Background Noise to 0 should improve performance by perhaps 10% (exact improvement is untested).\n" : "") +
+                (myBools.buildCreatureBackgrounds ? "Disabling Build Creature Backgrounds or reducing Creature Background Tests will help. 1 CreatureBackgroundTest ~= 3 EffectStrength" : "")
+                ;
+        }
+
+        public override void Update()
+        {
+            MyBools newBools = new();
+            if (newBools != myBools)
+            {
+                myBools = newBools;
+                UpdateText();
+                Plugin.Log("Updated Optimization Label text", 3);
+            }
+        }
+    }
 
     OpLabel layer2Label;
     public override void MenuInitialized()
@@ -114,9 +163,7 @@ public class Options : AutoConfigOptions
             );
 
         GetTab(OPTIMIZATION).AddItems(
-            new OpLabelLong(new(50, 200), new(400, 150),
-                "If you want to know how expensive the shader is, use this formula:\ncost = EffectStrength * MaxWarp / Optimization\nThus, Effect Strength is the primary factor for performance cost, and Max Warp and Optimization are used to directly reduce it.\nOther optimizations:\nEnabling Dynamic Optimization improves performance by roughly 50%.\nDisabling Second Layer could improve performance by up to 100%, because it is highly expensive.\nDisabling Limit Projection could improve performance by up to 50%; but I recommend keeping it on anyway.\nSetting Background Noise to 0 should improve performance by perhaps 10% (exact improvement is untested)."
-                )
+            new OptimizationLabel(new(50, 200))
             );
     }
 

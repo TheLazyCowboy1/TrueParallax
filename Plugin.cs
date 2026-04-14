@@ -191,12 +191,16 @@ public class Plugin : SimplerPlugin
         List<string> keywords = new();
         if (Options.LimitProjection) keywords.Add("LZC_LIMITPROJECTION");
         if (Options.DynamicOptimization) keywords.Add("LZC_DYNAMICOPTIMIZATION");
-        if (Options.TwoLayers) keywords.Add("LZC_PROCESSLAYER2");
+        if (Options.TwoLayers)
+        {
+            keywords.Add("LZC_PROCESSLAYER2");
+            if (Options.BuildCreatureBackground) keywords.Add("LZC_BUILDCREATUREBACKGROUND");
+        }
         if (Options.BackgroundNoise > 0.001f) keywords.Add("LZC_BACKGROUNDNOISE");
         keywords.Add(Options.DepthCurve switch
         {
-            Options.DepthCurveOptions.CUBED => "LZC_CUBEDEPTH",
-            Options.DepthCurveOptions.SQUARED => "LZC_SQUAREDEPTH",
+            Options.DepthCurveOptions.EXTREME => "LZC_EXTREMEDEPTH",
+            Options.DepthCurveOptions.PARABOLIC => "LZC_PARABOLICDEPTH",
             Options.DepthCurveOptions.INVERSE => "LZC_INVERSEDEPTH",
             _ => "LZC_LINEARDEPTH"
         });
@@ -232,6 +236,7 @@ public class Plugin : SimplerPlugin
         mat.SetFloat("LZC_AntiAliasingFac", Options.AntiAliasing);
         mat.SetFloat("LZC_BackgroundNoise", Options.BackgroundNoise);
         mat.SetFloat("LZC_MaxProjection", Options.MaxProjection);
+        mat.SetInt("LZC_CreatureBackgroundTests", Options.CreatureBackgroundTests);
 
         if (Options.TwoLayers && data.layer2Textures.First != null) //also set here in case the material wasn't set up yet when generated
             mat.SetTexture(ShadPropLayer2Tex, data.layer2Textures.First);

@@ -3,11 +3,11 @@
 //optionally also #define EXPONENTIALTESTS if tests should go out exponentially instead of linearly
 #include "DirectionDefinitions.cginc"
 
-inline float4 GenerateBackground(int2 startPos, int testNum, float minObjectDepth, float projectionMod, float maxDepDiff, int defaultThickness) {
+inline uint4 GenerateBackground(int2 startPos, int testNum, float minObjectDepth, float projectionMod, float maxDepDiff, int defaultThickness) {
 	int origDep = depthOfTexel(startPos);
 
 	if (origDep >= 30) {
-		return float4(0, defaultThickness / 255.0f, 0, 0); //fully thick layer1; otherwise irrelevant data so just 0
+		return uint4(0, defaultThickness, 0, 0); //fully thick layer1; otherwise irrelevant data so just 0
 	}
 
     dirDef //see DirectionDefinitions.cginc
@@ -71,7 +71,7 @@ inline float4 GenerateBackground(int2 startPos, int testNum, float minObjectDept
 	if (bestDir < 8) { //a ray had both sides hit
 
 		int dist2 = rDist[bestDir];
-		float layer1thick = clamp(ceil(minObjectDepth + (lDist[bestDir] + rDist[bestDir]) * 0.5f * projectionMod), 0, 31);
+		int layer1thick = clamp(ceil(minObjectDepth + (lDist[bestDir] + rDist[bestDir]) * 0.5f * projectionMod), 1, 31);
 		int l2Dep = 0;
 		int dist1 = lDist[bestDir]; //must be int so bit operation works
 
@@ -92,12 +92,12 @@ inline float4 GenerateBackground(int2 startPos, int testNum, float minObjectDept
 			}
 		}
 
-		return float4(
+		return uint4(
 			dist2,
 			layer1thick,
 			l2Dep,
 			dist1 | (bestDir << 5)
-		) / 255.0f;
+		);
 	}
 
 		//no rays hit both sides; let's see if any rays had at least 1 side hit, though
@@ -115,7 +115,7 @@ inline float4 GenerateBackground(int2 startPos, int testNum, float minObjectDept
 	}
 
 	if (minDist > testNum) { //absolutely no background for this
-		return float4(0, defaultThickness / 255.0f, 0, 0);
+		return uint4(0, defaultThickness, 0, 0);
 	}
 
 		//find the greatest depth that matches the shortest distance
@@ -133,11 +133,11 @@ inline float4 GenerateBackground(int2 startPos, int testNum, float minObjectDept
 	}
 
 		//pack info into bytes
-	float layer1thick = ceil(minObjectDepth + (minDist + testNum+1) * 0.5f * projectionMod);
-	return float4(
+	int layer1thick = clamp(ceil(minObjectDepth + (minDist + testNum+1) * 0.5f * projectionMod), 1, 31);
+	return uint4(
 		rDist[bestDir],
-		clamp(layer1thick, 1, 31),
+		layer1thick,
 		maxDep,
 		lDist[bestDir] | (bestDir << 5)
-	) / 255.0f;
+	);
 }
