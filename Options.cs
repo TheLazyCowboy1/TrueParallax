@@ -117,10 +117,9 @@ public class Options : AutoConfigOptions
             public MyBools() { }
         }
         private MyBools myBools = new();
-        private bool textSet = false;
         public OptimizationLabel(float x, float y) : base(new(x, y), new(400, 150), "PLACEHOLDER")
         {
-            //UpdateText();
+            UpdateText();
         }
 
         private void UpdateText()
@@ -140,10 +139,10 @@ public class Options : AutoConfigOptions
 
         public override void Update()
         {
+            base.Update();
             MyBools newBools = new();
-            if (!textSet || newBools != myBools)
+            if (newBools != myBools)
             {
-                textSet = true;
                 myBools = newBools;
                 UpdateText();
                 Plugin.Log("Updated Optimization Label text", 3);

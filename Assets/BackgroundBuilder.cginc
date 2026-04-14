@@ -35,9 +35,9 @@ inline uint4 GenerateBackground(int2 startPos, int testNum, float minObjectDepth
 		//for (uint d = 0; d < dirCount; d++) {
         for (uint d = dirCount-1; d >= 0; d--) { //go backwards if we're not including breaks, because I prefer the earlier directions
 #if dirCount > 4
-			int2 offset = dir[d] * c;
-#else
 			int2 offset = (dir[d] * c) / 2;
+#else
+			int2 offset = dir[d] * c;
 #endif
 			if (lDist[d] == 0) {
 				int dep = depthOfTexel(startPos + offset);

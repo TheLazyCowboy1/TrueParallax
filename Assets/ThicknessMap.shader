@@ -98,7 +98,7 @@ float4 frag (v2f i) : SV_Target
 	*/
 
 	int2 startPos = int2(i.texel);//int2(round(i.texel));
-	return GenerateBackground(startPos, LZC_BackgroundTestNum, LZC_MinObjectDepth, LZC_ProjectionMod, LZC_MaxDepDiff, 31) / 255.0f;
+	return float4(GenerateBackground(startPos, LZC_BackgroundTestNum, LZC_MinObjectDepth, LZC_ProjectionMod, LZC_MaxDepDiff, 31)) / 255.0f;
 
 }
 ENDCG

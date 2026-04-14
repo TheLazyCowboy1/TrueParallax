@@ -103,6 +103,7 @@ v2f vert (appdata_full v)
 }
 
 #if LZC_PROCESSLAYER2
+#if LZC_BUILDCREATUREBACKGROUND
 
 inline int depthOfTexel(int2 pos) {
 	float4 c = _PreLevelColorGrab.Load(int3(pos, 0));
@@ -120,6 +121,10 @@ uniform int LZC_CreatureBackgroundTests;
 #define dirCount 2
 //#define EXPONENTIALTESTS
 #include "BackgroundBuilder.cginc"
+
+#else //LZC_BUILDCREATUREBACKGROUND
+#include "DirectionDefinitions.cginc"
+#endif //LZC_BUILDCREATUREBACKGROUND
 
 #endif //LZC_PROCESSLAYER2
 
