@@ -86,7 +86,7 @@ public class Options : AutoConfigOptions
     public static float AntiAliasing = 0.1f;
 
     public enum DepthCurveOptions { INVERSE, LINEAR, SQUARED, CUBED };
-    [Config(ADVANCED, "Depth Curve", "Applies a curve to the room depth - for example, making mid-ground objects appear closer.\nLINEAR recommended. SQUARED may be useful if you need a low Effect Strength due to low processing power.", width = 120)]
+    [Config(ADVANCED, "Depth Curve", "Applies a curve to the room depth - for example, making mid-ground objects appear closer.\nLINEAR recommended. SQUARED may be useful if you need a low Effect Strength due to low processing power.", width = 120, spaceAfter = 100)]
     public static DepthCurveOptions DepthCurve = DepthCurveOptions.LINEAR;
 
     [Config(ADVANCED, "Background Depth", "How far away the background (the sky, basically) appears relative to the room geometry. Literally decreases the Effect Strength for everything except the background.\nHIGHLY recommended at 1, because the background is usually a mostly solid color, making this just a waste of resources.", spaceBefore = 40), LimitRange(1, 2)]

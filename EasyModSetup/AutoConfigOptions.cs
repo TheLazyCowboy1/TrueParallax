@@ -193,7 +193,7 @@ public abstract class AutoConfigOptions : OptionInterface
             Tabs[i] = new(this, name);
 
             float y = tInfo.startHeight;
-            bool lastWasLeft = false;
+            bool lastWasRightSide = false;
             int counterSinceSpace = 0;
             float nextSpace = 0;
 
@@ -208,12 +208,12 @@ public abstract class AutoConfigOptions : OptionInterface
                         float h = cInfo.height >= 0 ? cInfo.height : tInfo.defaultHeight;
                         float t = tInfo.textOffset + w - tInfo.updownWidth; //updownWidth is the default
 
-                        if (lastWasLeft == cInfo.rightSide || ++counterSinceSpace > 2) //on the same side as the last one
+                        if (lastWasRightSide == cInfo.rightSide || ++counterSinceSpace > 2) //on the same side as the last one
                         {
                             y -= nextSpace;
                             nextSpace = 0;
                         }
-                        lastWasLeft = !cInfo.rightSide;
+                        lastWasRightSide = cInfo.rightSide;
 
                         y -= cInfo.spaceBefore; //add extra space
 
