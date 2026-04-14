@@ -73,7 +73,7 @@ inline uint4 GenerateBackground(int2 startPos, int testNum, float minObjectDepth
 		int dist2 = rDist[bestDir];
 		int layer1thick = clamp(ceil(minObjectDepth + (lDist[bestDir] + rDist[bestDir]) * 0.5f * projectionMod), 1, 31);
 		int l2Dep = 0;
-		int dist1 = lDist[bestDir]; //must be int so bit operation works
+		int dist1 = lDist[bestDir];
 
 		bool lSky = lDep[bestDir] >= 30; //don't interpolate between sky and not-sky
 		bool rSky = rDep[bestDir] >= 30;

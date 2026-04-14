@@ -102,16 +102,16 @@ v2f vert (appdata_full v)
     return o;
 }
 
-#if LZC_PROCESSLAYER2
 #if LZC_BUILDCREATUREBACKGROUND
 
+static float2 spriteRectMult = float2(1, 1) / ((_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize * _screenSize);
 inline int depthOfTexel(int2 pos) {
 	float4 c = _PreLevelColorGrab.Load(int3(pos, 0));
 	if (c.r > 1.0f / 255.0f || c.g > 0 || c.b > 0) {
 		return 5;
 	}
 
-	int2 textCoord = int2(round((pos - _screenSize * _spriteRect.xy) / (_spriteRect.zw - _spriteRect.xy)));
+	int2 textCoord = int2((pos - _screenSize * _spriteRect.xy) * spriteRectMult);
 	float r = _LevelTex.Load(int3(textCoord, 0)).r;
 	return (r < 0.997f) ? ((uint(r*255.99f) - 1) % 30) : 30;
 }
@@ -122,11 +122,9 @@ uniform int LZC_CreatureBackgroundTests;
 //#define EXPONENTIALTESTS
 #include "BackgroundBuilder.cginc"
 
-#else //LZC_BUILDCREATUREBACKGROUND
+#elif LZC_PROCESSLAYER2
 #include "DirectionDefinitions.cginc"
-#endif //LZC_BUILDCREATUREBACKGROUND
-
-#endif //LZC_PROCESSLAYER2
+#endif
 
 inline half depthCurve(half d) {
 #if LZC_PARABOLICDEPTH
@@ -152,8 +150,6 @@ inline uint terrainDep(int2 pos) {
 
 void frag (v2f i)
 {
-		//map screen pos to level tex coord
-	//float2 textCoord = (i.uv - _spriteRect.xy) / (_spriteRect.zw - _spriteRect.xy);
 	int2 textCoord = int2(round(i.luv));
 	float lev = _LevelTex.Load(int3(textCoord, 0)).r;
 
@@ -169,7 +165,7 @@ void frag (v2f i)
 		terrainMask = true;
 	}
 
-		//check creature mask if applicable
+		//check creature mask, if applicable
 	bool creatureMask = false;
 	if (d > 5) {
 		float4 c = _PreLevelColorGrab.Load(int3(checkPos, 0));
