@@ -88,7 +88,7 @@ public class LayerTexCache
             sw.Start();
             Graphics.Blit(levelTex, tex, mat);
             sw.Stop();
-            Plugin.Log("Stopwatch results: " + sw.ElapsedMilliseconds + ":" + sw.ElapsedTicks, 3);
+            Plugin.Log("Stopwatch result in ms: " + (sw.ElapsedTicks / (float)TimeSpan.TicksPerMillisecond), 3);
             
             /* //async is way better in theory, but in practice, it somehow seems even worse somehow than just using normal Graphics.Blit
             CommandBuffer cmd = new();

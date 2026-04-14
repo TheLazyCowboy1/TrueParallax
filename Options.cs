@@ -72,7 +72,7 @@ public class Options : AutoConfigOptions
 
     [Config(LAYER2, "Build Creature Backgrounds", "Attempts to infer the room geometry behind creatures by checking the pixels around them. Has a significant performance cost.\nRecommended if you are using a high Effect Strength and have a stable framerate.", spaceBefore = 15)]
     public static bool BuildCreatureBackground = false;
-    [Config(LAYER2, "Creature Background Tests", "How many pixels around the creature are checked. \nRecommended at 1 or 2. Any higher is usually useless."), LimitRange(1, 8)]
+    [Config(LAYER2, "Creature Background Tests", "How many pixels around the creature are checked. Will affect performance.\nRecommended below 20."), LimitRange(1, 31)]
     public static int CreatureBackgroundTests = 10;
 
     //OPTIMIZATION
@@ -117,9 +117,10 @@ public class Options : AutoConfigOptions
             public MyBools() { }
         }
         private MyBools myBools = new();
-        public OptimizationLabel(Vector2 pos) : base(pos, new(400, 150), "PLACEHOLDER")
+        private bool textSet = false;
+        public OptimizationLabel(float x, float y) : base(new(x, y), new(400, 150), "PLACEHOLDER")
         {
-            UpdateText();
+            //UpdateText();
         }
 
         private void UpdateText()
@@ -140,8 +141,9 @@ public class Options : AutoConfigOptions
         public override void Update()
         {
             MyBools newBools = new();
-            if (newBools != myBools)
+            if (!textSet || newBools != myBools)
             {
+                textSet = true;
                 myBools = newBools;
                 UpdateText();
                 Plugin.Log("Updated Optimization Label text", 3);
@@ -163,7 +165,7 @@ public class Options : AutoConfigOptions
             );
 
         GetTab(OPTIMIZATION).AddItems(
-            new OptimizationLabel(new(50, 200))
+            new OptimizationLabel(50, 200)
             );
     }
 
