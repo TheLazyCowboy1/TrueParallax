@@ -522,7 +522,10 @@ public class Plugin : SimplerPlugin
         try
         {
             if (self.TryGetData(out CameraData data))
+            {
                 data.Clear();
+                Log("Cleared data for camera#" + self.cameraNumber);
+            }
         }
         catch (Exception ex) { Error(ex); }
     }

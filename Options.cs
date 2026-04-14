@@ -72,7 +72,7 @@ public class Options : AutoConfigOptions
 
     [Config(LAYER2, "Build Creature Backgrounds", "Attempts to infer the room geometry behind creatures by checking the pixels around them. Has a significant performance cost.\nRecommended if you are using a high Effect Strength and have a stable framerate.", spaceBefore = 15)]
     public static bool BuildCreatureBackground = false;
-    [Config(LAYER2, "Creature Background Tests", "How many pixels around the creature are checked. Will affect performance.\nRecommended below 20."), LimitRange(1, 31)]
+    [Config(LAYER2, "Creature Background Samples", "How many pixels around the creature are checked. Will affect performance.\nRecommended below 20."), LimitRange(1, 31)]
     public static int CreatureBackgroundTests = 10;
 
     //OPTIMIZATION
@@ -102,7 +102,7 @@ public class Options : AutoConfigOptions
     [Config(ADVANCED, "Convergence Scale", "Essentially how \"zoomed in\" the camera appears.\nHIGHLY recommended at 1, because lower values cause black bars on the side, and higher values feel like a waste of resources."), LimitRange(-5, 5)]
     public static float ConvergenceScale = 1;
 
-    [Config(ADVANCED, "Log Level", "When this number is higher, less important logs are displayed.", spaceBefore = 10), LimitRange(0, 3)]
+    [Config(ADVANCED, "Log Level", "When this number is higher, less important logs are logged to the LogOutput.log file.", spaceBefore = 10), LimitRange(0, 3)]
     public static int LogLevel = 1;
 
 
@@ -117,7 +117,7 @@ public class Options : AutoConfigOptions
             public MyBools() { }
         }
         private MyBools myBools = new();
-        public OptimizationLabel(float x, float y) : base(new(x, y), new(400, 150), "PLACEHOLDER")
+        public OptimizationLabel(float x, float y) : base(new(x, y), new(500, 150), "PLACEHOLDER")
         {
             UpdateText();
         }
@@ -128,12 +128,12 @@ public class Options : AutoConfigOptions
                 "If you want to know how expensive the shader is, use this basic formula:\n" +
                 "cost = EffectStrength * MaxWarp / Optimization\n" +
                 "Thus, Effect Strength is the primary factor for performance cost, and Max Warp and Optimization are used to directly reduce it.\n" +
-                "Other optimizations:\n" +
-                (myBools.dynamicOptimization ? "Enabling Dynamic Optimization improves performance by roughly 50%.\n" : "") +
-                (myBools.secondLayer ? "Disabling Second Layer could improve performance by 50-100%, because it is highly expensive.\n" : "") +
-                (myBools.limitProjection ? "Disabling Limit Projection could improve performance by up to 50%; but I recommend keeping it on anyway.\n" : "") +
-                (myBools.backgroundNoise ? "Setting Background Noise to 0 should improve performance by perhaps 10% (exact improvement is untested).\n" : "") +
-                (myBools.buildCreatureBackgrounds ? "Disabling Build Creature Backgrounds or reducing Creature Background Tests will help. 1 CreatureBackgroundTest ~= 3 EffectStrength" : "")
+                "\nOther optimizations:\n" +
+                (myBools.dynamicOptimization ? "* Enabling Dynamic Optimization improves performance by roughly 50%.\n" : "") +
+                (myBools.secondLayer ? "* Disabling Second Layer could improve performance by 50-100%, because it is highly expensive.\n" : "") +
+                (myBools.limitProjection ? "* Disabling Limit Projection could improve performance by up to 50%; but I recommend keeping it on anyway.\n" : "") +
+                (myBools.backgroundNoise ? "* Setting Background Noise to 0 should improve performance by perhaps 10% (exact improvement is untested).\n" : "") +
+                (myBools.buildCreatureBackgrounds ? "* Disabling Build Creature Backgrounds or reducing Creature Background Samples will help. 1 CreatureBackgroundSample is worth about 3 EffectStrength" : "")
                 ;
         }
 
@@ -186,6 +186,8 @@ public class Options : AutoConfigOptions
                 }
             }
             layer2Label.Hidden = TwoLayers;
+
+            UIConfigs[nameof(CreatureBackgroundTests)].greyedOut = !TwoLayers || !BuildCreatureBackground;
         }
         catch (Exception ex) { Plugin.Error(ex); }
     }
