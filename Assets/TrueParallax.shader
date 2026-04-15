@@ -93,18 +93,40 @@ Texture2D<float4> _OrigLevelTex;
 uniform int LZC_DefaultLevelThickness;
 #endif
 
+
+inline half depthCurve(half d) {
+#if LZC_PARABOLICDEPTH
+	return d*(2 - d); //simple parabola
+#elif LZC_EXTREMEDEPTH
+	return d*(d*(d - 3) + 3); //much more severe, cubic curve
+#elif LZC_INVERSEDEPTH
+	return d*d; //squared
+#else
+	return d; //linear
+#endif
+}
+
+inline uint depthOfPixel(float r) {
+	return (r < 0.997) ? (uint(r * 255.99f) - 1) % 30 : 30;
+}
+inline uint terrainDep(int2 pos) {
+	return round(30 * (2 - 3 * _SlopedTerrainMask.Load(int3(pos, 0)).r));
+}
+
 #if LZC_BUILDCREATUREBACKGROUND
 
-static float2 spriteRectMult = float2(1, 1) / ((_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize * _screenSize);
+//static float2 spriteRectMult = float2(1, 1) / ((_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize * _screenSize);
 inline int depthOfTexel(int2 pos) {
 	float4 c = _PreLevelColorGrab.Load(int3(pos, 0));
 	if (c.r > 1.0f / 255.0f || c.g > 0 || c.b > 0) {
 		return 5;
 	}
 
-	int2 textCoord = int2((pos - _screenSize * _spriteRect.xy) * spriteRectMult);
-	float r = _LevelTex.Load(int3(textCoord, 0)).r;
-	return (r < 0.997f) ? ((uint(r*255.99f) - 1) % 30) : 30;
+	//int2 textCoord = int2(round((pos - _screenSize * _spriteRect.xy) * spriteRectMult));
+	int2 textCoord = pos - int2(_spriteRect.xy * _screenSize);
+	return depthOfPixel(_LevelTex.Load(int3(textCoord, 0)).r);
+	//float r = _LevelTex.Load(int3(textCoord, 0)).r;
+	//return (r < 0.997f) ? ((uint(r*255.99f) - 1) % 30) : 30;
 }
 
 uniform int LZC_CreatureBackgroundTests;
@@ -122,25 +144,6 @@ uniform float LZC_MaxDepDiff;
 #elif LZC_PROCESSLAYER2
 #include "DirectionDefinitions.cginc"
 #endif
-
-inline half depthCurve(half d) {
-#if LZC_PARABOLICDEPTH
-	return d*(2 - d); //simple parabola
-#elif LZC_EXTREMEDEPTH
-	return d*(d*(d - 3) + 3); //much more severe, cubic curve
-#elif LZC_INVERSEDEPTH
-	return d*d; //squared
-#else
-	return d; //linear
-#endif
-}
-
-inline uint depthOfPixel(float r) {
-	return (r < 0.997) ? ((uint)round(r * 255) - 1) % 30 : 30;
-}
-inline uint terrainDep(int2 pos) {
-	return round(30 * (2 - 3 * _SlopedTerrainMask.Load(int3(pos, 0)).r));
-}
 
 //returns g and b channels
 inline float2 packBits(uint4 backColInts) {
@@ -165,7 +168,8 @@ v2f vert (appdata_full v)
     o.pos = UnityObjectToClipPos (v.vertex);
     o.uv = TRANSFORM_TEX (v.texcoord, _MainTex);
 	o.suv = o.uv * _screenSize;
-	o.luv = (o.uv - _spriteRect.xy) / ((_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize);
+	//o.luv = (o.uv - _spriteRect.xy) / ((_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize);
+	o.luv = (o.uv - _spriteRect.xy) * _screenSize;
     return o;
 }
 
@@ -256,42 +260,50 @@ void frag (v2f i)
 
 	fullDirDef //see DirectionDefinitions.cginc
 
-	int2 lOffset = (dir[dirIdx] * lDist)/2;
-	int2 rOffset = -(dir[dirIdx] * rDist)/2; //"right" side is negative direction, thus the negative sign
-	int2 lPos = checkPos + lOffset;
-	int2 rPos = checkPos + rOffset;
-	float4 lCritCol = _PreLevelColorGrab.Load(int3(lPos, 0));
-	float4 rCritCol = _PreLevelColorGrab.Load(int3(rPos, 0));
-	bool lCrit = lCritCol.r > 1.0f / 255.0f || lCritCol.g > 0 || lCritCol.b > 0;
-	bool rCrit = rCritCol.r > 1.0f / 255.0f || rCritCol.g > 0 || rCritCol.b > 0;
-	
-#if COMBINEDLEVEL
-	if (!lCrit) { //check if LevelTexCombiner is messing this pixel up
-		lPos = textCoord + lOffset;
-		lCrit = depthOfPixel(_LevelTex.Load(int3(lPos, 0)).r) != depthOfPixel(_OrigLevelTex.Load(int3(lPos, 0)).r); //LevelTex does not match OrigLevelTex
+	if (lDist > 0) { //determine if left side is obscured
+		int2 lOffset = (dir[dirIdx] * lDist)/2;
+
+		int2 lPos = checkPos + lOffset;
+		float4 lCritCol = _PreLevelColorGrab.Load(int3(lPos, 0));
+		bool lCrit = lCritCol.r > 1.0f / 255.0f || lCritCol.g > 0 || lCritCol.b > 0;
+	#if COMBINEDLEVEL
+		if (!lCrit) { //check if LevelTexCombiner is messing this pixel up
+			lPos = textCoord + lOffset;
+			lCrit = depthOfPixel(_LevelTex.Load(int3(lPos, 0)).r) != depthOfPixel(_OrigLevelTex.Load(int3(lPos, 0)).r); //LevelTex does not match OrigLevelTex
+		}
+	#endif
+		if (lCrit) {
+			lDist = 0;
+				//set lDist = 0 in packed bits
+			backCol.w = (dirIdx << 5) / 255.0f; //because it's packed in w, just re-pack it with lDist = 0
+		}
 	}
-	if (!rCrit) {
-		rPos = textCoord + rOffset;
-		rCrit = depthOfPixel(_LevelTex.Load(int3(rPos, 0)).r) != depthOfPixel(_OrigLevelTex.Load(int3(rPos, 0)).r);
+	if (rDist > 0) { //determine if right side is obscured
+		int2 lOffset = -(dir[dirIdx] * rDist)/2; //"right" side is negative direction, thus the negative sign
+
+		//copy left-side code for simplicity
+		int2 lPos = checkPos + lOffset;
+		float4 lCritCol = _PreLevelColorGrab.Load(int3(lPos, 0));
+		bool lCrit = lCritCol.r > 1.0f / 255.0f || lCritCol.g > 0 || lCritCol.b > 0;
+	#if COMBINEDLEVEL
+		if (!lCrit) { //check if LevelTexCombiner is messing this pixel up
+			lPos = textCoord + lOffset;
+			lCrit = depthOfPixel(_LevelTex.Load(int3(lPos, 0)).r) != depthOfPixel(_OrigLevelTex.Load(int3(lPos, 0)).r); //LevelTex does not match OrigLevelTex
+		}
+	#endif
+		if (lCrit) {
+			rDist = 0;
+			backColInts.x = 0; //set rDist = 0 in packed bits
+		}
 	}
-#endif
+
 		//OBSCURED BY CREATURES
-	if (lCrit && rCrit) { //can't use this background; creatures obscure it
+	if (lDist <= 0 && rDist <= 0) { //can't use this background; creatures obscure it
 		_LZC_LevelTex[checkPos] = float4(r,
 			backCol.y, //normal thickness, but rDist = 0
 			0, //no layer2
 			0); //no layer2
 		return;
-	}
-
-		//BACKGROUND IS USABLE
-
-	if (lCrit) { //change dist1
-			//because it's packed in w, just re-pack it with lDist = 0
-		backCol.w = (dirIdx << 5) / 255.0f;
-	}
-	else if (rCrit) { //change dist2
-		backColInts.x = 0;
 	}
 	
 	_LZC_LevelTex[checkPos] = float4(r, packBits(backColInts), backCol.w);
