@@ -84,12 +84,16 @@ public class LayerTexCache
                 tex.height = height;
             }
             
-            Stopwatch sw = new();
-            sw.Start();
-            Graphics.Blit(levelTex, tex, mat);
-            sw.Stop();
-            Plugin.Log("Stopwatch result in ms: " + (sw.ElapsedTicks / (float)TimeSpan.TicksPerMillisecond), 3);
-            
+            if (Options.LogLevel >= 3)
+            {
+                Stopwatch sw = new();
+                sw.Start();
+                Graphics.Blit(levelTex, tex, mat);
+                sw.Stop();
+                Plugin.Log("Stopwatch result in ms: " + (sw.ElapsedTicks / (float)TimeSpan.TicksPerMillisecond), 3);
+            }
+            else Graphics.Blit(levelTex, tex, mat); //don't bother with the Stopwatch
+
             /* //async is way better in theory, but in practice, it somehow seems even worse somehow than just using normal Graphics.Blit
             CommandBuffer cmd = new();
             cmd.Blit(levelTex, tex, mat);

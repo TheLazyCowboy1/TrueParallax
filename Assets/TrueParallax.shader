@@ -19,6 +19,10 @@ Shader "TheLazyCowboy1/TrueParallax"
         LZC_BackgroundNoise ("BackgroundNoise", Float) = 0
         LZC_MaxProjection ("MaxProjection", Float) = 0.05
         LZC_CreatureBackgroundTests ("CreatureBackgroundTests", Int) = 10
+		LZC_DefaultLevelThickness ("DefaultLevelThickness", Int) = 5
+		LZC_ProjectionMod ("ProjectionMod", Float) = 0.5
+		LZC_MinObjectDepth ("MinObjectDepth", Float) = 1
+		LZC_MaxDepDiff ("MaxDepDiff", Float) = 1
 	}
 	
 	Category 
@@ -54,6 +58,7 @@ CGPROGRAM
 #pragma multi_compile_local LZC_LINEARDEPTH LZC_PARABOLICDEPTH LZC_EXTREMEDEPTH LZC_INVERSEDEPTH
 #if LZC_PROCESSLAYER2
 	#pragma multi_compile_local _ LZC_BUILDCREATUREBACKGROUND
+	#pragma multi_compile _ COMBINEDLEVEL
 #endif
 
 #include "UnityCG.cginc"
@@ -83,6 +88,60 @@ uniform float2 _screenSize;
 
 uniform float LZC_Layer30Depth;
 
+#if LZC_PROCESSLAYER2 && COMBINEDLEVEL
+Texture2D<float4> _OrigLevelTex;
+uniform int LZC_DefaultLevelThickness;
+#endif
+
+#if LZC_BUILDCREATUREBACKGROUND
+
+static float2 spriteRectMult = float2(1, 1) / ((_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize * _screenSize);
+inline int depthOfTexel(int2 pos) {
+	float4 c = _PreLevelColorGrab.Load(int3(pos, 0));
+	if (c.r > 1.0f / 255.0f || c.g > 0 || c.b > 0) {
+		return 5;
+	}
+
+	int2 textCoord = int2((pos - _screenSize * _spriteRect.xy) * spriteRectMult);
+	float r = _LevelTex.Load(int3(textCoord, 0)).r;
+	return (r < 0.997f) ? ((uint(r*255.99f) - 1) % 30) : 30;
+}
+
+uniform int LZC_CreatureBackgroundTests;
+
+#if COMBINEDLEVEL
+uniform float LZC_ProjectionMod;
+uniform float LZC_MinObjectDepth;
+uniform float LZC_MaxDepDiff;
+#endif
+
+#define dirCount 2
+//#define NONLINEARTESTS
+#include "BackgroundBuilder.cginc"
+
+#elif LZC_PROCESSLAYER2
+#include "DirectionDefinitions.cginc"
+#endif
+
+inline half depthCurve(half d) {
+#if LZC_PARABOLICDEPTH
+	return d*(2 - d); //simple parabola
+#elif LZC_EXTREMEDEPTH
+	return d*(d*(d - 3) + 3); //much more severe, cubic curve
+#elif LZC_INVERSEDEPTH
+	return d*d; //squared
+#else
+	return d; //linear
+#endif
+}
+
+inline uint depthOfPixel(float r) {
+	return (r < 0.997) ? ((uint)round(r * 255) - 1) % 30 : 30;
+}
+inline uint terrainDep(int2 pos) {
+	return round(30 * (2 - 3 * _SlopedTerrainMask.Load(int3(pos, 0)).r));
+}
+
 struct v2f {
     float4  pos : SV_POSITION;
     float2  uv : TEXCOORD0;
@@ -102,60 +161,14 @@ v2f vert (appdata_full v)
     return o;
 }
 
-#if LZC_BUILDCREATUREBACKGROUND
-
-static float2 spriteRectMult = float2(1, 1) / ((_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize * _screenSize);
-inline int depthOfTexel(int2 pos) {
-	float4 c = _PreLevelColorGrab.Load(int3(pos, 0));
-	if (c.r > 1.0f / 255.0f || c.g > 0 || c.b > 0) {
-		return 5;
-	}
-
-	int2 textCoord = int2((pos - _screenSize * _spriteRect.xy) * spriteRectMult);
-	float r = _LevelTex.Load(int3(textCoord, 0)).r;
-	return (r < 0.997f) ? ((uint(r*255.99f) - 1) % 30) : 30;
-}
-
-uniform int LZC_CreatureBackgroundTests;
-
-#define dirCount 2
-//#define EXPONENTIALTESTS
-#include "BackgroundBuilder.cginc"
-
-#elif LZC_PROCESSLAYER2
-#include "DirectionDefinitions.cginc"
-#endif
-
-inline half depthCurve(half d) {
-#if LZC_PARABOLICDEPTH
-	return d*(2 - d); //simple parabola
-#elif LZC_EXTREMEDEPTH
-	return d*(d*(d - 3) + 3); //much more severe, cubic curve
-#elif LZC_INVERSEDEPTH
-	return d*d; //squared
-#else
-	return d; //linear
-#endif
-}
-
-inline uint min(uint a, uint b) {
-	return (a < b) ? a : b;
-}
-inline uint depthOfPixel(float r) {
-	return (r < 0.997) ? ((uint)round(r * 255) - 1) % 30 : 30;
-}
-inline uint terrainDep(int2 pos) {
-	return round(30 * (2 - 3 * _SlopedTerrainMask.Load(int3(pos, 0)).r));
-}
-
 void frag (v2f i)
 {
 	int2 textCoord = int2(round(i.luv));
-	float lev = _LevelTex.Load(int3(textCoord, 0)).r;
+	float4 lev = _LevelTex.Load(int3(textCoord, 0));
 
 	int2 checkPos = int2(round(i.suv));
 
-	uint ld = depthOfPixel(lev);
+	uint ld = depthOfPixel(lev.r);
 	uint d = ld;
 
 	bool terrainMask = false;
@@ -199,6 +212,26 @@ void frag (v2f i)
 		a = 0; //distance = 0
 	}
 	else {
+	#if COMBINEDLEVEL
+		float4 origLev = _OrigLevelTex.Load(int3(textCoord, 0));
+		uint origDep = depthOfPixel(origLev.r);
+		if (origDep != ld) { //LevelTexCombiner has altered this pixel's depth
+		#if LZC_BUILDCREATUREBACKGROUND
+			uint4 backColInts = GenerateBackground(checkPos, LZC_CreatureBackgroundTests, LZC_MinObjectDepth, LZC_ProjectionMod, LZC_MaxDepDiff, LZC_DefaultLevelThickness);
+				//pack in bytes, same as below
+			g = (backColInts.y | ((backColInts.x & 7) << 5)) / 255.0f; //bottom 3 bits +5
+			b = (backColInts.z | ((backColInts.x & 24) << 3)) / 255.0f; //top 2 bits +3 //24 = 0b11000
+			a = backColInts.w / 255.0f;
+		#else
+			g = LZC_DefaultLevelThickness / 255.0f; //thickness = DefaultLevelThickness
+			b = 0; //layer2 = none
+			a = 0; //distance = 0
+		#endif
+
+			_LZC_LevelTex[checkPos] = float4(r, g, b, a);
+			return; //don't execute anything more
+		}
+	#endif
 			//read it from background tex, but shift the bits around to pack 'em all in
 		//float4 backCol = tex2D(_LZC_Layer2Tex, textCoord);
 		float4 backCol = _LZC_Layer2Tex.Load(int3(textCoord, 0));
@@ -217,6 +250,18 @@ void frag (v2f i)
 		float4 rCritCol = _PreLevelColorGrab.Load(int3(rPos, 0));
 		bool lCrit = lCritCol.r > 1.0f / 255.0f || lCritCol.g > 0 || lCritCol.b > 0;
 		bool rCrit = rCritCol.r > 1.0f / 255.0f || rCritCol.g > 0 || rCritCol.b > 0;
+		
+	#if COMBINEDLEVEL
+		if (!lCrit) { //check if LevelTexCombiner is messing this pixel up
+			lPos = textCoord + (dir[dirIdx] * lDist)/2;
+			lCrit = depthOfPixel(_LevelTex.Load(int3(lPos, 0)).r) != depthOfPixel(_OrigLevelTex.Load(int3(lPos, 0)).r);
+		}
+		if (!rCrit) {
+			rPos = textCoord - (dir[dirIdx] * rDist)/2;
+			rCrit = depthOfPixel(_LevelTex.Load(int3(rPos, 0)).r) != depthOfPixel(_OrigLevelTex.Load(int3(rPos, 0)).r);
+		}
+	#endif
+
 		if (lCrit && rCrit) { //can't use this background; creatures obscure it
 			g = backCol.y;//backColInts.y / 255.0f; //normal thickness, but rDist = 0
 			b = 0; //no layer2

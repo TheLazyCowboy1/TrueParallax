@@ -236,10 +236,16 @@ public class Plugin : SimplerPlugin
         mat.SetFloat("LZC_AntiAliasingFac", Options.AntiAliasing);
         mat.SetFloat("LZC_BackgroundNoise", Options.BackgroundNoise);
         mat.SetFloat("LZC_MaxProjection", Options.MaxProjection);
+
         mat.SetInt("LZC_CreatureBackgroundTests", Options.CreatureBackgroundTests);
+        mat.SetInt("LZC_DefaultLevelThickness", Options.DefaultLevelThickness);
+        mat.SetFloat("LZC_ProjectionMod", Options.ThicknessMod);
+        mat.SetFloat("LZC_MinObjectDepth", Options.MinObjectThickness);
+        mat.SetFloat("LZC_MaxDepDiff", Options.MaxDepthDifference);
 
         if (Options.TwoLayers && data.layer2Textures.First != null) //also set here in case the material wasn't set up yet when generated
             mat.SetTexture(ShadPropLayer2Tex, data.layer2Textures.First);
+
     }
 
     private static void SetupScreenLevelTex()

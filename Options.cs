@@ -75,6 +75,9 @@ public class Options : AutoConfigOptions
     [Config(LAYER2, "Creature Background Samples", "How many pixels around the creature are checked. Will affect performance.\nRecommended below 20."), LimitRange(1, 31)]
     public static int CreatureBackgroundTests = 10;
 
+    [Config(LAYER2, "Fallback Thickness", "Used for dynamic level elements like turbines and floating rocks (in the Watcher campaign). Otherwise, this is not used.\nRecommended between 2 and 10.", spaceBefore = 15), LimitRange(1, 31)]
+    public static int DefaultLevelThickness = 5;
+
     //OPTIMIZATION
 
     [Config(OPTIMIZATION, "Optimization", "Reduces processing costs, at the risk of visual artefacts due to \"skipping over\" pixels.\nRecommended between 1 and 2. A good compromise is 1.5."), LimitRange(0.25f, 4)]
@@ -151,9 +154,17 @@ public class Options : AutoConfigOptions
     }
 
     OpLabel layer2Label;
+    bool initializedAlready = false; //just for testing purposes
     public override void MenuInitialized()
     {
         base.MenuInitialized();
+
+        if (initializedAlready)
+        {
+            Plugin.Error("Config menu was already initialized!!");
+            return;
+        }
+        initializedAlready = true;
 
         GetTab(BASICS).AddItems(
             new OpLabel(50, 550, "Parallax Effect Settings", true)
@@ -162,6 +173,7 @@ public class Options : AutoConfigOptions
         GetTab(LAYER2).AddItems(
             layer2Label = new(50, 500, $"Enable \"Second Layer\" in {BASICS} tab to configure these settings.")
             );
+        layer2Label.OnReactivate += () => layer2Label.Hidden = false; //trying to fix bug where it shows up sometimes when opening config menu
 
         GetTab(OPTIMIZATION).AddItems(
             new OptimizationLabel(50, 200)

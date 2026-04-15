@@ -1,6 +1,6 @@
 //the function int depthOfTexel(int2) MUST be defined BEFORE this is included in order for this to work!
 //must also #define dirCount BEFORE this is included; otherwise it will be 2
-//optionally also #define EXPONENTIALTESTS if tests should go out exponentially instead of linearly
+//optionally also #define NONLINEARTESTS if sample spacing should be parabolic instead of linear
 #include "DirectionDefinitions.cginc"
 
 inline uint4 GenerateBackground(int2 startPos, int testNum, float minObjectDepth, float projectionMod, float maxDepDiff, int defaultThickness) {
@@ -17,10 +17,9 @@ inline uint4 GenerateBackground(int2 startPos, int testNum, float minObjectDepth
 	for (uint b = 0; b < dirCount; b++) { lDist[b] = 0; rDist[b] = 0; lDep[b] = 0; rDep[b] = 0; }
 	uint bestDir = 8;
 
-#ifdef EXPONENTIALTESTS
-    int c = 1; //define c elsewhere
-	[loop]
-	for (int realCounter = 0; realCounter < testNum; realCounter++, c=c<<1) { //double c each time
+#ifdef NONLINEARTESTS //currently unused
+    [loop]
+	for (int c = 1, cJump = 1; c <= testNum; c++, c=c+cJump++) { //increment c by cJump, then increment cJump by 1
 #else
 	[loop] //unrolling it 22 times is actually significantly slower (just over half speed)
 	for (int c = 1; c <= testNum; c++) {
