@@ -142,6 +142,14 @@ inline uint terrainDep(int2 pos) {
 	return round(30 * (2 - 3 * _SlopedTerrainMask.Load(int3(pos, 0)).r));
 }
 
+//returns g and b channels
+inline float2 packBits(uint4 backColInts) {
+	return float2(
+		(backColInts.y | ((backColInts.x & 7) << 5)), //bottom 3 bits +5
+		(backColInts.z | ((backColInts.x & 24) << 3)) //top 2 bits +3 //24 = 0b11000
+		) / 255.0f;
+}
+
 struct v2f {
     float4  pos : SV_POSITION;
     float2  uv : TEXCOORD0;
@@ -191,96 +199,104 @@ void frag (v2f i)
 	//float r = d / 255.0f;
 	float r = (d >= 30) ? 1 : depthCurve(d / 30.0f) * LZC_Layer30Depth; //store the depth AFTER the depthCurve instead, as a small optimization
 
+
 #if LZC_PROCESSLAYER2
-	float g, b, a;
+
+		//CREATURES
 	if (creatureMask) {
 	#if LZC_BUILDCREATUREBACKGROUND
 		uint4 backColInts = GenerateBackground(checkPos, LZC_CreatureBackgroundTests, 0, 0, 10, 1);
 			//pack in bytes, same as below
-		g = (backColInts.y | ((backColInts.x & 7) << 5)) / 255.0f; //bottom 3 bits +5
-		b = (backColInts.z | ((backColInts.x & 24) << 3)) / 255.0f; //top 2 bits +3 //24 = 0b11000
-		a = backColInts.w / 255.0f;
+		_LZC_LevelTex[checkPos] = float4(r, packBits(backColInts), backColInts.w / 255.0f);
 	#else
-		g = 1 / 255.0f; //thickness = 1
-		b = 0; //layer2 = none
-		a = 0; //distance = 0
+		_LZC_LevelTex[checkPos] = float4(r,
+			1 / 255.0f, //thickness = 1
+			0, //layer2 = none
+			0); //distance = 0
 	#endif
+		return;
 	}
-	else if (terrainMask) {
-		g = 31 / 255.0f; //thickness = maximum, so no layer2
-		b = 0; //layer2 = not applicable
-		a = 0; //distance = 0
+
+		//TERRAIN CURVES
+	if (terrainMask) {
+		_LZC_LevelTex[checkPos] = float4(r,
+			31 / 255.0f, //thickness = maximum, so no layer2
+			0, //layer2 = not applicable
+			0); //distance = 0
+		return;
 	}
-	else {
+	
+		//LEVELTEXCOMBINER
 	#if COMBINEDLEVEL
 		float4 origLev = _OrigLevelTex.Load(int3(textCoord, 0));
 		uint origDep = depthOfPixel(origLev.r);
 		if (origDep != ld) { //LevelTexCombiner has altered this pixel's depth
 		#if LZC_BUILDCREATUREBACKGROUND
 			uint4 backColInts = GenerateBackground(checkPos, LZC_CreatureBackgroundTests, LZC_MinObjectDepth, LZC_ProjectionMod, LZC_MaxDepDiff, LZC_DefaultLevelThickness);
-				//pack in bytes, same as below
-			g = (backColInts.y | ((backColInts.x & 7) << 5)) / 255.0f; //bottom 3 bits +5
-			b = (backColInts.z | ((backColInts.x & 24) << 3)) / 255.0f; //top 2 bits +3 //24 = 0b11000
-			a = backColInts.w / 255.0f;
+			_LZC_LevelTex[checkPos] = float4(r, packBits(backColInts), backColInts.w / 255.0f);
 		#else
-			g = LZC_DefaultLevelThickness / 255.0f; //thickness = DefaultLevelThickness
-			b = 0; //layer2 = none
-			a = 0; //distance = 0
+			_LZC_LevelTex[checkPos] = float4(r,
+				LZC_DefaultLevelThickness / 255.0f, //thickness = DefaultLevelThickness
+				0, //layer2 = none
+				0); //distance = 0
 		#endif
 
-			_LZC_LevelTex[checkPos] = float4(r, g, b, a);
 			return; //don't execute anything more
 		}
 	#endif
-			//read it from background tex, but shift the bits around to pack 'em all in
-		//float4 backCol = tex2D(_LZC_Layer2Tex, textCoord);
-		float4 backCol = _LZC_Layer2Tex.Load(int3(textCoord, 0));
-		uint4 backColInts = uint4(backCol * 255.99f);
+	
+		//DEFAULT: READ FROM PRE-MADE LAYER2TEX
+	float4 backCol = _LZC_Layer2Tex.Load(int3(textCoord, 0));
+	uint4 backColInts = uint4(backCol * 255.99f);
 
-			//check if any creatures are interfering with my background
-		uint dirIdx = backColInts.w >> 5;
-		int lDist = backColInts.w & 31;//0b11111;
-		int rDist = backColInts.x;
+		//check if any creatures are interfering with my background
+	uint dirIdx = backColInts.w >> 5;
+	int lDist = backColInts.w & 31;//0b11111;
+	int rDist = backColInts.x;
 
-		fullDirDef //see DirectionDefinitions.cginc
+	fullDirDef //see DirectionDefinitions.cginc
 
-		int2 lPos = checkPos + (dir[dirIdx] * lDist)/2;
-		int2 rPos = checkPos - (dir[dirIdx] * rDist)/2;
-		float4 lCritCol = _PreLevelColorGrab.Load(int3(lPos, 0));
-		float4 rCritCol = _PreLevelColorGrab.Load(int3(rPos, 0));
-		bool lCrit = lCritCol.r > 1.0f / 255.0f || lCritCol.g > 0 || lCritCol.b > 0;
-		bool rCrit = rCritCol.r > 1.0f / 255.0f || rCritCol.g > 0 || rCritCol.b > 0;
-		
-	#if COMBINEDLEVEL
-		if (!lCrit) { //check if LevelTexCombiner is messing this pixel up
-			lPos = textCoord + (dir[dirIdx] * lDist)/2;
-			lCrit = depthOfPixel(_LevelTex.Load(int3(lPos, 0)).r) != depthOfPixel(_OrigLevelTex.Load(int3(lPos, 0)).r);
-		}
-		if (!rCrit) {
-			rPos = textCoord - (dir[dirIdx] * rDist)/2;
-			rCrit = depthOfPixel(_LevelTex.Load(int3(rPos, 0)).r) != depthOfPixel(_OrigLevelTex.Load(int3(rPos, 0)).r);
-		}
-	#endif
-
-		if (lCrit && rCrit) { //can't use this background; creatures obscure it
-			g = backCol.y;//backColInts.y / 255.0f; //normal thickness, but rDist = 0
-			b = 0; //no layer2
-			a = 0; //no layer2
-		}
-		else {
-			if (lCrit) { //change dist1
-					//because it's packed in w, just re-pack it with lDist = 0
-				backCol.w = (dirIdx << 5) / 255.0f;
-			}
-			else if (rCrit) { //change dist2
-				backColInts.x = 0;
-			}
-				//split up the r channel (dist2) and put bottom half in g and top half in b
-			g = (backColInts.y | ((backColInts.x & 7) << 5)) / 255.0f; //bottom 3 bits +5
-			b = (backColInts.z | ((backColInts.x & 24) << 3)) / 255.0f; //top 2 bits +3 //24 = 0b11000
-			a = backCol.w;
-		}
+	int2 lOffset = (dir[dirIdx] * lDist)/2;
+	int2 rOffset = -(dir[dirIdx] * rDist)/2; //"right" side is negative direction, thus the negative sign
+	int2 lPos = checkPos + lOffset;
+	int2 rPos = checkPos + rOffset;
+	float4 lCritCol = _PreLevelColorGrab.Load(int3(lPos, 0));
+	float4 rCritCol = _PreLevelColorGrab.Load(int3(rPos, 0));
+	bool lCrit = lCritCol.r > 1.0f / 255.0f || lCritCol.g > 0 || lCritCol.b > 0;
+	bool rCrit = rCritCol.r > 1.0f / 255.0f || rCritCol.g > 0 || rCritCol.b > 0;
+	
+#if COMBINEDLEVEL
+	if (!lCrit) { //check if LevelTexCombiner is messing this pixel up
+		lPos = textCoord + lOffset;
+		lCrit = depthOfPixel(_LevelTex.Load(int3(lPos, 0)).r) != depthOfPixel(_OrigLevelTex.Load(int3(lPos, 0)).r); //LevelTex does not match OrigLevelTex
 	}
+	if (!rCrit) {
+		rPos = textCoord + rOffset;
+		rCrit = depthOfPixel(_LevelTex.Load(int3(rPos, 0)).r) != depthOfPixel(_OrigLevelTex.Load(int3(rPos, 0)).r);
+	}
+#endif
+		//OBSCURED BY CREATURES
+	if (lCrit && rCrit) { //can't use this background; creatures obscure it
+		_LZC_LevelTex[checkPos] = float4(r,
+			backCol.y, //normal thickness, but rDist = 0
+			0, //no layer2
+			0); //no layer2
+		return;
+	}
+
+		//BACKGROUND IS USABLE
+
+	if (lCrit) { //change dist1
+			//because it's packed in w, just re-pack it with lDist = 0
+		backCol.w = (dirIdx << 5) / 255.0f;
+	}
+	else if (rCrit) { //change dist2
+		backColInts.x = 0;
+	}
+	
+	_LZC_LevelTex[checkPos] = float4(r, packBits(backColInts), backCol.w);
+
+	//BIT PACKING GUIDE:
 	//layer1dep = 5, layer1thick = 5, layer2dep = 5, lDist = 5, rDist = 5, dir = 3;   total = 28
 	//r = layer1dep
 	//g = layer1thick, rDist(3)
@@ -288,8 +304,6 @@ void frag (v2f i)
 	//a = lDist, dir
 
 	//layer2Tex: r = rDist, g = layer1thick, b = layer2dep, a = lDist, dir
-
-	_LZC_LevelTex[checkPos] = float4(r, g, b, a);
 
 #else
 	_LZC_LevelTex[checkPos] = r;
