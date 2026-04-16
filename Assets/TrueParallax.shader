@@ -400,7 +400,8 @@ v2f vert (appdata_full v)
 {
     v2f o;
     o.pos = UnityObjectToClipPos (v.vertex);
-    o.uv = TRANSFORM_TEX (v.texcoord, _MainTex) * LZC_GeneralScale;
+    o.uv = TRANSFORM_TEX (v.texcoord, _MainTex);
+	o.uv = float2(0.5f, 0.5f) + (o.uv - float2(0.5f, 0.5f)) * LZC_GeneralScale; //scale it just for fun
 	o.nuv = o.uv * float2(16, 9);
 	o.suv = o.uv * _screenSize;
 	o.posCamDiff = lerp(float2(0.5f,0.5f), o.uv, LZC_ConvergenceScale) - LZC_CamPos;
@@ -471,7 +472,7 @@ half4 frag (v2f i) : SV_Target
 		totalTests = ceil(totalTests / optimization);
 	}
 	#if LZC_PROCESSLAYER2
-	float minThickness = stepSize * LZC_Layer30Depth; //otherwise, layer1 can seemingly just disappear when stepSize is high
+	float minThickness = stepSize; //otherwise, layer1 can seemingly just disappear when stepSize is high
 	#endif
 #endif
 

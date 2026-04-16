@@ -70,7 +70,7 @@ inline uint4 GenerateBackground(int2 startPos, int testNum, float minObjectDepth
 	if (bestDir < 8) { //a ray had both sides hit
 
 		int dist2 = rDist[bestDir];
-		int layer1thick = clamp(ceil(minObjectDepth + (lDist[bestDir] + rDist[bestDir]) * 0.5f * projectionMod), 1, 31);
+		int layer1thick = clamp(ceil(minObjectDepth + (lDist[bestDir] + rDist[bestDir]) * 0.5f * projectionMod), 1, 30 - origDep);
 		int l2Dep = 0;
 		int dist1 = lDist[bestDir];
 
@@ -114,7 +114,7 @@ inline uint4 GenerateBackground(int2 startPos, int testNum, float minObjectDepth
 	}
 
 	if (minDist > testNum) { //absolutely no background for this
-		return uint4(0, clamp(ceil(minObjectDepth + (testNum+1) * projectionMod), 1, 31), 0, 0); //maximum possible thickness with these settings
+		return uint4(0, clamp(ceil(minObjectDepth + (testNum+1) * projectionMod), 1, 30 - origDep), 0, 0); //maximum possible thickness with these settings
 	}
 
 		//find the greatest depth that matches the shortest distance
@@ -132,7 +132,7 @@ inline uint4 GenerateBackground(int2 startPos, int testNum, float minObjectDepth
 	}
 
 		//pack info into bytes
-	int layer1thick = clamp(ceil(minObjectDepth + (minDist + testNum+1) * 0.5f * projectionMod), 1, 31);
+	int layer1thick = clamp(ceil(minObjectDepth + (minDist + testNum+1) * 0.5f * projectionMod), 1, 30 - origDep);
 	return uint4(
 		rDist[bestDir],
 		layer1thick,
