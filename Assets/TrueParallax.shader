@@ -5,14 +5,15 @@ Shader "TheLazyCowboy1/TrueParallax"
 	Properties 
 	{
 		[MainTexture] _MainTex ("Base (RGB) Trans (A)", 2D) = "white" {}
-        //LZC_CamPos ("CamPos", Vector) = (0.5, 0.5)
+        LZC_CamPos ("CamPos", Vector) = (0.5, 0.5, 0, 0)
 		_LZC_Layer2Tex ("Layer2Tex", 2D) = "black" {}
         LZC_ConvergenceScale ("ConvergenceScale", Float) = 1
+        LZC_GeneralScale ("GeneralScale", Vector) = (1, 1, 0, 0)
         LZC_Warp ("Warp", Float) = 100
-        //LZC_MaxWarp ("MaxWarp", Vector) = 1
+        LZC_MaxWarp ("MaxWarp", Vector) = (1, 1, 0, 0)
 		LZC_TestNum ("TestNum", Int) = 100
         LZC_StepSize ("StepSize", Float) = 0.01
-        //LZC_MoveStepScale ("StepSize", Vector) = 0.01
+        LZC_MoveStepScale ("MoveStepScale", Vector) = (1, 1, 0, 0)
         LZC_PivotDepth ("PivotDepth", Float) = 1
         LZC_Layer30Depth ("Layer30Depth", Float) = 1
         LZC_AntiAliasingFac ("AntiAliasingFac", Float) = 0
@@ -369,6 +370,7 @@ Texture2D<float4> _PreLevelColorGrab;
 
 uniform float2 LZC_CamPos;
 uniform float LZC_ConvergenceScale;
+uniform float2 LZC_GeneralScale;
 uniform float LZC_Warp;
 uniform float2 LZC_MaxWarp;
 uniform uint LZC_TestNum;
@@ -398,8 +400,8 @@ v2f vert (appdata_full v)
 {
     v2f o;
     o.pos = UnityObjectToClipPos (v.vertex);
-    o.uv = TRANSFORM_TEX (v.texcoord, _MainTex);
-	o.nuv = o.uv * float2(10.667f, 6);
+    o.uv = TRANSFORM_TEX (v.texcoord, _MainTex) * LZC_GeneralScale;
+	o.nuv = o.uv * float2(16, 9);
 	o.suv = o.uv * _screenSize;
 	o.posCamDiff = lerp(float2(0.5f,0.5f), o.uv, LZC_ConvergenceScale) - LZC_CamPos;
     return o;
@@ -469,7 +471,7 @@ half4 frag (v2f i) : SV_Target
 		totalTests = ceil(totalTests / optimization);
 	}
 	#if LZC_PROCESSLAYER2
-	float minThickness = stepSize; //otherwise, layer1 can seemingly just disappear when stepSize is high
+	float minThickness = stepSize * LZC_Layer30Depth; //otherwise, layer1 can seemingly just disappear when stepSize is high
 	#endif
 #endif
 
@@ -482,9 +484,10 @@ half4 frag (v2f i) : SV_Target
 #endif
 #if LZC_PROCESSLAYER2
 	uint bestLayer = 1;
+	float thicknessMod = LZC_Layer30Depth / 30.0f; //just to reduce multiplications slightly
 #endif
 
-	int2 bestGrabPos = int2(round(i.suv));
+	int2 bestGrabPos = int2(round(i.suv)); //as a fallback that ideally should never be used
 
 	float percentage = 0.0002f; //very tiny margin of error, just in case there's some weird imprecision error
 	float2 grabPos = initGrabPos + float2(0.5f, 0.5f); //adjust coords slightly so that int2(round(grabPos)) becomes int2(grabPos)
@@ -506,13 +509,17 @@ half4 frag (v2f i) : SV_Target
 #endif
 		float xDistance = percentage - newDepth;
 
+#if LZC_BACKGROUNDNOISE && (LZC_LIMITPROJECTION || LZC_PROCESSLAYER2)
+		bestXDist = bestXDist + stepSize; //increment bestXDist, because we are moving AWAY from the previous position that set it
+#endif
+
 			//CHECK XDISTANCE
 
 #if LZC_PROCESSLAYER2 && LZC_LIMITPROJECTION
 			//THIS IS GETTING CRAZY
 
 		if (xDistance >= 0) {
-			float thickness = (uint(lev.y * 255.99f) & 31) / 30.0f;
+			float thickness = (uint(lev.y * 255.99f) & 31) * thicknessMod;
 	#if LZC_DYNAMICOPTIMIZATION
 			thickness = max(thickness, minThickness);
 	#endif
@@ -546,7 +553,7 @@ half4 frag (v2f i) : SV_Target
 					bestGrabPos = checkPos;
 					bestLayer = 2;
 	#if LZC_BACKGROUNDNOISE
-					bestXDist = min(bestXDist, -xDistance);
+					bestXDist = 0;
 					bestDep = newDepth;
 	#endif
 				}
@@ -556,7 +563,7 @@ half4 frag (v2f i) : SV_Target
 			bestGrabPos = checkPos;
 			bestLayer = 1;
 	#if LZC_BACKGROUNDNOISE
-			bestXDist = min(bestXDist, -xDistance);
+			bestXDist = 0;
 			bestDep = newDepth;
 	#endif
 		}
@@ -565,7 +572,7 @@ half4 frag (v2f i) : SV_Target
 			//BASICALLY LIMITPROJECTION EXCEPT IT USES THICKNESS INSTEAD OF MAXXDIST
 
 		if (xDistance >= 0) {
-			float thickness = (uint(lev.y * 255.99f) & 31) / 30.0f;
+			float thickness = (uint(lev.y * 255.99f) & 31) * thicknessMod;
 	#if LZC_DYNAMICOPTIMIZATION
 			thickness = max(thickness, minThickness);
 	#endif
@@ -597,7 +604,7 @@ half4 frag (v2f i) : SV_Target
 			bestGrabPos = checkPos;
 			//bestLayer = 1; //in this implementation, bestLayer should always be 1 here anyway
 	#if LZC_BACKGROUNDNOISE
-			bestXDist = min(bestXDist, -xDistance);
+			bestXDist = 0;
 			bestDep = newDepth;
 	#endif
 		}
@@ -618,7 +625,7 @@ half4 frag (v2f i) : SV_Target
 		else {
 			bestGrabPos = checkPos;
 	#if LZC_BACKGROUNDNOISE
-			bestXDist = min(bestXDist, -xDistance);
+			bestXDist = 0;
 			bestDep = newDepth;
 	#endif
 		}
@@ -713,10 +720,10 @@ half4 frag (v2f i) : SV_Target
 #endif
 		//logic if the loop DID break. This is always used if we're not using LIMITPROJECTION
 	noisePoint = (bestGrabPos //start at grabPos
-		+ float2(bestXDist, bestXDist) * LZC_Warp*0.5f) //fixed offset based on bestXDist and Warp; *0.5f because I think it'll look better
+		+ float2(bestXDist, bestXDist) * LZC_Warp*0.3f) //fixed offset based on bestXDist and Warp; *0.3f because I think it'll look better
 		/ _screenSize; //convert from texel coordinates to uv
 
-	float noiseVal2 = highFreqNoise(noisePoint - _spriteRect.xy, float2(5.333f, 3)); //subtract spriteRect.xy so that noise doesn't appear to move when the screen is moving
+	float noiseVal2 = highFreqNoise(noisePoint - _spriteRect.xy, float2(8.889f, 5)); //subtract spriteRect.xy so that noise doesn't appear to move when the screen is moving
 
 	float curBrightness = finalCol.r * 0.299f + finalCol.g * 0.587f + finalCol.b * 0.114f;
 	half add = bestXDist * LZC_BackgroundNoise * (noiseVal2 - 0.5f) * (curBrightness + 0.3f); //more noise if pixel is already brighter

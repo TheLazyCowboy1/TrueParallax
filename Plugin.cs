@@ -237,6 +237,7 @@ public class Plugin : SimplerPlugin
         //mat.SetFloat("LZC_MaxWarp", Options.MaxWarp);
         mat.SetVector("LZC_MaxWarp", Options.MaxWarp * new Vector2(1, sSize.x / sSize.y)); //increase MaxWarp.y due to aspect ratio
         mat.SetFloat("LZC_ConvergenceScale", Options.ConvergenceScale);
+        mat.SetVector("LZC_GeneralScale", new(Options.GeneralScale, Options.GeneralScale));
         mat.SetFloat("LZC_PivotDepth", Options.PivotDepth);
         mat.SetFloat("LZC_Layer30Depth", data.activeBackgroundScene ? 1.0f / Options.BackgroundDepth : 1);
         mat.SetFloat("LZC_AntiAliasingFac", Options.AntiAliasing);
@@ -430,10 +431,11 @@ public class Plugin : SimplerPlugin
             }
             else
             {
-                data.CamPos = new(
+                /*data.CamPos = new(
                     Custom.LerpAndTick(data.CamPos.x, pos.x, moveMod * Options.CameraMoveSpeed, moveMod * 0.001f),
                     Custom.LerpAndTick(data.CamPos.y, pos.y, moveMod * Options.CameraMoveSpeed, moveMod * 0.001f)
-                    );
+                    );*/
+                data.CamPos = LerpAndTick(data.CamPos, pos, moveMod * Options.CameraMoveSpeed, moveMod * Options.CameraMoveSpeed * 0.01f);
             }
 
 
@@ -503,7 +505,19 @@ public class Plugin : SimplerPlugin
         }
         catch (Exception ex) { Error(ex); }
     }
-    //private void RoomCamera_GetCameraBestIndex(On.RoomCamera.orig_GetCameraBestIndex orig, RoomCamera self)
+    private static Vector2 LerpAndTick(Vector2 a, Vector2 b, float lerp, float tick)
+    {
+        //lerp
+        Vector2 l = Vector2.LerpUnclamped(a, b, lerp);
+        if (l == b) return l; //already there
+
+        //tick
+        Vector2 d = b - l; //desired direction
+        float dMag = d.magnitude;
+        Vector2 t = d / dMag * Mathf.Min(tick, dMag); //don't move more than magnitude = don't overshoot
+        return l + t;
+    }
+
     private void RoomCamera_DrawUpdate(On.RoomCamera.orig_DrawUpdate orig, RoomCamera self, float timeStacker, float timeSpeed)
     {
         try
