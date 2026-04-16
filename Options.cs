@@ -18,7 +18,7 @@ public class Options : AutoConfigOptions
     {
         new(BASICS) { spacing = 40, startHeight = 500 },
         new(CAMERA),
-        new(LAYER2) { startHeight = 450 },
+        new(LAYER2) { startHeight = 500 },
         new(OPTIMIZATION),
         new(ADVANCED)
     })
@@ -171,7 +171,7 @@ public class Options : AutoConfigOptions
             );
 
         GetTab(LAYER2).AddItems(
-            layer2Label = new(50, 500, $"Enable \"Second Layer\" in {BASICS} tab to configure these settings.")
+            layer2Label = new(50, 550, $"Enable \"Second Layer\" in {BASICS} tab to configure these settings.")
             );
         layer2Label.OnReactivate += () => layer2Label.Hidden = false; //trying to fix bug where it shows up sometimes when opening config menu
 
