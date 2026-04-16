@@ -564,7 +564,14 @@ public class Plugin : SimplerPlugin
                     if (cam.room == self.room && dist < lowestCamDist) { lowestCamDist = dist; lowestCam = cam; }
                 }
                 if (lowestCam != null && lowestCam.TryGetData(out CameraData data))
-                    camPos += data.BackgroundShift;
+                {
+                    if (self is RoofTopView)
+                        camPos.x += data.BackgroundShift.x; //only shift x; otherwise it looks really bad
+                    else if (self is AboveCloudsView)
+                        camPos.y += data.BackgroundShift.y; //only shift y; because the clouds can't be shifted horizontally
+                    else
+                        camPos += data.BackgroundShift;
+                }
             }
         } catch (Exception ex) { Error(ex); }
 
