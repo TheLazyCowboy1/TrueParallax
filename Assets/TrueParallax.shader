@@ -115,18 +115,14 @@ inline uint terrainDep(int2 pos) {
 
 #if LZC_BUILDCREATUREBACKGROUND
 
-//static float2 spriteRectMult = float2(1, 1) / ((_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize * _screenSize);
 inline int depthOfTexel(int2 pos) {
 	float4 c = _PreLevelColorGrab.Load(int3(pos, 0));
 	if (c.r > 1.0f / 255.0f || c.g > 0 || c.b > 0) {
 		return 5;
 	}
 
-	//int2 textCoord = int2(round((pos - _screenSize * _spriteRect.xy) * spriteRectMult));
 	int2 textCoord = pos - int2(_spriteRect.xy * _screenSize);
 	return depthOfPixel(_LevelTex.Load(int3(textCoord, 0)).r);
-	//float r = _LevelTex.Load(int3(textCoord, 0)).r;
-	//return (r < 0.997f) ? ((uint(r*255.99f) - 1) % 30) : 30;
 }
 
 uniform int LZC_CreatureBackgroundTests;
@@ -149,7 +145,7 @@ uniform float LZC_MaxDepDiff;
 inline float2 packBits(uint4 backColInts) {
 	return float2(
 		(backColInts.y | ((backColInts.x & 7) << 5)), //bottom 3 bits +5
-		(backColInts.z | ((backColInts.x & 24) << 3)) //top 2 bits +3 //24 = 0b11000
+		(backColInts.z | ((backColInts.x & 24) << 2)) //top 2 bits +2 //24 = 0b11000
 		) / 255.0f;
 }
 
@@ -209,7 +205,7 @@ void frag (v2f i)
 		//CREATURES
 	if (creatureMask) {
 	#if LZC_BUILDCREATUREBACKGROUND
-		uint4 backColInts = GenerateBackground(checkPos, LZC_CreatureBackgroundTests, 0, 0, 10, 1);
+		uint4 backColInts = GenerateBackground(checkPos, LZC_CreatureBackgroundTests, 0, 0, 10);
 			//pack in bytes, same as below
 		_LZC_LevelTex[checkPos] = float4(r, packBits(backColInts), backColInts.w / 255.0f);
 	#else
@@ -236,7 +232,7 @@ void frag (v2f i)
 		uint origDep = depthOfPixel(origLev.r);
 		if (origDep != ld) { //LevelTexCombiner has altered this pixel's depth
 		#if LZC_BUILDCREATUREBACKGROUND
-			uint4 backColInts = GenerateBackground(checkPos, LZC_CreatureBackgroundTests, LZC_MinObjectDepth, LZC_ProjectionMod, LZC_MaxDepDiff, LZC_DefaultLevelThickness);
+			uint4 backColInts = GenerateBackground(checkPos, LZC_CreatureBackgroundTests, LZC_MinObjectDepth, LZC_ProjectionMod, LZC_MaxDepDiff);
 			_LZC_LevelTex[checkPos] = float4(r, packBits(backColInts), backColInts.w / 255.0f);
 		#else
 			_LZC_LevelTex[checkPos] = float4(r,
@@ -278,6 +274,7 @@ void frag (v2f i)
 			backCol.w = (dirIdx << 5) / 255.0f; //because it's packed in w, just re-pack it with lDist = 0
 		}
 	}
+
 	if (rDist > 0) { //determine if right side is obscured
 		int2 lOffset = -(dir[dirIdx] * rDist)/2; //"right" side is negative direction, thus the negative sign
 
@@ -564,27 +561,6 @@ half4 frag (v2f i) : SV_Target
 	#endif
 		}
 
-#elif LZC_LIMITPROJECTION
-			//HAS A LITTLE EXTRA LOGIC
-
-		if (xDistance >= 0) {
-			if (xDistance < maxXDist) {
-				bestGrabPos = checkPos;
-	#if LZC_BACKGROUNDNOISE
-				bestXDist = xDistance;
-				bestDep = newDepth;
-	#endif
-				break; //we found it! don't run any more code, ideally
-			}
-		}
-		else {
-			bestGrabPos = checkPos;
-	#if LZC_BACKGROUNDNOISE
-			bestXDist = min(bestXDist, -xDistance);
-			bestDep = newDepth;
-	#endif
-		}
-
 #elif LZC_PROCESSLAYER2
 			//BASICALLY LIMITPROJECTION EXCEPT IT USES THICKNESS INSTEAD OF MAXXDIST
 
@@ -626,6 +602,27 @@ half4 frag (v2f i) : SV_Target
 	#endif
 		}
 
+#elif LZC_LIMITPROJECTION
+			//HAS A LITTLE EXTRA LOGIC
+
+		if (xDistance >= 0) {
+			if (xDistance < maxXDist) {
+				bestGrabPos = checkPos;
+	#if LZC_BACKGROUNDNOISE
+				bestXDist = xDistance;
+				bestDep = newDepth;
+	#endif
+				break; //we found it! don't run any more code, ideally
+			}
+		}
+		else {
+			bestGrabPos = checkPos;
+	#if LZC_BACKGROUNDNOISE
+			bestXDist = min(bestXDist, -xDistance);
+			bestDep = newDepth;
+	#endif
+		}
+
 #else
 		//OBVIOUSLY WAY SIMPLER
 
@@ -646,12 +643,15 @@ half4 frag (v2f i) : SV_Target
 	}
 
 
-//APPLY FINAL NOISE
+
+	//FINALIZE COLOR
 
 #if LZC_PROCESSLAYER2
+		//INTERPRET LAYER2
+
 	half4 finalCol;
 	if (bestLayer > 1) {
-		uint4 lev = int4(_LZC_LevelTex.Load(int3(bestGrabPos, 0)) * 255.99f);
+		uint4 lev = uint4(_LZC_LevelTex.Load(int3(bestGrabPos, 0)) * 255.99f);
 		uint d = lev.w >> 5;
 		int lDist = lev.w & 31;//0b11111;
 		int rDist = (lev.y >> 5) | ((lev.z & 96) >> 2); //96 = 0b01100000
@@ -695,6 +695,8 @@ half4 frag (v2f i) : SV_Target
 #if !LZC_BACKGROUNDNOISE
 	return finalCol;
 #else
+
+		//APPLY FINAL NOISE
 
 	if (bestXDist <= stepSize || bestDep >= 1) { //it's close enough; don't add noise. Also don't add noise to the sky
 		return finalCol;

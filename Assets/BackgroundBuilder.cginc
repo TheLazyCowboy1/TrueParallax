@@ -3,11 +3,11 @@
 //optionally also #define NONLINEARTESTS if sample spacing should be parabolic instead of linear
 #include "DirectionDefinitions.cginc"
 
-inline uint4 GenerateBackground(int2 startPos, int testNum, float minObjectDepth, float projectionMod, float maxDepDiff, int defaultThickness) {
+inline uint4 GenerateBackground(int2 startPos, int testNum, float minObjectDepth, float projectionMod, float maxDepDiff) {
 	int origDep = depthOfTexel(startPos);
 
 	if (origDep >= 30) {
-		return uint4(0, defaultThickness, 0, 0); //fully thick layer1; otherwise irrelevant data so just 0
+		return uint4(0, 31, 0, 0); //fully thick layer1; otherwise irrelevant data so just 0
 	}
 
     dirDef //see DirectionDefinitions.cginc
@@ -114,7 +114,7 @@ inline uint4 GenerateBackground(int2 startPos, int testNum, float minObjectDepth
 	}
 
 	if (minDist > testNum) { //absolutely no background for this
-		return uint4(0, defaultThickness, 0, 0);
+		return uint4(0, clamp(ceil(minObjectDepth + (testNum+1) * projectionMod), 1, 31), 0, 0); //maximum possible thickness with these settings
 	}
 
 		//find the greatest depth that matches the shortest distance
