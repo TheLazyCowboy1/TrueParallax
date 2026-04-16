@@ -3,14 +3,28 @@ using UnityEngine;
 
 namespace TrueParallax;
 
-public class CameraData
+public partial class CameraData
 {
     public static ResizableArray<CameraData> list = new(2);
 
-    public Vector2 camPos;
+    private Vector2 _camPos;
+    public Vector2 CamPos { get => _camPos; set { posDirty = true; _camPos = value; } }
 
+    public bool posDirty = true;
     public float currentWarp = Options.Warp;
-    public Vector2 BackgroundShift { get => currentWarp * (camPos - new Vector2(0.5f, 0.5f)); }
+    private Vector2 _backgroundShift;
+    public Vector2 BackgroundShift
+    {
+        get {
+            if (posDirty)
+            {
+                _backgroundShift = -Options.BackgroundShift * CalculateWarp(new(0.5f, 0.5f));
+                posDirty = true;
+            }
+            return _backgroundShift;
+        }
+    }
+    public bool activeBackgroundScene = true; //only updated if Options.BackDepthForSceneOnly == true
 
     public FSprite sprite;
     public bool needSetConstants;

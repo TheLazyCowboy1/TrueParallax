@@ -105,7 +105,7 @@ public class Plugin : SimplerPlugin
         On.RoomCamera.ctor += RoomCamera_ctor;
 
         On.RoomCamera.DrawUpdate += RoomCamera_DrawUpdate;
-        On.RoomCamera.Update += RoomCamera_Update;
+        //On.RoomCamera.Update += RoomCamera_Update;
 
         On.RoomCamera.MoveCamera_Room_int += RoomCamera_MoveCamera_Room_int;
         On.RoomCamera.WarpMoveCameraActual += RoomCamera_WarpMoveCameraActual;
@@ -123,7 +123,7 @@ public class Plugin : SimplerPlugin
     {
         On.RoomCamera.ctor -= RoomCamera_ctor;
         On.RoomCamera.DrawUpdate -= RoomCamera_DrawUpdate;
-        On.RoomCamera.Update -= RoomCamera_Update;
+        //On.RoomCamera.Update -= RoomCamera_Update;
 
         On.RoomCamera.MoveCamera_Room_int -= RoomCamera_MoveCamera_Room_int;
         On.RoomCamera.WarpMoveCameraActual -= RoomCamera_WarpMoveCameraActual;
@@ -157,7 +157,7 @@ public class Plugin : SimplerPlugin
 
             //setup CameraData
             CameraData data = self.CreateData();
-            data.camPos.Set(-1, -1); //don't lerp from previous camera's position
+            data.CamPos = new(-1, -1); //don't lerp from previous camera's position
             data.needSetConstants = true; //can't set them here because the material isn't created yet, so we'll have to wait until it is
 
 
@@ -238,7 +238,7 @@ public class Plugin : SimplerPlugin
         mat.SetVector("LZC_MaxWarp", Options.MaxWarp * new Vector2(1, sSize.x / sSize.y)); //increase MaxWarp.y due to aspect ratio
         mat.SetFloat("LZC_ConvergenceScale", Options.ConvergenceScale);
         mat.SetFloat("LZC_PivotDepth", Options.PivotDepth);
-        mat.SetFloat("LZC_Layer30Depth", 1.0f / Options.BackgroundDepth);
+        mat.SetFloat("LZC_Layer30Depth", data.activeBackgroundScene ? 1.0f / Options.BackgroundDepth : 1);
         mat.SetFloat("LZC_AntiAliasingFac", Options.AntiAliasing);
         mat.SetFloat("LZC_BackgroundNoise", Options.BackgroundNoise);
         mat.SetFloat("LZC_MaxProjection", Options.MaxProjection);
@@ -352,7 +352,7 @@ public class Plugin : SimplerPlugin
             if (!self.TryGetData(out CameraData data)) return;
 
             if (Options.TransitionsResetCamera)
-                data.camPos.Set(-1, -1); //don't lerp from previous position
+                data.CamPos = new(-1, -1); //don't lerp from previous position
 
             if (Options.TwoLayers)
             {
@@ -424,28 +424,42 @@ public class Plugin : SimplerPlugin
                 pos = Vector2.one - pos;
 
             //Actually change camera position
-            if (data.camPos.x < 0 || data.camPos.y < 0) //invalid old camPos; don't lerp with it
+            if (data.CamPos.x < 0 || data.CamPos.y < 0) //invalid old camPos; don't lerp with it
             {
-                data.camPos = pos;
+                data.CamPos = pos;
             }
             else
             {
-                data.camPos = new(
-                    Custom.LerpAndTick(data.camPos.x, pos.x, moveMod * Options.CameraMoveSpeed, moveMod * 0.001f),
-                    Custom.LerpAndTick(data.camPos.y, pos.y, moveMod * Options.CameraMoveSpeed, moveMod * 0.001f)
+                data.CamPos = new(
+                    Custom.LerpAndTick(data.CamPos.x, pos.x, moveMod * Options.CameraMoveSpeed, moveMod * 0.001f),
+                    Custom.LerpAndTick(data.CamPos.y, pos.y, moveMod * Options.CameraMoveSpeed, moveMod * 0.001f)
                     );
             }
 
-            //set the CamPos in the actual material
+
             Material mat = data.SpriteMaterial;
+
+            //Background Scene stuff
+            if (Options.BackDepthForScenesOnly)
+            {
+                bool old = data.activeBackgroundScene;
+                data.activeBackgroundScene = self.room != null && self.room.updateList.Any(uad => uad is BackgroundScene);
+                if (mat != null && old != data.activeBackgroundScene) //if it has changed
+                {
+                    mat.SetFloat("LZC_Layer30Depth", data.activeBackgroundScene ? 1.0f / Options.BackgroundDepth : 1);
+                    Log("Updated activeBackgroundScene for camera#"+self.cameraNumber, 2);
+                }
+            }
+
+            //set the CamPos in the actual material
             if (mat != null)
             {
-                mat.SetVector(ShadPropCamPos, data.camPos);
+                mat.SetVector(ShadPropCamPos, data.CamPos);
 
                 float warpMod = 1;
                 if (Options.DynamicZoom > 0)
                 {
-                    Vector2 camDiff2 = data.camPos - new Vector2(0.5f, 0.5f);
+                    Vector2 camDiff2 = data.CamPos - new Vector2(0.5f, 0.5f);
                     camDiff2 *= camDiff2;
 
                     float centerDistance = Mathf.Max(camDiff2.x, camDiff2.y);
@@ -472,7 +486,7 @@ public class Plugin : SimplerPlugin
                 if (!Options.DynamicOptimization) //test a significant optimization (up to half) without using DynamicOptimization
                 {
                     Vector2 sSize = Custom.rainWorld.screenSize;
-                    Vector2 warpFacs = new(0.5f + Mathf.Abs(data.camPos.x - 0.5f), 0.5f + Mathf.Abs(data.camPos.y - 0.5f));
+                    Vector2 warpFacs = new(0.5f + Mathf.Abs(data.CamPos.x - 0.5f), 0.5f + Mathf.Abs(data.CamPos.y - 0.5f));
                     warpFacs *= sSize / sSize.x; //adjust for aspect ratio
 
                     float warp = Options.Warp * warpMod;
@@ -491,13 +505,6 @@ public class Plugin : SimplerPlugin
     }
     //private void RoomCamera_GetCameraBestIndex(On.RoomCamera.orig_GetCameraBestIndex orig, RoomCamera self)
     private void RoomCamera_DrawUpdate(On.RoomCamera.orig_DrawUpdate orig, RoomCamera self, float timeStacker, float timeSpeed)
-    {
-        orig(self, timeStacker, timeSpeed);
-
-        SetCamPos(self, 0.5f * timeSpeed);
-    }
-
-    private void RoomCamera_Update(On.RoomCamera.orig_Update orig, RoomCamera self)
     {
         try
         {
@@ -523,6 +530,14 @@ public class Plugin : SimplerPlugin
         }
         catch (Exception ex) { Error(ex); }
 
+        orig(self, timeStacker, timeSpeed);
+
+        //SetCamPos(self, 0.5f * timeSpeed);
+        SetCamPos(self, timeSpeed);
+    }
+
+    private void RoomCamera_Update(On.RoomCamera.orig_Update orig, RoomCamera self)
+    {
         orig(self);
 
         SetCamPos(self, 0.5f);
@@ -552,7 +567,7 @@ public class Plugin : SimplerPlugin
     {
         try
         {
-            if (Options.ShiftBackgrounds)
+            if (Options.BackgroundShift != 0)
             {
                 //find the closest camera and use it
                 var cameras = self.room.game.cameras;
@@ -582,7 +597,7 @@ public class Plugin : SimplerPlugin
     {
         try
         {
-            if (Options.ShiftBackgrounds && camera.TryGetData(out CameraData data))
+            if (Options.BackgroundShift != 0 && camera.TryGetData(out CameraData data))
                 camPos += data.BackgroundShift;
         } catch (Exception ex) { Error(ex); }
 

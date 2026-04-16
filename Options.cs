@@ -45,8 +45,8 @@ public class Options : AutoConfigOptions
     [Config(CAMERA, "Transitions Reset Camera", "Instantly snaps the camera into place whenever going through screen transitions. If disabled, the camera will often pan across the entire screen upon screen transitions.\nHIGHLY recommended, especially if you are prone to motion-sickness. But personally, I think it looks cool when this option is disabled.")]
     public static bool TransitionsResetCamera = true;
 
-    [Config(CAMERA, "Shift Background Scenes", "Shifts the position of background scenes (like the views above the clouds) slightly to match the movement of the camera.\nGenerally recommended: It improves realism, although it's not perfect.", spaceBefore = 10)]
-    public static bool ShiftBackgrounds = true;
+    [Config(CAMERA, "Shift Background Scenes", "Shifts the position of background scenes (like the views above the clouds) slightly to match the movement of the camera.\nRecommended at 0. Set at 1 to have the background follow the camera movement. Set at -1 to have it follow the back wall's movement.", spaceBefore = 10), LimitRange(-5, 5)]
+    public static float BackgroundShift = 0;
 
     [Config(CAMERA, "Mouse Sensitivity", "How much the camera moves when the mouse is moved. If 0, mouse movement does not affect the camera.", precision = 1, spaceBefore = 10), LimitRange(-10, 10)]
     public static float MouseSensitivity = 0;
@@ -100,8 +100,11 @@ public class Options : AutoConfigOptions
     [Config(ADVANCED, "Depth Curve", "Applies a curve to the room depth - for example, making mid-ground objects appear closer.\nLINEAR recommended. PARABOLIC may be useful if you need a low Effect Strength due to low processing power.", width = 120, spaceAfter = 100)]
     public static DepthCurveOptions DepthCurve = DepthCurveOptions.LINEAR;
 
-    [Config(ADVANCED, "Background Depth", "How far away the background (the sky, basically) appears relative to the room geometry. Literally decreases the Effect Strength for everything except the background.\nHIGHLY recommended at 1, because the background is usually a mostly solid color, making this just a waste of resources.", spaceBefore = 40), LimitRange(1, 2)]
+    [Config(ADVANCED, "Background Depth", "How far away the background (the sky, basically) appears relative to the room geometry. Literally decreases the Effect Strength for everything except the background.\nRecommended at 1, because the background is usually a solid color, making this just a waste of resources (although For Scenes Only helps with this).", spaceBefore = 40), LimitRange(1, 2)]
     public static float BackgroundDepth = 1; //1.0 / Layer30Depth
+    [Config(ADVANCED, "For Scenes Only", "Sets Background Depth to 1 EXCEPT when a Background Scene (e.g: AboveCloudsView, RoofTopView) is active in the room.\nRecommended for performance reasons. This only applies when Background Depth is > 1.", rightSide = true)]
+    public static bool BackDepthForScenesOnly = true;
+
     [Config(ADVANCED, "Pivot Depth", "What depth stays fixed in place. Decreasing this decreases zoom and causes an inverse parallax effect, where the background moves but the foreground does not.\nHIGHLY recommended at 1, because lower values look weird. However, this is the best way to make the game look less zoomed-in."), LimitRange(0, 1)]
     public static float PivotDepth = 1;
     [Config(ADVANCED, "Convergence Scale", "Essentially how \"zoomed in\" the camera appears.\nHIGHLY recommended at 1, because lower values cause black bars on the side, and higher values feel like a waste of resources."), LimitRange(-5, 5)]
@@ -190,6 +193,7 @@ public class Options : AutoConfigOptions
         {
             UIConfigs[nameof(MaxProjection)].greyedOut = !LimitProjection;
             UIConfigs[nameof(CameraMoveSpeed)].greyedOut = AlwaysCentered;
+            UIConfigs[nameof(BackDepthForScenesOnly)].greyedOut = BackgroundDepth <= 1;
 
             OpTab layer2 = Tabs.FirstOrDefault(t => t.name == LAYER2);
             if (layer2 != null)
