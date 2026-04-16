@@ -10,7 +10,7 @@ public class CameraData
     public Vector2 camPos;
 
     public float currentWarp = Options.Warp;
-    public Vector2 BackgroundShift { get => currentWarp * (new Vector2(0.5f, 0.5f) - camPos); }
+    public Vector2 BackgroundShift { get => currentWarp * (camPos - new Vector2(0.5f, 0.5f)); }
 
     public FSprite sprite;
     public bool needSetConstants;
