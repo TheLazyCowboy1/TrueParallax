@@ -8,6 +8,10 @@ public class CameraData
     public static ResizableArray<CameraData> list = new(2);
 
     public Vector2 camPos;
+
+    public float currentWarp = Options.Warp;
+    public Vector2 BackgroundShift { get => currentWarp * (new Vector2(0.5f, 0.5f) - camPos); }
+
     public FSprite sprite;
     public bool needSetConstants;
     public LayerTexCache layer2Textures;

@@ -114,6 +114,9 @@ public class Plugin : SimplerPlugin
         On.RoomCamera.ApplyPositionChange += RoomCamera_ApplyPositionChange;
 
         On.RoomCamera.ClearAllSprites += RoomCamera_ClearAllSprites;
+
+        On.BackgroundScene.DrawPos += BackgroundScene_DrawPos;
+        On.Watcher.OuterRimView.DrawPos += OuterRimView_DrawPos;
     }
 
     public override void RemoveHooks()
@@ -123,12 +126,15 @@ public class Plugin : SimplerPlugin
         On.RoomCamera.Update -= RoomCamera_Update;
 
         On.RoomCamera.MoveCamera_Room_int -= RoomCamera_MoveCamera_Room_int;
-        On.RoomCamera.WarpMoveCameraActual -= RoomCamera_WarpMoveCameraActual; ;
+        On.RoomCamera.WarpMoveCameraActual -= RoomCamera_WarpMoveCameraActual;
         On.RoomCamera.ApplyPalette -= RoomCamera_ApplyPalette;
 
         On.RoomCamera.ApplyPositionChange -= RoomCamera_ApplyPositionChange;
 
         On.RoomCamera.ClearAllSprites -= RoomCamera_ClearAllSprites;
+
+        On.BackgroundScene.DrawPos -= BackgroundScene_DrawPos;
+        On.Watcher.OuterRimView.DrawPos -= OuterRimView_DrawPos;
     }
 
 
@@ -459,6 +465,8 @@ public class Plugin : SimplerPlugin
                     }
                     else
                         warpMod = centerWarpFac;
+
+                    data.currentWarp = warpMod; //keep track of the new warp value
                 }
 
                 if (!Options.DynamicOptimization) //test a significant optimization (up to half) without using DynamicOptimization
@@ -534,6 +542,44 @@ public class Plugin : SimplerPlugin
             }
         }
         catch (Exception ex) { Error(ex); }
+    }
+
+    #endregion
+
+    #region ShiftBackgrounds
+
+    private Vector2 BackgroundScene_DrawPos(On.BackgroundScene.orig_DrawPos orig, BackgroundScene self, Vector2 pos, float depth, Vector2 camPos, float hDisplace)
+    {
+        try
+        {
+            if (Options.ShiftBackgrounds)
+            {
+                //find the closest camera and use it
+                var cameras = self.room.game.cameras;
+                float lowestCamDist = float.PositiveInfinity;
+                RoomCamera lowestCam = null;
+                foreach (var cam in cameras)
+                {
+                    float dist = (cam.pos - camPos).sqrMagnitude;
+                    if (cam.room == self.room && dist < lowestCamDist) { lowestCamDist = dist; lowestCam = cam; }
+                }
+                if (lowestCam != null && lowestCam.TryGetData(out CameraData data))
+                    camPos += data.BackgroundShift;
+            }
+        } catch (Exception ex) { Error(ex); }
+
+        return orig(self, pos, depth, camPos, hDisplace);
+    }
+
+    private Vector2 OuterRimView_DrawPos(On.Watcher.OuterRimView.orig_DrawPos orig, Watcher.OuterRimView self, BackgroundScene.BackgroundSceneElement element, Vector2 camPos, RoomCamera camera)
+    {
+        try
+        {
+            if (Options.ShiftBackgrounds && camera.TryGetData(out CameraData data))
+                camPos += data.BackgroundShift;
+        } catch (Exception ex) { Error(ex); }
+
+        return orig(self, element, camPos, camera);
     }
 
     #endregion

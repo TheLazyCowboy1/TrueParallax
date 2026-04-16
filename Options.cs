@@ -2,7 +2,6 @@
 using Menu.Remix.MixedUI;
 using System;
 using System.Linq;
-using UnityEngine;
 
 namespace TrueParallax;
 
@@ -45,6 +44,9 @@ public class Options : AutoConfigOptions
     public static bool AlwaysCentered = false;
     [Config(CAMERA, "Transitions Reset Camera", "Instantly snaps the camera into place whenever going through screen transitions. If disabled, the camera will often pan across the entire screen upon screen transitions.\nHIGHLY recommended, especially if you are prone to motion-sickness. But personally, I think it looks cool when this option is disabled.")]
     public static bool TransitionsResetCamera = true;
+
+    [Config(CAMERA, "Shift Background Scenes", "Shifts the position of background scenes (like the views above the clouds) slightly to match the movement of the camera.\nGenerally recommended: It improves realism, although it's not perfect.", spaceBefore = 10)]
+    public static bool ShiftBackgrounds = true;
 
     [Config(CAMERA, "Mouse Sensitivity", "How much the camera moves when the mouse is moved. If 0, mouse movement does not affect the camera.", precision = 1, spaceBefore = 10), LimitRange(-10, 10)]
     public static float MouseSensitivity = 0;
@@ -89,8 +91,8 @@ public class Options : AutoConfigOptions
 
     //ADVANCED
 
-    [Config(ADVANCED, "Background Noise", "Applies noise to areas that look stretched. There is a performance benefit if this is 0.\nRecommended value = 1."), LimitRange(0, 4)]
-    public static float BackgroundNoise = 1;
+    [Config(ADVANCED, "Background Noise", "Applies noise to areas that look stretched. There is a performance benefit if this is 0.\nRecommended between 0.2 and 0.8."), LimitRange(0, 4)]
+    public static float BackgroundNoise = 0.5f;
     [Config(ADVANCED, "Anti-Aliasing", "Attempts to break up straight lines that are noticable when moving the camera slowly. (Not really anti-aliasing). Has a minimal effect when the Effect Strength is high.\nRecommended below 1."), LimitRange(0, 10)]
     public static float AntiAliasing = 0.1f;
 
@@ -100,7 +102,7 @@ public class Options : AutoConfigOptions
 
     [Config(ADVANCED, "Background Depth", "How far away the background (the sky, basically) appears relative to the room geometry. Literally decreases the Effect Strength for everything except the background.\nHIGHLY recommended at 1, because the background is usually a mostly solid color, making this just a waste of resources.", spaceBefore = 40), LimitRange(1, 2)]
     public static float BackgroundDepth = 1; //1.0 / Layer30Depth
-    [Config(ADVANCED, "Pivot Depth", "What depth stays fixed in place. Decreasing this decreases zoom and causes an inverse parallax effect, where the background moves but the foreground does not.\nHIGHLY recommended at 1, because lower values look weird."), LimitRange(0, 1)]
+    [Config(ADVANCED, "Pivot Depth", "What depth stays fixed in place. Decreasing this decreases zoom and causes an inverse parallax effect, where the background moves but the foreground does not.\nHIGHLY recommended at 1, because lower values look weird. However, this is the best way to make the game look less zoomed-in."), LimitRange(0, 1)]
     public static float PivotDepth = 1;
     [Config(ADVANCED, "Convergence Scale", "Essentially how \"zoomed in\" the camera appears.\nHIGHLY recommended at 1, because lower values cause black bars on the side, and higher values feel like a waste of resources."), LimitRange(-5, 5)]
     public static float ConvergenceScale = 1;
