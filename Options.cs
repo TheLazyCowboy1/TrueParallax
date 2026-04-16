@@ -200,6 +200,7 @@ public class Options : AutoConfigOptions
             layer2Label.Hidden = TwoLayers;
 
             UIConfigs[nameof(CreatureBackgroundTests)].greyedOut = !TwoLayers || !BuildCreatureBackground;
+            UIConfigs[nameof(DefaultLevelThickness)].greyedOut = !TwoLayers || BuildCreatureBackground;
         }
         catch (Exception ex) { Plugin.Error(ex); }
     }
