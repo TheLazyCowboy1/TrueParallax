@@ -208,11 +208,11 @@ public abstract class AutoConfigOptions : OptionInterface
                         float h = cInfo.height >= 0 ? cInfo.height : tInfo.defaultHeight;
                         float t = tInfo.textOffset + w - tInfo.updownWidth; //updownWidth is the default
 
-                        if (lastWasRightSide == cInfo.rightSide || (counterSinceSpace++) > 2) //on the same side as the last one
+                        if (lastWasRightSide == cInfo.rightSide || (++counterSinceSpace) > 2) //on the same side as the last one
                         {
                             y -= nextSpace;
                             nextSpace = 0;
-                            counterSinceSpace = 0;
+                            counterSinceSpace = 1;
                         }
                         lastWasRightSide = cInfo.rightSide;
 
