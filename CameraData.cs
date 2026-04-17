@@ -7,8 +7,9 @@ public partial class CameraData
 {
     public static ResizableArray<CameraData> list = new(2);
 
+    public Vector2 lastCamPos;
     private Vector2 _camPos;
-    public Vector2 CamPos { get => _camPos; set { posDirty = true; _camPos = value; } }
+    public Vector2 CamPos { get => _camPos; set { lastCamPos = _camPos; posDirty = true; _camPos = value; } }
 
     public bool posDirty = true;
     public float currentWarp = Options.Warp;

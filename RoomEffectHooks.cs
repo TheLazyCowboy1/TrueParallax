@@ -1,0 +1,77 @@
+﻿using System;
+using UnityEngine;
+
+namespace TrueParallax;
+
+public partial class Plugin
+{
+    #region Hooks
+    //WetTerrain hook
+    private void RoomCamera_MoveCamera_Room_int(On.RoomCamera.orig_MoveCamera_Room_int orig, RoomCamera self, Room newRoom, int camPos)
+    {
+        orig(self, newRoom, camPos);
+        DisableWetTerrain();
+    }
+    //WetTerrain hook
+    private void RoomCamera_WarpMoveCameraActual(On.RoomCamera.orig_WarpMoveCameraActual orig, RoomCamera self, Room newRoom, int camPos)
+    {
+        orig(self, newRoom, camPos);
+        DisableWetTerrain();
+    }
+
+    //Move potentially problematic fullScreenEffects to the correct container
+    private void RoomCamera_ApplyPalette(On.RoomCamera.orig_ApplyPalette orig, RoomCamera self)
+    {
+        orig(self);
+
+        try
+        {
+            if (self.fullScreenEffect == null) return;
+
+            string name = self.fullScreenEffect.shader.name;
+            bool reads = ShaderReadsLevel(name);
+            bool warps = ShaderWarpsLevel(name);
+            if (reads && warps)
+            {
+                self.fullScreenEffect.RemoveFromContainer();
+                self.fullScreenEffect = null;
+                Log("Removed problematic fullScreenEffect: " + name, 2);
+            }
+            else if (!reads) //move most fullScreenEffects to parallax container by default
+            {
+                self.fullScreenEffect.RemoveFromContainer();
+                self.ReturnFContainer(PARALLAXCONTAINER).AddChild(self.fullScreenEffect);
+                Log("Moved fullScreenEffect to parallax container: " + name, 2);
+            }
+        }
+        catch (Exception ex) { Error(ex); }
+    }
+    #endregion
+
+    //Disable WetTerrain, which displaces the pixels and causes visual artefacts.
+    private static void DisableWetTerrain() => Shader.SetGlobalFloat(RainWorld.ShadPropWetTerrain, 0);
+
+    #region FullScreenEffectFilter
+    private static bool ShaderWarpsLevel(string FShaderName) => FShaderName switch
+    {
+        "LevelMelt2" => true,
+        "SkyBloom" => false,
+        "LightAndSkyBloom" => false,
+        "LightBloom" => false,
+        "Fog" => false,
+        "Bloom" => false,
+        _ => false
+    };
+    private static bool ShaderReadsLevel(string FShaderName) => FShaderName switch
+    {
+        "LevelMelt2" => false, //surprising!
+        "SkyBloom" => false,
+        "LightAndSkyBloom" => true,
+        "LightBloom" => true,
+        "Fog" => true,
+        "Bloom" => false,
+        _ => false
+    };
+    #endregion
+
+}

@@ -25,7 +25,7 @@ public class Options : AutoConfigOptions
     }
 
     //BASICS
-    [Config(BASICS, "Effect Strength", "How strong the parallax effect is. Higher numbers will decrease performance and make the camera more zoomed in.\nRecommended between 30 and 100.", spaceAfter = 20, precision = 1), LimitRange(-500, 500)]
+    [Config(BASICS, "Effect Strength", "How strong the parallax effect is. Higher numbers will decrease performance and make the camera more zoomed in.\nRecommended between 50 and 200.", spaceAfter = 20, precision = 1), LimitRange(-500, 500)]
     public static float Warp = 50;
 
     [Config(BASICS, "Limit Projection", "Limits the thickness of objects like poles and creatures, but at a slight performance cost.\nHIGHLY recommended, because otherwise creatures look very stretched.")]
@@ -40,39 +40,42 @@ public class Options : AutoConfigOptions
 
     [Config(CAMERA, "Camera Move Speed", "How smoothly the camera follows the player. Lower values mean smoother movements, but high values can make it feel too snappy.\nRecommended between 0.07 and 0.20. 0 = no movement; 1 = no smoothing."), LimitRange(0, 1)]
     public static float CameraMoveSpeed = 0.1f;
+    [Config(CAMERA, "Movement Stop Distance", "If the camera's distance from its target position is less than this distance, then it does not try to move any closer. Measured as a fraction of the screen size.\nRecommended between 0.005 and 0.02. 0 = camera always tries to inch closer; 1 = camera never moves.", precision = 3), LimitRange(0, 1)]
+    public static float CameraStopDistance = 0.01f;
+
     [Config(CAMERA, "Always Centered", "Locks the camera in the middle of the screen, not following the player at all.\nRecommended if you are using SBCameraScroll and experience motion-sickness. Otherwise, keep this setting OFF!")]
     public static bool AlwaysCentered = false;
     [Config(CAMERA, "Transitions Reset Camera", "Instantly snaps the camera into place whenever going through screen transitions. If disabled, the camera will often pan across the entire screen upon screen transitions.\nHIGHLY recommended, especially if you are prone to motion-sickness. But personally, I think it looks cool when this option is disabled.")]
     public static bool TransitionsResetCamera = true;
 
-    [Config(CAMERA, "Shift Background Scenes", "Shifts the position of background scenes (like the views above the clouds) slightly to match the movement of the camera.\nRecommended at 0. Set at 1 to have the background follow the camera movement. Set at -1 to have it follow the back wall's movement.", spaceBefore = 10), LimitRange(-5, 5)]
+    [Config(CAMERA, "Shift Background Scenes", "Shifts the position of background scenes (like the views above the clouds) slightly to match the movement of the camera.\nRecommended at 0. 1 = background follows player movement; -1 = follows back wall's movement.", spaceBefore = 10), LimitRange(-5, 5)]
     public static float BackgroundShift = 0;
 
-    [Config(CAMERA, "Mouse Sensitivity", "How much the camera moves when the mouse is moved. If 0, mouse movement does not affect the camera.", precision = 1, spaceBefore = 10), LimitRange(-10, 10)]
+    [Config(CAMERA, "Mouse Sensitivity", "How much the camera moves when the mouse is moved. If 0, mouse movement does not affect the camera.", spaceBefore = 10), LimitRange(-5, 5)]
     public static float MouseSensitivity = 0;
 
     [Config(CAMERA, "Invert Position", "Makes the camera think the player is on the opposite end of the room; thus, camera motion is opposite player motion.\nNOT recommended.", spaceBefore = 10)]
     public static bool InvertPos = false;
-    [Config(CAMERA, "Dynamic Zoom", "How much the camera zooms out when moving towards the center of the screen.\nNOT recommended; keep at 0."), LimitRange(0, 1)]
+    [Config(CAMERA, "Dynamic Zoom", "How much the camera zooms out when moving towards the center of the screen.\nNOT recommended; keep at 0. 0 = zoom remains constant; 1 = the parallax effect is entirely disabled when standing in the center of the screen."), LimitRange(0, 1)]
     public static float DynamicZoom = 0;
 
     //LAYER2
 
     [Config(LAYER2, "Min Object Thickness", "The minimum thickness of geometry like poles. Setting this too low can make geometry appear disconnected.\nRecommended between 1 and 3."), LimitRange(0, 30)]
     public static float MinObjectThickness = 2;
-    [Config(LAYER2, "Thickness Modifier", "How much thicker wide objects (like pipes) are than narrow ones (like poles).\nRecommended between 0.5 and 1."), LimitRange(0, 3)]
+    [Config(LAYER2, "Thickness Modifier", "How much thicker wide objects (like pipes) are than narrow ones (like poles).\nRecommended between 0.5 and 1. 0 = everything is the same thickness."), LimitRange(0, 3)]
     public static float ThicknessMod = 0.65f;
-    [Config(LAYER2, "Max Depth Difference", "How severe background interpolation can be. Basically, if this number is too high, things can look stretched; but if it is too low, backgrounds look less smooth.\nRecommended between 0.5 and 1."), LimitRange(0, 10)]
+    [Config(LAYER2, "Max Depth Difference", "How severe background interpolation can be. Basically, if this number is too high, things can look stretched; but if it is too low, backgrounds look less smooth.\nRecommended between 0.5 and 1. 0 = no background interpolation; 10 = floating bits in background."), LimitRange(0, 10)]
     public static float MaxDepthDifference = 1;
     [Config(LAYER2, "Sample Count", "How many texture samples are performed when determining the background. Currently cannot exceed 31 due to being only 5-bit.\nRecommended above 20, because 20 = 1 tile."), LimitRange(1, 31)]
     public static int BackgroundTestNum = 22;
 
     [Config(LAYER2, "Simpler Layers", "Reduces the lag when changing screens, but loses some finer details in the process. Specifically, halves the number of texture samples.\nRecommended if you notice lag upon screen transitions.", spaceBefore = 15)]
     public static bool SimplerLayers = false;
-    [Config(LAYER2, "Cached Textures", "How many Layer2 textures are saved. Saves processing when going back to previous screens, at the cost of VRAM.\nRecommended at 1 or 2. Any higher is usually useless."), LimitRange(1, 8)]
+    [Config(LAYER2, "Cached Textures", "How many Layer2 textures are saved. Saves processing when going back to previous screens, at the cost of VRAM.\nRecommended at 2. Any higher is usually useless."), LimitRange(1, 8)]
     public static int CachedRenderTextures = 2;
 
-    [Config(LAYER2, "Build Creature Backgrounds", "Attempts to infer the room geometry behind creatures by checking the pixels around them. Has a significant performance cost.\nRecommended if you are using a high Effect Strength and have a stable framerate.", spaceBefore = 15)]
+    [Config(LAYER2, "Build Creature Backgrounds", "Attempts to infer the room geometry behind creatures by checking the pixels around them. Has a significant performance cost. Also applies to dynamic level elements.\nRecommended if you are using a high Effect Strength and have a stable framerate.", spaceBefore = 15)]
     public static bool BuildCreatureBackground = false;
     [Config(LAYER2, "Creature Background Samples", "How many pixels around the creature are checked. Will affect performance.\nRecommended below 20."), LimitRange(1, 31)]
     public static int CreatureBackgroundTests = 10;
