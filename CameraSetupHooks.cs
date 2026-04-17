@@ -64,6 +64,7 @@ public partial class Plugin
     {
         //determine keywords for FShader
         List<string> keywords = new();
+
         if (Options.LimitProjection) keywords.Add("LZC_LIMITPROJECTION");
         if (Options.DynamicOptimization) keywords.Add("LZC_DYNAMICOPTIMIZATION");
         if (Options.TwoLayers)
@@ -80,6 +81,8 @@ public partial class Plugin
             Options.DepthCurveOptions.REALISTIC => "LZC_REALISTICDEPTH",
             _ => "LZC_LINEARDEPTH"
         });
+        if (Options.SuperAccurateThickness) keywords.Add("LZC_SUPERACCURATETHICKNESS");
+
         TrueParallaxFShader.keywords = keywords.ToArray();
 
         //determine keywords for material

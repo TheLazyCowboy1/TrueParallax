@@ -90,7 +90,7 @@ public class Options : AutoConfigOptions
 
     [Config(OPTIMIZATION, "Optimization", "Reduces processing costs, at the risk of visual artefacts due to \"skipping over\" pixels.\nRecommended between 1 and 2. A good compromise is 1.5."), LimitRange(0.25f, 4)]
     public static float OptimizationFac = 1;
-    [Config(OPTIMIZATION, "Dynamic Optimization", "Reduces processing costs for pixels closer to the camera (by about 50% on average), but can cause some minor visual artefacts (serrated edges).\nRecommended to EITHER set Optimization to 1.5, OR enable this and use Max Warp.")]
+    [Config(OPTIMIZATION, "Dynamic Optimization", "Reduces processing costs for pixels closer to the camera (by about 50% on average), but can cause some minor visual artefacts (serrated edges, pixelated backgrounds).\nRecommended to EITHER set Optimization to 1.5, OR enable this and use Max Warp.")]
     public static bool DynamicOptimization = false;
     [Config(OPTIMIZATION, "Max Warp", "Caps the strength of the parallax effect, only affecting the further parts of the screen. This can significantly improve performance.\nIF using Dynamic Optimization, recommended between 0.5 and 0.8. OTHERWISE, keep above 0.8."), LimitRange(0, 1)]
     public static float MaxWarp = 1;
@@ -99,13 +99,15 @@ public class Options : AutoConfigOptions
 
     [Config(ADVANCED, "Background Noise", "Applies noise to areas that look stretched. There is a performance benefit if this is 0.\nRecommended between 0.2 and 0.8."), LimitRange(0, 4)]
     public static float BackgroundNoise = 0.5f;
-    [Config(ADVANCED, "Anti-Aliasing", "Attempts to break up straight lines that are noticable when moving the camera slowly. (Not really anti-aliasing). Has a minimal effect when the Effect Strength is high.\nRecommended below 1."), LimitRange(0, 10)]
+    [Config(ADVANCED, "Anti-Aliasing", "Attempts to break up straight lines that are noticable when moving the camera slowly. (Not really anti-aliasing). Has a minimal effect when the Effect Strength is high.\nRecommended below 1. May be useful when Dynamic Optimization is enabled."), LimitRange(0, 10)]
     public static float AntiAliasing = 0.1f;
 
     public enum DepthCurveOptions { INVERSE, LINEAR, PARABOLIC, EXTREME, REALISTIC };
-    [Config(ADVANCED, "Depth Curve", "Applies a curve to the room depth - for example, making mid-ground objects appear closer.\nLINEAR recommended. PARABOLIC may be useful if you need a low Effect Strength due to low processing power. REALISTIC is NOT recommended, especially if Effect Strength is not extremely high.", width = 120, spaceAfter = 100)]
+    [Config(ADVANCED, "Depth Curve", "Applies a curve to the room depth - for example, making mid-ground objects appear closer.\nLINEAR or PARABOLIC recommended. REALISTIC is NOT recommended due to being extremely expensive.", width = 120, spaceAfter = 100)]
     public static DepthCurveOptions DepthCurve = DepthCurveOptions.LINEAR;
 
+    [Config(ADVANCED, "Super Accurate Thickness", "Ensures that the depth curve applies properly to geometry thickness. Adds additional performance cost for a very tiny visual improvement.\nNOT recommended: The improvement is not worth the cost. This is most useful with the REALISTIC depth curve, but it is also very expensive with that curve.")]
+    public static bool SuperAccurateThickness = false;
     [Config(ADVANCED, "Background Depth", "How far away the background (the sky, basically) appears relative to the room geometry. Literally decreases the Effect Strength for everything except the background.\nRecommended at 1, because the background is usually a solid color, making this just a waste of resources (although For Scenes Only helps with this).", spaceBefore = 40), LimitRange(1, 2)]
     public static float BackgroundDepth = 1; //1.0 / Layer30Depth
     [Config(ADVANCED, "For Scenes Only", "Sets Background Depth to 1 EXCEPT when a Background Scene (e.g: AboveCloudsView, RoofTopView) is active in the room.\nRecommended for performance reasons. This only applies when Background Depth is > 1.", rightSide = true)]
@@ -129,7 +131,9 @@ public class Options : AutoConfigOptions
                 secondLayer = Options.TwoLayers,
                 limitProjection = Options.LimitProjection,
                 backgroundNoise = Options.BackgroundNoise > 0,
-                buildCreatureBackgrounds = Options.TwoLayers && Options.BuildCreatureBackground;
+                buildCreatureBackgrounds = Options.TwoLayers && Options.BuildCreatureBackground,
+                realisticDepthCurve = Options.DepthCurve == DepthCurveOptions.REALISTIC,
+                superAccurateThickness = Options.SuperAccurateThickness && (Options.LimitProjection || Options.TwoLayers) && Options.DepthCurve != DepthCurveOptions.LINEAR;
             public MyBools() { }
         }
         private MyBools myBools = new();
@@ -144,12 +148,14 @@ public class Options : AutoConfigOptions
                 "If you want to know how expensive the shader is, use this basic formula:\n" +
                 "cost = EffectStrength * MaxWarp / Optimization\n" +
                 "Thus, Effect Strength is the primary factor for performance cost, and Max Warp and Optimization are used to directly reduce it.\n" +
-                "\nOther optimizations:\n" +
-                (myBools.dynamicOptimization ? "* Enabling Dynamic Optimization improves performance by roughly 50%.\n" : "") +
-                (myBools.secondLayer ? "* Disabling Second Layer could improve performance by 50-100%, because it is highly expensive.\n" : "") +
-                (myBools.limitProjection ? "* Disabling Limit Projection could improve performance by up to 50%; but I recommend keeping it on anyway.\n" : "") +
-                (myBools.backgroundNoise ? "* Setting Background Noise to 0 should improve performance by perhaps 10% (exact improvement is untested).\n" : "") +
-                (myBools.buildCreatureBackgrounds ? "* Disabling Build Creature Backgrounds or reducing Creature Background Samples will help. 1 CreatureBackgroundSample is worth about 3 EffectStrength" : "")
+                "\nOther optimizations:"
+                + (myBools.dynamicOptimization ? "\n* Enabling Dynamic Optimization improves performance by roughly 50%." : "")
+                + (myBools.secondLayer ? "\n* Disabling Second Layer could improve performance by 50-100%, because it is highly expensive." : "")
+                + (myBools.limitProjection ? "\n* Disabling Limit Projection could improve performance by up to 50%; but I recommend keeping it on anyway." : "")
+                + (myBools.backgroundNoise ? "\n* Setting Background Noise to 0 should improve performance by perhaps 10% (exact improvement is untested)." : "")
+                + (myBools.buildCreatureBackgrounds ? "\n* Disabling Build Creature Backgrounds or reducing Creature Background Samples will help. 1 CreatureBackgroundSample is worth about 3 EffectStrength" : "")
+                + (myBools.realisticDepthCurve ? "\n* Use a Depth Curve other than REALISTIC. It involves repeated divisions, which is highly expensive." : "")
+                + (myBools.superAccurateThickness ? "\n* Disabling Super Accurate Thickness should improve performance some. I have not determined the exact improvement." : "")
                 ;
         }
 
@@ -195,6 +201,7 @@ public class Options : AutoConfigOptions
             UIConfigs[nameof(CameraMoveSpeed)].greyedOut = AlwaysCentered;
             UIConfigs[nameof(CameraStopDistance)].greyedOut = AlwaysCentered;
             UIConfigs[nameof(BackDepthForScenesOnly)].greyedOut = BackgroundDepth <= 1;
+            UIConfigs[nameof(SuperAccurateThickness)].greyedOut = DepthCurve == DepthCurveOptions.LINEAR || !(Options.LimitProjection || Options.TwoLayers);
 
             OpTab layer2 = Tabs.FirstOrDefault(t => t.name == LAYER2);
             if (layer2 != null)
