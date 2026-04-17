@@ -59,16 +59,27 @@ public partial class Plugin
 
             //Follow creatures
             var crit = self.followAbstractCreature?.realizedCreature;
+            bool readInput = false;
             if (!Options.AlwaysCentered && crit != null)
             {
                 Vector2? critPos = (crit.inShortcut ? self.game.shortcuts.OnScreenPositionOfInShortCutCreature(self.room, crit) : crit.mainBodyChunk.pos);
                 if (critPos != null)
                 {
-                    pos = (critPos.Value - self.pos
-                        + (self.followCreatureInputForward + self.leanPos) * 2f) //add some offset for movement
-                        / self.sSize;
+                    //inch offset toward 0
+                    data.critFollowOffset = LerpAndTick(data.critFollowOffset, Vector2.zero, Options.CameraMoveSpeed * moveMod, moveMod * Options.CameraMoveSpeed * 0.02f);
+
+                    //offset by player input
+                    var input = (crit as Player)?.input[0] ?? crit.inputWithDiagonals;
+                    if (input != null)
+                    {
+                        data.critFollowOffset = Vector2.ClampMagnitude(data.critFollowOffset + input.Value.analogueDir * moveMod, 20);
+                        readInput = true;
+                    }
+
+                    pos = (critPos.Value - self.pos + data.critFollowOffset) / self.sSize;
                 }
             }
+            if (!readInput) data.critFollowOffset.Set(0, 0);
 
             //Mouse movement
             if (Options.MouseSensitivity > 0)
@@ -102,12 +113,12 @@ public partial class Plugin
             if (data.CamPos.x < 0 || data.CamPos.y < 0) //invalid old camPos; don't lerp with it
             {
                 data.CamPos = pos;
-                data.lastCamPos = pos; //also set lastCamPos
+                data.lastCamPos = pos; //also set lastCamPos, so there's no interpolation
             }
             else
             {
                 if ((data.CamPos - pos).sqrMagnitude > Options.CameraStopDistance * Options.CameraStopDistance) //don't move when very close
-                    data.CamPos = LerpAndTick(data.CamPos, pos, moveMod * Options.CameraMoveSpeed, moveMod * Options.CameraMoveSpeed * 0.01f);
+                    data.CamPos = LerpAndTick(data.CamPos, pos, moveMod * Options.CameraMoveSpeed, moveMod * Options.CameraMoveSpeed * 0.02f);
             }
         }
         catch (Exception ex) { Error(ex); }

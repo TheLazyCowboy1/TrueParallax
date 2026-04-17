@@ -48,13 +48,13 @@ public class Options : AutoConfigOptions
     [Config(CAMERA, "Transitions Reset Camera", "Instantly snaps the camera into place whenever going through screen transitions. If disabled, the camera will often pan across the entire screen upon screen transitions.\nHIGHLY recommended, especially if you are prone to motion-sickness. But personally, I think it looks cool when this option is disabled.")]
     public static bool TransitionsResetCamera = true;
 
-    [Config(CAMERA, "Shift Background Scenes", "Shifts the position of background scenes (like the views above the clouds) slightly to match the movement of the camera.\nRecommended at 0. 1 = background follows player movement; -1 = follows back wall's movement.", spaceBefore = 10), LimitRange(-5, 5)]
-    public static float BackgroundShift = 0;
-
-    [Config(CAMERA, "Mouse Sensitivity", "How much the camera moves when the mouse is moved. If 0, mouse movement does not affect the camera.", spaceBefore = 10), LimitRange(-5, 5)]
+    [Config(CAMERA, "Mouse Sensitivity", "How much the camera moves when the mouse is moved. If 0, mouse movement does not affect the camera.", spaceBefore = 15), LimitRange(-5, 5)]
     public static float MouseSensitivity = 0;
 
-    [Config(CAMERA, "Invert Position", "Makes the camera think the player is on the opposite end of the room; thus, camera motion is opposite player motion.\nNOT recommended.", spaceBefore = 10)]
+    [Config(CAMERA, "Shift Background Scenes", "Shifts the position of background scenes (like the views above the clouds) slightly to match the movement of the camera.\nRecommended at 0. 1 = background follows player movement; -1 = follows back wall's movement.", spaceBefore = 15), LimitRange(-5, 5)]
+    public static float BackgroundShift = 0;
+
+    [Config(CAMERA, "Invert Position", "Makes the camera think the player is on the opposite end of the room; thus, camera motion is opposite player motion.\nNOT recommended.", spaceBefore = 15)]
     public static bool InvertPos = false;
     [Config(CAMERA, "Dynamic Zoom", "How much the camera zooms out when moving towards the center of the screen.\nNOT recommended; keep at 0. 0 = zoom remains constant; 1 = the parallax effect is entirely disabled when standing in the center of the screen."), LimitRange(0, 1)]
     public static float DynamicZoom = 0;
@@ -164,17 +164,9 @@ public class Options : AutoConfigOptions
     }
 
     OpLabel layer2Label;
-    bool initializedAlready = false; //just for testing purposes
     public override void MenuInitialized()
     {
         base.MenuInitialized();
-
-        if (initializedAlready)
-        {
-            Plugin.Error("Config menu was already initialized!!");
-            return;
-        }
-        initializedAlready = true;
 
         GetTab(BASICS).AddItems(
             new OpLabel(50, 550, "Parallax Effect Settings", true)
@@ -198,6 +190,7 @@ public class Options : AutoConfigOptions
         {
             UIConfigs[nameof(MaxProjection)].greyedOut = !LimitProjection;
             UIConfigs[nameof(CameraMoveSpeed)].greyedOut = AlwaysCentered;
+            UIConfigs[nameof(CameraStopDistance)].greyedOut = AlwaysCentered;
             UIConfigs[nameof(BackDepthForScenesOnly)].greyedOut = BackgroundDepth <= 1;
 
             OpTab layer2 = Tabs.FirstOrDefault(t => t.name == LAYER2);

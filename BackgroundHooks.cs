@@ -25,8 +25,8 @@ public partial class Plugin
                 {
                     if (self is RoofTopView)
                         camPos.x += data.BackgroundShift.x; //only shift x; otherwise it looks really bad
-                    else if (self is AboveCloudsView)
-                        camPos.y += data.BackgroundShift.y; //only shift y; because the clouds can't be shifted horizontally
+                    //else if (self is AboveCloudsView)
+                    //    camPos.y += data.BackgroundShift.y; //only shift y; because the clouds can't be shifted horizontally
                     else
                         camPos += data.BackgroundShift;
                 }
