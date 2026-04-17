@@ -25,7 +25,7 @@ public class Options : AutoConfigOptions
     }
 
     //BASICS
-    [Config(BASICS, "Effect Strength", "How strong the parallax effect is. Higher numbers will decrease performance and make the camera more zoomed in.\nRecommended between 50 and 200.", spaceAfter = 20, precision = 1), LimitRange(-500, 500)]
+    [Config(BASICS, "Effect Strength", "How strong the parallax effect is. Higher numbers will decrease performance and make the camera more zoomed in.\nRecommended between 50 and 200.", spaceAfter = 20, precision = 1), LimitRange(-1000, 1000)]
     public static float Warp = 50;
 
     [Config(BASICS, "Limit Projection", "Limits the thickness of objects like poles and creatures, but at a slight performance cost.\nHIGHLY recommended, because otherwise creatures look very stretched.")]
@@ -42,6 +42,9 @@ public class Options : AutoConfigOptions
     public static float CameraMoveSpeed = 0.1f;
     [Config(CAMERA, "Movement Stop Distance", "If the camera's distance from its target position is less than this distance, then it does not try to move any closer. Measured as a fraction of the screen size.\nRecommended between 0.005 and 0.02. 0 = camera always tries to inch closer; 1 = camera never moves.", precision = 3), LimitRange(0, 1)]
     public static float CameraStopDistance = 0.01f;
+
+    [Config(CAMERA, "Input Offset", "How much the camera position moves according to the player's inputs.", precision = 1), LimitRange(-200, 200)]
+    public static float CameraInputOffset = 50;
 
     [Config(CAMERA, "Always Centered", "Locks the camera in the middle of the screen, not following the player at all.\nRecommended if you are using SBCameraScroll and experience motion-sickness. Otherwise, keep this setting OFF!")]
     public static bool AlwaysCentered = false;
@@ -99,8 +102,8 @@ public class Options : AutoConfigOptions
     [Config(ADVANCED, "Anti-Aliasing", "Attempts to break up straight lines that are noticable when moving the camera slowly. (Not really anti-aliasing). Has a minimal effect when the Effect Strength is high.\nRecommended below 1."), LimitRange(0, 10)]
     public static float AntiAliasing = 0.1f;
 
-    public enum DepthCurveOptions { INVERSE, LINEAR, PARABOLIC, EXTREME };
-    [Config(ADVANCED, "Depth Curve", "Applies a curve to the room depth - for example, making mid-ground objects appear closer.\nLINEAR recommended. PARABOLIC may be useful if you need a low Effect Strength due to low processing power.", width = 120, spaceAfter = 100)]
+    public enum DepthCurveOptions { INVERSE, LINEAR, PARABOLIC, EXTREME, REALISTIC };
+    [Config(ADVANCED, "Depth Curve", "Applies a curve to the room depth - for example, making mid-ground objects appear closer.\nLINEAR recommended. PARABOLIC may be useful if you need a low Effect Strength due to low processing power. REALISTIC is NOT recommended, especially if Effect Strength is not extremely high.", width = 120, spaceAfter = 100)]
     public static DepthCurveOptions DepthCurve = DepthCurveOptions.LINEAR;
 
     [Config(ADVANCED, "Background Depth", "How far away the background (the sky, basically) appears relative to the room geometry. Literally decreases the Effect Strength for everything except the background.\nRecommended at 1, because the background is usually a solid color, making this just a waste of resources (although For Scenes Only helps with this).", spaceBefore = 40), LimitRange(1, 2)]

@@ -77,6 +77,7 @@ public partial class Plugin
             Options.DepthCurveOptions.EXTREME => "LZC_EXTREMEDEPTH",
             Options.DepthCurveOptions.PARABOLIC => "LZC_PARABOLICDEPTH",
             Options.DepthCurveOptions.INVERSE => "LZC_INVERSEDEPTH",
+            Options.DepthCurveOptions.REALISTIC => "LZC_REALISTICDEPTH",
             _ => "LZC_LINEARDEPTH"
         });
         TrueParallaxFShader.keywords = keywords.ToArray();

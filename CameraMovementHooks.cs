@@ -72,7 +72,7 @@ public partial class Plugin
                     var input = (crit as Player)?.input[0] ?? crit.inputWithDiagonals;
                     if (input != null)
                     {
-                        data.critFollowOffset = Vector2.ClampMagnitude(data.critFollowOffset + input.Value.analogueDir * moveMod * 1.5f, 50);
+                        data.critFollowOffset = Vector2.ClampMagnitude(data.critFollowOffset + input.Value.analogueDir * moveMod * 1.5f, Options.CameraInputOffset);
                         readInput = true;
                     }
 
