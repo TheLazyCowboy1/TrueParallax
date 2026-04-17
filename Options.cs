@@ -40,10 +40,10 @@ public class Options : AutoConfigOptions
 
     [Config(CAMERA, "Camera Move Speed", "How smoothly the camera follows the player. Lower values mean smoother movements, but high values can make it feel too snappy.\nRecommended between 0.07 and 0.20. 0 = no movement; 1 = no smoothing."), LimitRange(0, 1)]
     public static float CameraMoveSpeed = 0.1f;
-    [Config(CAMERA, "Movement Stop Distance", "If the camera's distance from its target position is less than this distance, then it does not try to move any closer. Measured as a fraction of the screen size.\nRecommended between 0.005 and 0.02. 0 = camera always tries to inch closer; 1 = camera never moves.", precision = 3), LimitRange(0, 1)]
-    public static float CameraStopDistance = 0.01f;
+    [Config(CAMERA, "Movement Stop Distance", "If the camera's distance from its target position is less than this distance, then it does not try to move any closer. Measured as a fraction of the screen size.\nRecommended between 0.002 and 0.01. 0 = camera always tries to inch closer; 1 = camera never moves.", precision = 3), LimitRange(0, 1)]
+    public static float CameraStopDistance = 0.005f;
 
-    [Config(CAMERA, "Input Offset", "How much the camera position moves according to the player's inputs.", precision = 1), LimitRange(-200, 200)]
+    [Config(CAMERA, "Input Offset", "How much the camera position moves according to the player's inputs.\nGenerally recommended, unless you have a high Camera Move Speed.", precision = 1), LimitRange(-500, 500)]
     public static float CameraInputOffset = 50;
 
     [Config(CAMERA, "Always Centered", "Locks the camera in the middle of the screen, not following the player at all.\nRecommended if you are using SBCameraScroll and experience motion-sickness. Otherwise, keep this setting OFF!")]

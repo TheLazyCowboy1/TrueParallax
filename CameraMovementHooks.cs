@@ -66,13 +66,13 @@ public partial class Plugin
                 if (critPos != null)
                 {
                     //inch offset toward 0
-                    data.critFollowOffset = LerpAndTick(data.critFollowOffset, Vector2.zero, Options.CameraMoveSpeed * moveMod, moveMod * Options.CameraMoveSpeed * 0.005f);
+                    data.critFollowOffset = LerpAndTick(data.critFollowOffset, Vector2.zero, Options.CameraMoveSpeed * moveMod, moveMod * Options.CameraMoveSpeed * 0.01f);
 
                     //offset by player input
                     var input = (crit as Player)?.input[0] ?? crit.inputWithDiagonals;
                     if (input != null)
                     {
-                        data.critFollowOffset = Vector2.ClampMagnitude(data.critFollowOffset + input.Value.analogueDir * moveMod * 1.5f, Options.CameraInputOffset);
+                        data.critFollowOffset = Vector2.ClampMagnitude(data.critFollowOffset + input.Value.analogueDir * moveMod * Options.CameraInputOffset * Options.CameraMoveSpeed, Options.CameraInputOffset);
                         readInput = true;
                     }
 
