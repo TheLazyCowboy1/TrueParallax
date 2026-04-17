@@ -66,13 +66,13 @@ public partial class Plugin
                 if (critPos != null)
                 {
                     //inch offset toward 0
-                    data.critFollowOffset = LerpAndTick(data.critFollowOffset, Vector2.zero, Options.CameraMoveSpeed * moveMod, moveMod * Options.CameraMoveSpeed * 0.02f);
+                    data.critFollowOffset = LerpAndTick(data.critFollowOffset, Vector2.zero, Options.CameraMoveSpeed * moveMod, moveMod * Options.CameraMoveSpeed * 0.005f);
 
                     //offset by player input
                     var input = (crit as Player)?.input[0] ?? crit.inputWithDiagonals;
                     if (input != null)
                     {
-                        data.critFollowOffset = Vector2.ClampMagnitude(data.critFollowOffset + input.Value.analogueDir * moveMod, 20);
+                        data.critFollowOffset = Vector2.ClampMagnitude(data.critFollowOffset + input.Value.analogueDir * moveMod * 1.5f, 50);
                         readInput = true;
                     }
 
@@ -118,7 +118,7 @@ public partial class Plugin
             else
             {
                 if ((data.CamPos - pos).sqrMagnitude > Options.CameraStopDistance * Options.CameraStopDistance) //don't move when very close
-                    data.CamPos = LerpAndTick(data.CamPos, pos, moveMod * Options.CameraMoveSpeed, moveMod * Options.CameraMoveSpeed * 0.02f);
+                    data.CamPos = LerpAndTick(data.CamPos, pos, moveMod * Options.CameraMoveSpeed, moveMod * Options.CameraMoveSpeed * 0.005f);
             }
         }
         catch (Exception ex) { Error(ex); }
