@@ -108,6 +108,8 @@ public class Options : AutoConfigOptions
 
     [Config(ADVANCED, "Super Accurate Thickness", "Ensures that the depth curve applies properly to geometry thickness. Adds additional performance cost for a very tiny visual improvement. Does not work for LINEAR or PARABOLIC.\nNOT recommended: The improvement is not worth the cost. This is most useful with the REALISTIC depth curve, but it is also very expensive with that curve.")]
     public static bool SuperAccurateThickness = false;
+    public static bool IsActiveSuperAccurateThickness => SuperAccurateThickness && (TwoLayers || LimitProjection) && DepthCurve != DepthCurveOptions.LINEAR;
+
     [Config(ADVANCED, "Background Depth", "How far away the background (the sky, basically) appears relative to the room geometry. Literally decreases the Effect Strength for everything except the background.\nRecommended at 1, because the background is usually a solid color, making this just a waste of resources (although For Scenes Only helps with this).", spaceBefore = 40), LimitRange(1, 2)]
     public static float BackgroundDepth = 1; //1.0 / Layer30Depth
     [Config(ADVANCED, "For Scenes Only", "Sets Background Depth to 1 EXCEPT when a Background Scene (e.g: AboveCloudsView, RoofTopView) is active in the room.\nRecommended for performance reasons. This only applies when Background Depth is > 1.", rightSide = true)]
@@ -133,7 +135,7 @@ public class Options : AutoConfigOptions
                 backgroundNoise = Options.BackgroundNoise > 0,
                 buildCreatureBackgrounds = Options.TwoLayers && Options.BuildCreatureBackground,
                 realisticDepthCurve = Options.DepthCurve == DepthCurveOptions.REALISTIC,
-                superAccurateThickness = Options.SuperAccurateThickness && (Options.LimitProjection || Options.TwoLayers) && Options.DepthCurve != DepthCurveOptions.LINEAR && Options.DepthCurve != DepthCurveOptions.PARABOLIC;
+                superAccurateThickness = Options.IsActiveSuperAccurateThickness;
             public MyBools() { }
         }
         private MyBools myBools = new();
@@ -201,7 +203,7 @@ public class Options : AutoConfigOptions
             UIConfigs[nameof(CameraMoveSpeed)].greyedOut = AlwaysCentered;
             UIConfigs[nameof(CameraStopDistance)].greyedOut = AlwaysCentered;
             UIConfigs[nameof(BackDepthForScenesOnly)].greyedOut = BackgroundDepth <= 1;
-            UIConfigs[nameof(SuperAccurateThickness)].greyedOut = (DepthCurve == DepthCurveOptions.LINEAR || DepthCurve == DepthCurveOptions.PARABOLIC) || !(Options.LimitProjection || Options.TwoLayers);
+            UIConfigs[nameof(SuperAccurateThickness)].greyedOut = DepthCurve == DepthCurveOptions.LINEAR || !(Options.LimitProjection || Options.TwoLayers);
 
             OpTab layer2 = Tabs.FirstOrDefault(t => t.name == LAYER2);
             if (layer2 != null)

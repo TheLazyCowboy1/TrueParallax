@@ -82,9 +82,7 @@ public partial class Plugin
             Options.DepthCurveOptions.REALISTIC => "LZC_REALISTICDEPTH",
             _ => "LZC_LINEARDEPTH"
         });
-        if (Options.SuperAccurateThickness && (Options.LimitProjection || Options.TwoLayers)
-            && Options.DepthCurve != Options.DepthCurveOptions.LINEAR && Options.DepthCurve != Options.DepthCurveOptions.PARABOLIC)
-            keywords.Add("LZC_SUPERACCURATETHICKNESS");
+        if (Options.IsActiveSuperAccurateThickness) keywords.Add("LZC_SUPERACCURATETHICKNESS");
 
         TrueParallaxFShader.keywords = keywords.ToArray();
 
