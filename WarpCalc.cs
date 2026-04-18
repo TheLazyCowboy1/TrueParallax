@@ -19,9 +19,10 @@ public partial class CameraData
 
     public float DepthCurve(float d) => Options.DepthCurve switch
         {
-            Options.DepthCurveOptions.EXTREME => d * (d * (d - 3) + 3),
+            Options.DepthCurveOptions.CUBIC => d * (d * (d - 3) + 3),
             Options.DepthCurveOptions.PARABOLIC => d * (2 - d),
             Options.DepthCurveOptions.INVERSE => d * d,
+            Options.DepthCurveOptions.REALAPPROX => Mathf.Lerp(d, d * (d * (d - 3) + 3), 0.001f*Mathf.Abs(currentWarp)),
             Options.DepthCurveOptions.REALISTIC => 1 - 1.0f / (6*d * Mathf.Abs(currentWarp)/Custom.rainWorld.screenSize.x + 1),
             _ => d //LINEAR
         };

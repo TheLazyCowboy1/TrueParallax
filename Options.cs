@@ -102,11 +102,11 @@ public class Options : AutoConfigOptions
     [Config(ADVANCED, "Anti-Aliasing", "Attempts to break up straight lines that are noticable when moving the camera slowly. (Not really anti-aliasing). Has a minimal effect when the Effect Strength is high.\nRecommended below 1. May be useful when Dynamic Optimization is enabled."), LimitRange(0, 10)]
     public static float AntiAliasing = 0.1f;
 
-    public enum DepthCurveOptions { INVERSE, LINEAR, PARABOLIC, EXTREME, REALISTIC };
-    [Config(ADVANCED, "Depth Curve", "Applies a curve to the room depth - for example, making mid-ground objects appear closer.\nLINEAR or PARABOLIC recommended. REALISTIC is NOT recommended due to being extremely expensive.", width = 120, spaceAfter = 100)]
+    public enum DepthCurveOptions { INVERSE, LINEAR, PARABOLIC, CUBIC, REALAPPROX, REALISTIC };
+    [Config(ADVANCED, "Depth Curve", "Applies a curve to the room depth - for example, making mid-ground objects appear farther. INVERSE = mid-ground looks closer; PARABOLIC, CUBIC, REALAPPROX = mid-ground appears farther; REALISTIC = mathematically accurate proportions.\nLINEAR or PARABOLIC recommended. REALAPPROX is NOT recommended for high or low Effect Strengths. REALISTIC is NOT recommended due to being extremely expensive.", width = 120, spaceAfter = 100)]
     public static DepthCurveOptions DepthCurve = DepthCurveOptions.LINEAR;
 
-    [Config(ADVANCED, "Super Accurate Thickness", "Ensures that the depth curve applies properly to geometry thickness. Adds additional performance cost for a very tiny visual improvement.\nNOT recommended: The improvement is not worth the cost. This is most useful with the REALISTIC depth curve, but it is also very expensive with that curve.")]
+    [Config(ADVANCED, "Super Accurate Thickness", "Ensures that the depth curve applies properly to geometry thickness. Adds additional performance cost for a very tiny visual improvement. Does not work for LINEAR or PARABOLIC.\nNOT recommended: The improvement is not worth the cost. This is most useful with the REALISTIC depth curve, but it is also very expensive with that curve.")]
     public static bool SuperAccurateThickness = false;
     [Config(ADVANCED, "Background Depth", "How far away the background (the sky, basically) appears relative to the room geometry. Literally decreases the Effect Strength for everything except the background.\nRecommended at 1, because the background is usually a solid color, making this just a waste of resources (although For Scenes Only helps with this).", spaceBefore = 40), LimitRange(1, 2)]
     public static float BackgroundDepth = 1; //1.0 / Layer30Depth
@@ -133,7 +133,7 @@ public class Options : AutoConfigOptions
                 backgroundNoise = Options.BackgroundNoise > 0,
                 buildCreatureBackgrounds = Options.TwoLayers && Options.BuildCreatureBackground,
                 realisticDepthCurve = Options.DepthCurve == DepthCurveOptions.REALISTIC,
-                superAccurateThickness = Options.SuperAccurateThickness && (Options.LimitProjection || Options.TwoLayers) && Options.DepthCurve != DepthCurveOptions.LINEAR;
+                superAccurateThickness = Options.SuperAccurateThickness && (Options.LimitProjection || Options.TwoLayers) && Options.DepthCurve != DepthCurveOptions.LINEAR && Options.DepthCurve != DepthCurveOptions.PARABOLIC;
             public MyBools() { }
         }
         private MyBools myBools = new();
@@ -201,7 +201,7 @@ public class Options : AutoConfigOptions
             UIConfigs[nameof(CameraMoveSpeed)].greyedOut = AlwaysCentered;
             UIConfigs[nameof(CameraStopDistance)].greyedOut = AlwaysCentered;
             UIConfigs[nameof(BackDepthForScenesOnly)].greyedOut = BackgroundDepth <= 1;
-            UIConfigs[nameof(SuperAccurateThickness)].greyedOut = DepthCurve == DepthCurveOptions.LINEAR || !(Options.LimitProjection || Options.TwoLayers);
+            UIConfigs[nameof(SuperAccurateThickness)].greyedOut = (DepthCurve == DepthCurveOptions.LINEAR || DepthCurve == DepthCurveOptions.PARABOLIC) || !(Options.LimitProjection || Options.TwoLayers);
 
             OpTab layer2 = Tabs.FirstOrDefault(t => t.name == LAYER2);
             if (layer2 != null)

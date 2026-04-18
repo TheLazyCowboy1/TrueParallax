@@ -75,13 +75,16 @@ public partial class Plugin
         if (Options.BackgroundNoise > 0.001f) keywords.Add("LZC_BACKGROUNDNOISE");
         keywords.Add(Options.DepthCurve switch
         {
-            Options.DepthCurveOptions.EXTREME => "LZC_EXTREMEDEPTH",
-            Options.DepthCurveOptions.PARABOLIC => "LZC_PARABOLICDEPTH",
             Options.DepthCurveOptions.INVERSE => "LZC_INVERSEDEPTH",
+            Options.DepthCurveOptions.PARABOLIC => "LZC_PARABOLICDEPTH",
+            Options.DepthCurveOptions.CUBIC => "LZC_EXTREMEDEPTH",
+            Options.DepthCurveOptions.REALAPPROX => "LZC_APPROXREALDEPTH",
             Options.DepthCurveOptions.REALISTIC => "LZC_REALISTICDEPTH",
             _ => "LZC_LINEARDEPTH"
         });
-        if (Options.SuperAccurateThickness) keywords.Add("LZC_SUPERACCURATETHICKNESS");
+        if (Options.SuperAccurateThickness && (Options.LimitProjection || Options.TwoLayers)
+            && Options.DepthCurve != Options.DepthCurveOptions.LINEAR && Options.DepthCurve != Options.DepthCurveOptions.PARABOLIC)
+            keywords.Add("LZC_SUPERACCURATETHICKNESS");
 
         TrueParallaxFShader.keywords = keywords.ToArray();
 
