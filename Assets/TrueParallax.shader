@@ -56,7 +56,10 @@ CGPROGRAM
 
 #pragma multi_compile_local _ LZC_PROCESSLAYER2
 #pragma multi_compile_local _ LZC_LIMITPROJECTION
-#pragma multi_compile_local LZC_LINEARDEPTH LZC_PARABOLICDEPTH LZC_EXTREMEDEPTH LZC_INVERSEDEPTH
+#if LZC_LIMITPROJECTION || LZC_PROCESSLAYER2
+	#pragma multi_compile_local _ LZC_SUPERACCURATETHICKNESS
+#endif
+#pragma multi_compile_local LZC_LINEARDEPTH LZC_PARABOLICDEPTH LZC_EXTREMEDEPTH LZC_INVERSEDEPTH LZC_APPROXREALDEPTH LZC_REALISTICDEPTH
 #if LZC_PROCESSLAYER2
 	#pragma multi_compile_local _ LZC_BUILDCREATUREBACKGROUND
 	#pragma multi_compile _ COMBINEDLEVEL
@@ -95,13 +98,25 @@ uniform int LZC_DefaultLevelThickness;
 #endif
 
 
-inline half depthCurve(half d) {
+#if LZC_REALISTICDEPTH
+uniform float LZC_Warp;
+static float realisticDepthMod = 6 * abs(LZC_Warp) / _screenSize.x;
+#elif LZC_APPROXREALDEPTH
+uniform float LZC_Warp;
+static float absWarp = 0.001f*abs(LZC_Warp);
+inline float depLerpCurve(float l) { return l*(2-l); }
+#endif
+inline float depthCurve(float d) {
 #if LZC_PARABOLICDEPTH
 	return d*(2 - d); //simple parabola
 #elif LZC_EXTREMEDEPTH
 	return d*(d*(d - 3) + 3); //much more severe, cubic curve
 #elif LZC_INVERSEDEPTH
 	return d*d; //squared
+#elif LZC_APPROXREALDEPTH
+	return lerp(d, d*(d*(d - 3) + 3), depLerpCurve(absWarp)); //lerp between LINEAR and EXTREME based on Warp = approximation of REALISTIC / depthCurve(1)
+#elif LZC_REALISTICDEPTH
+	return 1 - 1.0f / (d * realisticDepthMod + 1); //accurate depth projection
 #else
 	return d; //linear
 #endif
@@ -197,8 +212,11 @@ void frag (v2f i)
 		}
 	}
 
-	//float r = d / 255.0f;
+#if LZC_SUPERACCURATETHICKNESS
+	float r = d / 255.0f;
+#else
 	float r = (d >= 30) ? 1 : depthCurve(d / 30.0f) * LZC_Layer30Depth; //store the depth AFTER the depthCurve instead, as a small optimization
+#endif
 
 
 #if LZC_PROCESSLAYER2
@@ -336,8 +354,11 @@ CGPROGRAM
 #pragma multi_compile_local _ LZC_DYNAMICOPTIMIZATION
 #pragma multi_compile_local _ LZC_PROCESSLAYER2
 #pragma multi_compile_local _ LZC_BACKGROUNDNOISE
-#if LZC_PROCESSLAYER2
-	#pragma multi_compile_local LZC_LINEARDEPTH LZC_PARABOLICDEPTH LZC_EXTREMEDEPTH LZC_INVERSEDEPTH
+#if LZC_LIMITPROJECTION || LZC_PROCESSLAYER2
+	#pragma multi_compile_local _ LZC_SUPERACCURATETHICKNESS
+#endif
+#if LZC_PROCESSLAYER2 || LZC_SUPERACCURATETHICKNESS
+	#pragma multi_compile_local LZC_LINEARDEPTH LZC_PARABOLICDEPTH LZC_EXTREMEDEPTH LZC_INVERSEDEPTH LZC_APPROXREALDEPTH LZC_REALISTICDEPTH
 	#include "DirectionDefinitions.cginc"
 #endif
 
@@ -386,6 +407,43 @@ uniform float LZC_BackgroundNoise;
 uniform float LZC_MaxProjection;
 #endif
 
+#if LZC_REALISTICDEPTH
+static float realisticDepthMod = 6 * abs(LZC_Warp) / _screenSize.x;
+#elif LZC_APPROXREALDEPTH
+static float absWarp = 0.001f*abs(LZC_Warp);
+inline float depLerpCurve(float l) { return l*(2-l); }
+#endif
+inline float depthCurve(float d) {
+#if LZC_PARABOLICDEPTH
+	return d*(2 - d); //simple parabola
+#elif LZC_EXTREMEDEPTH
+	return d*(d*(d - 3) + 3); //much more severe, cubic curve
+#elif LZC_INVERSEDEPTH
+	return d*d; //squared
+#elif LZC_APPROXREALDEPTH
+	return lerp(d, d*(d*(d - 3) + 3), depLerpCurve(absWarp)); //lerp between LINEAR and EXTREME based on Warp = approximation of REALISTIC / depthCurve(1)
+#elif LZC_REALISTICDEPTH
+	return 1 - 1.0f / (d * realisticDepthMod + 1); //accurate depth projection
+#else
+	return d; //linear
+#endif
+}
+
+inline float highFreqNoise(float2 uv, float2 scale) {
+	float2 nuv = frac(uv * scale);
+	float2 rawLerpFac = 2 * (nuv - float2(0.5f, 0.5f));
+	rawLerpFac = rawLerpFac * rawLerpFac; //^2 (also abs)
+	float lerpFac = max(rawLerpFac.x, rawLerpFac.y);
+	lerpFac = lerpFac * lerpFac; //^4
+	lerpFac = lerpFac * lerpFac; //^6
+	lerpFac = lerpFac * lerpFac; //^8
+	lerpFac = lerpFac * lerpFac; //^10
+	float n1 = tex2Dlod(_NoiseTex, float4(nuv, 0, 0)).x;
+	float n2 = tex2Dlod(_NoiseTex, float4(nuv + _NoiseTex_TexelSize.xy * 2 * (scale + float2(1,1)), 0, 0)).x; //10 pixel buffer when scale=5
+	return lerp(n1, n2, lerpFac * 0.5f);
+}
+
+
 struct v2f {
     float4  pos : SV_POSITION;
     float2  uv : TEXCOORD0;
@@ -407,33 +465,6 @@ v2f vert (appdata_full v)
 	o.posCamDiff = lerp(float2(0.5f,0.5f), o.uv, LZC_ConvergenceScale) - LZC_CamPos;
     return o;
 }
-
-inline half depthCurve(half d) {
-#if LZC_PARABOLICDEPTH
-	return d*(2 - d); //simple parabola
-#elif LZC_EXTREMEDEPTH
-	return d*(d*(d - 3) + 3); //much more severe, cubic curve
-#elif LZC_INVERSEDEPTH
-	return d*d; //squared
-#else
-	return d; //linear
-#endif
-}
-
-inline float highFreqNoise(float2 uv, float2 scale) {
-	float2 nuv = frac(uv * scale);
-	float2 rawLerpFac = 2 * (nuv - float2(0.5f, 0.5f));
-	rawLerpFac = rawLerpFac * rawLerpFac; //^2 (also abs)
-	float lerpFac = max(rawLerpFac.x, rawLerpFac.y);
-	lerpFac = lerpFac * lerpFac; //^4
-	lerpFac = lerpFac * lerpFac; //^6
-	lerpFac = lerpFac * lerpFac; //^8
-	lerpFac = lerpFac * lerpFac; //^10
-	float n1 = tex2Dlod(_NoiseTex, float4(nuv, 0, 0)).x;
-	float n2 = tex2Dlod(_NoiseTex, float4(nuv + _NoiseTex_TexelSize.xy * 2 * (scale + float2(1,1)), 0, 0)).x; //10 pixel buffer when scale=5
-	return lerp(n1, n2, lerpFac * 0.5f);
-}
-
 
 half4 frag (v2f i) : SV_Target
 {
@@ -508,6 +539,12 @@ half4 frag (v2f i) : SV_Target
 #else
 		float newDepth = _LZC_LevelTex[checkPos];
 #endif
+#if LZC_SUPERACCURATETHICKNESS
+		newDepth = newDepth * 255.0f / 30.0f;
+		float realDepth = newDepth; //keep track of the value before the curve
+		newDepth = newDepth >= 1 ? 1 : depthCurve(newDepth) * LZC_Layer30Depth;
+#endif
+
 		float xDistance = percentage - newDepth;
 
 #if LZC_BACKGROUNDNOISE && (LZC_LIMITPROJECTION || LZC_PROCESSLAYER2)
@@ -520,7 +557,12 @@ half4 frag (v2f i) : SV_Target
 			//THIS IS GETTING CRAZY
 
 		if (xDistance >= 0) {
+	#if LZC_SUPERACCURATETHICKNESS
+			uint tempThick = uint(lev.y * 255.99f) & 31;
+			float thickness = tempThick >= 30 ? 1.1f : depthCurve(realDepth + tempThick/30.0f) * LZC_Layer30Depth - newDepth;
+	#else
 			float thickness = (uint(lev.y * 255.99f) & 31) * thicknessMod;
+	#endif
 	#if LZC_DYNAMICOPTIMIZATION
 			thickness = max(thickness, minThickness);
 	#endif
@@ -540,7 +582,11 @@ half4 frag (v2f i) : SV_Target
 					: depthCurve(l2DepInt / 30.0f) * LZC_Layer30Depth;
 				xDistance = percentage - newDepth;
 				if (xDistance >= 0) {
+	#if LZC_SUPERACCURATETHICKNESS
+					if (percentage < depthCurve(l2DepInt / 30.0f + maxXDist) * LZC_Layer30Depth) {
+	#else
 					if (xDistance < maxXDist) {
+	#endif
 						bestGrabPos = checkPos;
 						bestLayer = 2;
 	#if LZC_BACKGROUNDNOISE
@@ -573,7 +619,12 @@ half4 frag (v2f i) : SV_Target
 			//BASICALLY LIMITPROJECTION EXCEPT IT USES THICKNESS INSTEAD OF MAXXDIST
 
 		if (xDistance >= 0) {
+	#if LZC_SUPERACCURATETHICKNESS && !LZC_LINEARDEPTH && !LZC_PARABOLICDEPTH
+			uint tempThick = uint(lev.y * 255.99f) & 31;
+			float thickness = tempThick >= 30 ? 1.1f : depthCurve(realDepth + tempThick/30.0f) * LZC_Layer30Depth - newDepth;
+	#else
 			float thickness = (uint(lev.y * 255.99f) & 31) * thicknessMod;
+	#endif
 	#if LZC_DYNAMICOPTIMIZATION
 			thickness = max(thickness, minThickness);
 	#endif
@@ -614,7 +665,11 @@ half4 frag (v2f i) : SV_Target
 			//HAS A LITTLE EXTRA LOGIC
 
 		if (xDistance >= 0) {
+	#if LZC_SUPERACCURATETHICKNESS && !LZC_LINEARDEPTH && !LZC_PARABOLICDEPTH
+			if (percentage < depthCurve(realDepth + maxXDist) * LZC_Layer30Depth) {
+	#else
 			if (xDistance < maxXDist) {
+	#endif
 				bestGrabPos = checkPos;
 	#if LZC_BACKGROUNDNOISE
 				bestXDist = xDistance;

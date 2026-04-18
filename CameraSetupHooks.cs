@@ -116,10 +116,10 @@ public partial class Plugin
         mat.SetFloat("LZC_ConvergenceScale", Options.ConvergenceScale);
         mat.SetVector("LZC_GeneralScale", new(1.0f / Options.GeneralScale, 1.0f / Options.GeneralScale));
         mat.SetFloat("LZC_PivotDepth", Options.PivotDepth);
-        mat.SetFloat("LZC_Layer30Depth", data.activeBackgroundScene ? 1.0f / Options.BackgroundDepth : 1);
+        mat.SetFloat("LZC_Layer30Depth", data.currentLayer30Depth);
         mat.SetFloat("LZC_AntiAliasingFac", Options.AntiAliasing);
         mat.SetFloat("LZC_BackgroundNoise", Options.BackgroundNoise);
-        mat.SetFloat("LZC_MaxProjection", Options.MaxProjection);
+        mat.SetFloat("LZC_MaxProjection", data.currentMaxProjection);
 
         mat.SetInt("LZC_CreatureBackgroundTests", Options.CreatureBackgroundTests);
         mat.SetInt("LZC_DefaultLevelThickness", Options.DefaultLevelThickness);

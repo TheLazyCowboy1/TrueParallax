@@ -28,6 +28,11 @@ public partial class CameraData
         }
     }
     public bool activeBackgroundScene = true; //only updated if Options.BackDepthForSceneOnly == true
+    public float currentLayer30Depth => activeBackgroundScene ? 1.0f / Options.BackgroundDepth : 1;
+    public float currentMaxProjection => Options.MaxProjection *
+        ((Options.SuperAccurateThickness && (Options.TwoLayers || Options.LimitProjection) && !(Options.DepthCurve == Options.DepthCurveOptions.LINEAR || Options.DepthCurve == Options.DepthCurveOptions.PARABOLIC))
+        ? 1
+        : currentLayer30Depth);
 
     public FSprite sprite;
     public bool needSetConstants;

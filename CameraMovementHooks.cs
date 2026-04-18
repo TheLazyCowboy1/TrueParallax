@@ -159,6 +159,7 @@ public partial class Plugin
                 if (mat != null && old != data.activeBackgroundScene) //if it has changed
                 {
                     mat.SetFloat("LZC_Layer30Depth", data.activeBackgroundScene ? 1.0f / Options.BackgroundDepth : 1);
+                    mat.SetFloat("LZC_MaxProjection", data.currentMaxProjection);
                     Log("Updated activeBackgroundScene for camera#" + self.cameraNumber, 2);
                 }
             }
