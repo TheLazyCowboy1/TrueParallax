@@ -5,16 +5,24 @@ namespace TrueParallax;
 
 public partial class CameraData
 {
-    public Vector2 CalculateWarp(Vector2 pos, float depth = 5)
+    public Vector2 CalcPosCamDiff(Vector2 pos)
     {
-        Vector2 posCamDiff = Vector2.LerpUnclamped(new(0.5f, 0.5f), pos, Options.ConvergenceScale) - this._camPos;
+        //pos = Vector2.LerpUnclamped(this._camPos, pos, 1.0f / Options.GeneralScale); //GeneralScale is not relevant for posCamDiff
+        float absBackScale = Mathf.Abs(Options.ConvergenceScale);
+        Vector2 posCamDiff = (Vector2.LerpUnclamped(new(0.5f, 0.5f), pos, Options.ConvergenceScale) - this._camPos) / (absBackScale + 0.5f * (1 - absBackScale));
         if (!Options.DynamicOptimization)
         {
             posCamDiff.x = Mathf.Clamp(posCamDiff.x, -Options.MaxWarp, Options.MaxWarp);
-            posCamDiff.y = Mathf.Clamp(posCamDiff.y, -Options.MaxWarp, Options.MaxWarp);
+            Vector2 sSize = Custom.rainWorld.screenSize;
+            float maxWarpY = Options.MaxWarp * sSize.x / sSize.y; //MaxWarp.y is increased due to aspect ratio
+            posCamDiff.y = Mathf.Clamp(posCamDiff.y, -maxWarpY, maxWarpY);
         }
+        return posCamDiff;
+    }
+    public Vector2 CalculateWarp(Vector2 pos, float depth = 5)
+    {
         float d = depth >= 30 ? 1 : DepthCurve(depth / 30.0f) / Options.BackgroundDepth;
-        return this.currentWarp * (Options.PivotDepth - d) * posCamDiff; //1 - d, because d=1 => no warp, but d=0 => full warp
+        return this.currentWarp * (Options.PivotDepth - d) * CalcPosCamDiff(pos); //1 - d, because d=1 => no warp, but d=0 => full warp
     }
 
     public float DepthCurve(float d) => Options.DepthCurve switch
@@ -26,4 +34,12 @@ public partial class CameraData
             Options.DepthCurveOptions.REALISTIC => 1 - 1.0f / (6*d * Mathf.Abs(currentWarp)/Custom.rainWorld.screenSize.x + 1),
             _ => d //LINEAR
         };
+
+    public float CalcMaxUsedWarp()
+    {
+        Vector2 maxDiff = CalcPosCamDiff(new(this._camPos.x > 0.5f ? 0 : 1, this._camPos.y > 0.5f ? 0 : 1)); //simply use far corner of screen for calculations
+        Vector2 sSize = Custom.rainWorld.screenSize;
+        maxDiff *= new Vector2(1, sSize.y / sSize.x);
+        return currentWarp * Mathf.Max(Mathf.Abs(maxDiff.x), Mathf.Abs(maxDiff.y));
+    }
 }

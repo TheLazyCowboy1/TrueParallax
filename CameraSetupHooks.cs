@@ -100,18 +100,28 @@ public partial class Plugin
     }
 
     //Sets constants for TrueParallax.shader
-    private static void SetCameraConstants(CameraData data)
+    public static void SetWarpConstants(CameraData data)
     {
         Material mat = data.SpriteMaterial;
-        mat.SetFloat(ShadPropWarp, Options.Warp);
 
-        int testNum = Mathf.Max(2, (int)Mathf.Ceil(Mathf.Abs(Options.Warp) * Options.MaxWarp / Options.OptimizationFac));
+        mat.SetFloat(ShadPropWarp, data.currentWarp);
+
+        float maxUsedWarp = Options.IsActiveCenterOptimization ? data.CalcMaxUsedWarp() : data.currentWarp;
+        int testNum = Mathf.Max(2, (int)Mathf.Ceil(Mathf.Abs(maxUsedWarp) / Options.OptimizationFac));
+
         mat.SetInt(ShadPropTestNum, testNum);
         mat.SetFloat(ShadPropStepSize, 1.0f / testNum);
-        Vector2 sSize = Custom.rainWorld.screenSize;
-        mat.SetVector(ShadPropMoveStepScale, Options.Warp / testNum * sSize / sSize.x);
 
-        //mat.SetFloat("LZC_MaxWarp", Options.MaxWarp);
+        Vector2 sSize = Custom.rainWorld.screenSize;
+        mat.SetVector(ShadPropMoveStepScale, data.currentWarp / testNum * new Vector2(1, sSize.y / sSize.x));
+    }
+    private static void SetCameraConstants(CameraData data)
+    {
+        SetWarpConstants(data);
+
+        Material mat = data.SpriteMaterial;
+
+        Vector2 sSize = Custom.rainWorld.screenSize;
         mat.SetVector("LZC_MaxWarp", Options.MaxWarp * new Vector2(1, sSize.x / sSize.y)); //increase MaxWarp.y due to aspect ratio
         mat.SetFloat("LZC_ConvergenceScale", Options.ConvergenceScale);
         mat.SetVector("LZC_GeneralScale", new(1.0f / Options.GeneralScale, 1.0f / Options.GeneralScale));

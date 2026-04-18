@@ -90,8 +90,13 @@ public class Options : AutoConfigOptions
 
     [Config(OPTIMIZATION, "Optimization", "Reduces processing costs, at the risk of visual artefacts due to \"skipping over\" pixels.\nRecommended between 1 and 2. A good compromise is 1.5."), LimitRange(0.25f, 4)]
     public static float OptimizationFac = 1;
-    [Config(OPTIMIZATION, "Dynamic Optimization", "Reduces processing costs for pixels closer to the camera (by about 50% on average), but can cause some minor visual artefacts (serrated edges, pixelated backgrounds).\nRecommended to EITHER set Optimization to 1.5, OR enable this and use Max Warp.")]
+
+    [Config(OPTIMIZATION, "Dynamic Optimization", "Reduces processing costs (by about 50% on average) for pixels closer to the camera, but can cause some minor visual artefacts (serrated edges, pixelated backgrounds).\nRecommended to EITHER set Optimization to 1.5, OR enable this and use Max Warp.")]
     public static bool DynamicOptimization = false;
+    [Config(OPTIMIZATION, "Center Optimization", "Reduces processing costs (by about 33% on average) when the camera is closer to the center of the screen, but can cause some foreground object to wiggle slightly.\nRecommended as a less aggressive alternative to Dynamic Optimization. Disable if you have both motion-sickness and high frame-rates.")]
+    public static bool CenterOptimization = false;
+    public static bool IsActiveCenterOptimization => CenterOptimization && !DynamicOptimization;
+
     [Config(OPTIMIZATION, "Max Warp", "Caps the strength of the parallax effect, only affecting the further parts of the screen. This can significantly improve performance.\nIF using Dynamic Optimization, recommended between 0.5 and 0.8. OTHERWISE, keep above 0.8."), LimitRange(0, 1)]
     public static float MaxWarp = 1;
 
@@ -102,12 +107,13 @@ public class Options : AutoConfigOptions
     [Config(ADVANCED, "Anti-Aliasing", "Attempts to break up straight lines that are noticable when moving the camera slowly. (Not really anti-aliasing). Has a minimal effect when the Effect Strength is high.\nRecommended below 1. May be useful when Dynamic Optimization is enabled."), LimitRange(0, 10)]
     public static float AntiAliasing = 0.1f;
 
-    [Config(ADVANCED, "Super Accurate Thickness", "Ensures that the depth curve applies properly to geometry thickness. Adds additional performance cost for a very tiny visual improvement. Does not work for LINEAR or PARABOLIC.\nNOT recommended: The improvement is not worth the cost. This is most useful with the REALISTIC depth curve, but it is also very expensive with that curve.", rightSide = true)]
-    public static bool SuperAccurateThickness = false;
-    public static bool IsActiveSuperAccurateThickness => SuperAccurateThickness && (TwoLayers || LimitProjection) && DepthCurve != DepthCurveOptions.LINEAR;
     public enum DepthCurveOptions { INVERSE, LINEAR, PARABOLIC, CUBIC, REALAPPROX, REALISTIC };
     [Config(ADVANCED, "Depth Curve", "Applies a curve to the room depth. INVERSE = mid-ground looks closer; PARABOLIC, CUBIC, REALAPPROX = mid-ground appears farther; REALISTIC = mathematically accurate proportions.\nLINEAR or PARABOLIC recommended. REALAPPROX is NOT recommended for high or low Effect Strengths. REALISTIC is NOT recommended due to being extremely expensive.", width = 120, spaceAfter = 100)]
     public static DepthCurveOptions DepthCurve = DepthCurveOptions.LINEAR;
+
+    [Config(ADVANCED, "Super Accurate Thickness", "Ensures that the depth curve applies properly to geometry thickness. Adds additional performance cost for a very tiny visual improvement. Does not work for LINEAR or PARABOLIC.\nNOT recommended: The improvement is not worth the cost. This is most useful with the REALISTIC depth curve, but it is also very expensive with that curve.", rightSide = true)]
+    public static bool SuperAccurateThickness = false;
+    public static bool IsActiveSuperAccurateThickness => SuperAccurateThickness && (TwoLayers || LimitProjection) && DepthCurve != DepthCurveOptions.LINEAR;
 
     [Config(ADVANCED, "Background Depth", "How far away the background (the sky, basically) appears relative to the room geometry. Literally decreases the Effect Strength for everything except the background.\nRecommended at 1, because the background is usually a solid color, making this just a waste of resources (although For Scenes Only helps with this).", spaceBefore = 40), LimitRange(1, 2)]
     public static float BackgroundDepth = 1; //1.0 / Layer30Depth
@@ -129,6 +135,7 @@ public class Options : AutoConfigOptions
     {
         private readonly record struct MyBools {
             public readonly bool dynamicOptimization = !Options.DynamicOptimization,
+                centerOptimization = !Options.DynamicOptimization && !Options.CenterOptimization,
                 secondLayer = Options.TwoLayers,
                 limitProjection = Options.LimitProjection,
                 backgroundNoise = Options.BackgroundNoise > 0,
@@ -151,6 +158,7 @@ public class Options : AutoConfigOptions
                 "Thus, Effect Strength is the primary factor for performance cost, and Max Warp and Optimization are used to directly reduce it.\n" +
                 "\nOther optimizations:"
                 + (myBools.dynamicOptimization ? "\n* Enabling Dynamic Optimization improves performance by roughly 50%." : "")
+                + (myBools.centerOptimization ? "\n* Enabling Center Optimization improves performance by roughly 33%." : "")
                 + (myBools.secondLayer ? "\n* Disabling Second Layer could improve performance by 50-100%, because it is highly expensive." : "")
                 + (myBools.limitProjection ? "\n* Disabling Limit Projection could improve performance by up to 50%; but I recommend keeping it on anyway." : "")
                 + (myBools.backgroundNoise ? "\n* Setting Background Noise to 0 should improve performance by perhaps 10% (exact improvement is untested)." : "")
@@ -202,6 +210,7 @@ public class Options : AutoConfigOptions
             UIConfigs[nameof(CameraMoveSpeed)].greyedOut = AlwaysCentered;
             UIConfigs[nameof(CameraStopDistance)].greyedOut = AlwaysCentered;
             UIConfigs[nameof(BackDepthForScenesOnly)].greyedOut = BackgroundDepth <= 1;
+            UIConfigs[nameof(CenterOptimization)].greyedOut = DynamicOptimization;
             UIConfigs[nameof(SuperAccurateThickness)].greyedOut = DepthCurve == DepthCurveOptions.LINEAR || !(Options.LimitProjection || Options.TwoLayers);
 
             OpTab layer2 = Tabs.FirstOrDefault(t => t.name == LAYER2);

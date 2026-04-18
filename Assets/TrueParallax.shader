@@ -108,7 +108,7 @@ inline float depLerpCurve(float l) { return l*(2-l); }
 #endif
 inline float depthCurve(float d) {
 #if LZC_PARABOLICDEPTH
-	return d*(2 - d); //simple parabola
+	return d*(1.8f - 0.8f*d); //simple parabola
 #elif LZC_EXTREMEDEPTH
 	return d*(d*(d - 3) + 3); //much more severe, cubic curve
 #elif LZC_INVERSEDEPTH
@@ -415,7 +415,10 @@ inline float depLerpCurve(float l) { return l*(2-l); }
 #endif
 inline float depthCurve(float d) {
 #if LZC_PARABOLICDEPTH
-	return d*(2 - d); //simple parabola
+	#if LZC_SUPERACCURATETHICKNESS
+	if (d >= 1.125f) { return 1.0125f; } //don't let depth curve go back down
+	#endif
+	return d*(1.8f - 0.8f*d); //simple parabola
 #elif LZC_EXTREMEDEPTH
 	return d*(d*(d - 3) + 3); //much more severe, cubic curve
 #elif LZC_INVERSEDEPTH
@@ -446,10 +449,10 @@ inline float highFreqNoise(float2 uv, float2 scale) {
 
 struct v2f {
     float4  pos : SV_POSITION;
-    float2  uv : TEXCOORD0;
-	float2  nuv : TEXCOORD1;
-	float2  suv : TEXCOORD2;
-	float2  posCamDiff : TEXCOORD3;
+    //float2  uv : TEXCOORD0;
+	float2  nuv : TEXCOORD0;
+	float2  suv : TEXCOORD1;
+	float2  posCamDiff : TEXCOORD2;
 };
 
 float4 _MainTex_ST;
@@ -458,11 +461,14 @@ v2f vert (appdata_full v)
 {
     v2f o;
     o.pos = UnityObjectToClipPos (v.vertex);
-    o.uv = TRANSFORM_TEX (v.texcoord, _MainTex);
-	o.uv = float2(0.5f, 0.5f) + (o.uv - float2(0.5f, 0.5f)) * LZC_GeneralScale; //scale it just for fun
-	o.nuv = o.uv * float2(16, 9);
-	o.suv = o.uv * _screenSize;
-	o.posCamDiff = lerp(float2(0.5f,0.5f), o.uv, LZC_ConvergenceScale) - LZC_CamPos;
+    //o.uv = TRANSFORM_TEX (v.texcoord, _MainTex);
+	float2 realUV = TRANSFORM_TEX (v.texcoord, _MainTex);
+	float2 uv = lerp(LZC_CamPos, realUV, LZC_GeneralScale);
+	o.nuv = uv * float2(16, 9);
+	o.suv = uv * _screenSize;
+	float absBackScale = abs(LZC_ConvergenceScale); //prevents ridiculous results when BackgroundScale is < 0, especially: -1 caused division by 0
+		//GeneralScale does not affect posCamDiff, so use realUV for it as a simplification
+	o.posCamDiff = (lerp(float2(0.5f,0.5f), realUV, LZC_ConvergenceScale) - LZC_CamPos) / (absBackScale + 0.5f * (1 - absBackScale));
     return o;
 }
 
@@ -619,7 +625,7 @@ half4 frag (v2f i) : SV_Target
 			//BASICALLY LIMITPROJECTION EXCEPT IT USES THICKNESS INSTEAD OF MAXXDIST
 
 		if (xDistance >= 0) {
-	#if LZC_SUPERACCURATETHICKNESS && !LZC_LINEARDEPTH && !LZC_PARABOLICDEPTH
+	#if LZC_SUPERACCURATETHICKNESS
 			uint tempThick = uint(lev.y * 255.99f) & 31;
 			float thickness = tempThick >= 30 ? 1.1f : depthCurve(realDepth + tempThick/30.0f) * LZC_Layer30Depth - newDepth;
 	#else
@@ -665,7 +671,7 @@ half4 frag (v2f i) : SV_Target
 			//HAS A LITTLE EXTRA LOGIC
 
 		if (xDistance >= 0) {
-	#if LZC_SUPERACCURATETHICKNESS && !LZC_LINEARDEPTH && !LZC_PARABOLICDEPTH
+	#if LZC_SUPERACCURATETHICKNESS
 			if (percentage < depthCurve(realDepth + maxXDist) * LZC_Layer30Depth) {
 	#else
 			if (xDistance < maxXDist) {
