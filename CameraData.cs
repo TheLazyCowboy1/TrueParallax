@@ -12,6 +12,7 @@ public partial class CameraData
     public Vector2 CamPos { get => _camPos; set { lastCamPos = _camPos; posDirty = true; _camPos = value; } }
 
     public Vector2 critFollowOffset = new(0, 0);
+    public Vector2 mouseOffset = new(0, 0);
 
     public bool posDirty = true;
     public float currentWarp = Options.Warp;
