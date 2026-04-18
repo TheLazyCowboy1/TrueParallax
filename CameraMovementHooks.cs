@@ -104,6 +104,8 @@ public partial class Plugin
                         //pos.y += strength * ((mouseY > 0 ? 1f : 0f) - pos.y);
                         data.mouseOffset.y += Mathf.Clamp(mouseY, -2, 2) * moveMod * Options.CameraMoveSpeed;
                     }
+
+                    pos += data.mouseOffset;
                 }
                 catch { }
             }
