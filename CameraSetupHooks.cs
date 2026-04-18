@@ -95,6 +95,8 @@ public partial class Plugin
         ThicknessMapMaterial.SetFloat("LZC_ProjectionMod", Options.ThicknessMod);
         ThicknessMapMaterial.SetFloat("LZC_MinObjectDepth", Options.MinObjectThickness);
         ThicknessMapMaterial.SetFloat("LZC_MaxDepDiff", Options.MaxDepthDifference);
+
+        Log("Set shader keywords: " + string.Join(", ", TrueParallaxFShader.keywords), 2);
     }
 
     //Sets constants for TrueParallax.shader
