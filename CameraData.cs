@@ -7,6 +7,8 @@ public partial class CameraData
 {
     public static ResizableArray<CameraData> list = new(2);
 
+    public RoomCamera camera;
+
     public Vector2 lastCamPos;
     private Vector2 _camPos;
     public Vector2 CamPos { get => _camPos; set { lastCamPos = _camPos; posDirty = true; _camPos = value; } }
@@ -29,21 +31,20 @@ public partial class CameraData
         }
     }
     public bool activeBackgroundScene = true; //only updated if Options.BackDepthForSceneOnly == true
-    public float currentLayer30Depth => activeBackgroundScene ? 1.0f / Options.BackgroundDepth : 1;
-    public float currentMaxProjection => Options.MaxProjection * (Options.IsActiveSuperAccurateThickness ? 1 : currentLayer30Depth);
+    public float CurrentLayer30Depth => activeBackgroundScene ? 1.0f / Options.BackgroundDepth : 1;
+    public float CurrentMaxProjection => Options.MaxProjection * (Options.IsActiveSuperAccurateThickness ? 1 : CurrentLayer30Depth);
 
     public FSprite sprite;
     public bool needSetConstants;
     public LayerTexCache layer2Textures;
-    public int idx;
 
     public Material SpriteMaterial => sprite?._renderLayer?._material;
 
     public CameraData(RoomCamera camera)
     {
+        this.camera = camera;
         layer2Textures = new(0, Plugin.ThicknessMapMaterial, camera);
-        idx = camera.cameraNumber;
-        list.Add(idx, this);
+        list.Add(camera.cameraNumber, this);
     }
 
     public void Clear()
@@ -51,7 +52,8 @@ public partial class CameraData
         sprite = null;
         layer2Textures.Clear();
         layer2Textures = null;
-        list.Remove(idx);
+        list.Remove(camera.cameraNumber);
+        camera = null;
     }
 }
 

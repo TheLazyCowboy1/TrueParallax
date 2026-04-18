@@ -94,7 +94,7 @@ public class Options : AutoConfigOptions
     [Config(OPTIMIZATION, "Dynamic Optimization", "Reduces processing costs (by about 50% on average) for pixels closer to the camera, but can cause some minor visual artefacts (serrated edges, pixelated backgrounds).\nRecommended to EITHER set Optimization to 1.5, OR enable this and use Max Warp.")]
     public static bool DynamicOptimization = false;
     [Config(OPTIMIZATION, "Center Optimization", "Reduces processing costs (by about 33% on average) when the camera is closer to the center of the screen, but can cause some foreground object to wiggle slightly.\nRecommended as a less aggressive alternative to Dynamic Optimization. Disable if you have both motion-sickness and high frame-rates.")]
-    public static bool CenterOptimization = false;
+    public static bool CenterOptimization = true;
     public static bool IsActiveCenterOptimization => CenterOptimization && !DynamicOptimization;
 
     [Config(OPTIMIZATION, "Max Warp", "Caps the strength of the parallax effect, only affecting the further parts of the screen. This can significantly improve performance.\nIF using Dynamic Optimization, recommended between 0.5 and 0.8. OTHERWISE, keep above 0.8."), LimitRange(0, 1)]
@@ -106,6 +106,11 @@ public class Options : AutoConfigOptions
     public static float BackgroundNoise = 0.5f;
     [Config(ADVANCED, "Anti-Aliasing", "Attempts to break up straight lines that are noticable when moving the camera slowly. (Not really anti-aliasing). Has a minimal effect when the Effect Strength is high.\nRecommended below 1. May be useful when Dynamic Optimization is enabled."), LimitRange(0, 10)]
     public static float AntiAliasing = 0.1f;
+
+    [Config(ADVANCED, "Level Heat/Melt", "Attempts to re-implement the distortion added by the LevelHeat and VoidMelt Room Effects.")]
+    public static bool LevelHeat = true;
+    [Config(ADVANCED, "Heat Distortion Multiplier", "Multiplies the strength of the heat distortion. Just for fun.\nRecommended at 1, because that's the proper number.", rightSide = true), LimitRange(-5, 5)]
+    public static float LevelHeatFac = 1;
 
     public enum DepthCurveOptions { INVERSE, LINEAR, PARABOLIC, CUBIC, REALAPPROX, REALISTIC };
     [Config(ADVANCED, "Depth Curve", "Applies a curve to the room depth. INVERSE = mid-ground looks closer; PARABOLIC, CUBIC, REALAPPROX = mid-ground appears farther; REALISTIC = mathematically accurate proportions.\nLINEAR or PARABOLIC recommended. REALAPPROX is NOT recommended for high or low Effect Strengths. REALISTIC is NOT recommended due to being extremely expensive.", width = 120, spaceAfter = 100)]

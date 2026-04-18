@@ -6,17 +6,19 @@ namespace TrueParallax;
 public partial class Plugin
 {
     #region Hooks
-    //WetTerrain hook
+    //WetTerrain hook + LevelHeat
     private void RoomCamera_MoveCamera_Room_int(On.RoomCamera.orig_MoveCamera_Room_int orig, RoomCamera self, Room newRoom, int camPos)
     {
         orig(self, newRoom, camPos);
         DisableWetTerrain();
+        SetupCameraLevelHeat(self);
     }
-    //WetTerrain hook
+    //WetTerrain hook + LevelHeat
     private void RoomCamera_WarpMoveCameraActual(On.RoomCamera.orig_WarpMoveCameraActual orig, RoomCamera self, Room newRoom, int camPos)
     {
         orig(self, newRoom, camPos);
         DisableWetTerrain();
+        SetupCameraLevelHeat(self);
     }
 
     //Move potentially problematic fullScreenEffects to the correct container
@@ -72,6 +74,29 @@ public partial class Plugin
         "Bloom" => false,
         _ => false
     };
+    #endregion
+
+    #region LevelHeat
+    public static void SetupCameraLevelHeat(RoomCamera camera)
+    {
+        if (!Options.LevelHeat)
+            return; //no level heat at all
+        if (!camera.TryGetData(out CameraData data))
+            return; //no camera data somehow
+        Material mat = data.SpriteMaterial;
+        if (mat == null)
+            return; //no material
+
+        string shaderName = camera.levelGraphic.shader.name;
+        bool levelHeat = shaderName == "LevelHeat" || shaderName == "LevelMelt";
+        if (levelHeat)
+        {
+            mat.EnableKeyword("levelheat");
+            mat.SetFloat("LZC_LevelHeatAmount", camera.levelGraphic.alpha * Options.LevelHeatFac);
+        }
+        else
+            mat.DisableKeyword("levelheat");
+    }
     #endregion
 
 }

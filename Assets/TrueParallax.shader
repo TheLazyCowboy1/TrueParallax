@@ -1,4 +1,5 @@
-//Simple parallax shader by LZC
+//Simple parallax shader by TheLazyCowboy1
+//Well, it used to be simple. Then I kept "improving" it. Now it looks like this. Funny how that happens.
 
 Shader "TheLazyCowboy1/TrueParallax"
 {
@@ -24,6 +25,7 @@ Shader "TheLazyCowboy1/TrueParallax"
 		LZC_ProjectionMod ("ProjectionMod", Float) = 0.5
 		LZC_MinObjectDepth ("MinObjectDepth", Float) = 1
 		LZC_MaxDepDiff ("MaxDepDiff", Float) = 1
+		LZC_LevelHeatAmount ("LevelHeatAmount", Float) = 0.5
 	}
 	
 	Category 
@@ -354,6 +356,7 @@ CGPROGRAM
 #pragma multi_compile_local _ LZC_DYNAMICOPTIMIZATION
 #pragma multi_compile_local _ LZC_PROCESSLAYER2
 #pragma multi_compile_local _ LZC_BACKGROUNDNOISE
+#pragma multi_compile_local _ levelheat
 #if LZC_LIMITPROJECTION || LZC_PROCESSLAYER2
 	#pragma multi_compile_local _ LZC_SUPERACCURATETHICKNESS
 #endif
@@ -407,6 +410,11 @@ uniform float LZC_BackgroundNoise;
 uniform float LZC_MaxProjection;
 #endif
 
+#if levelheat
+uniform float _RAIN;
+uniform float LZC_LevelHeatAmount;
+#endif
+
 #if LZC_REALISTICDEPTH
 static float realisticDepthMod = 6 * abs(LZC_Warp) / _screenSize.x;
 #elif LZC_APPROXREALDEPTH
@@ -432,27 +440,15 @@ inline float depthCurve(float d) {
 #endif
 }
 
-inline float highFreqNoise(float2 uv, float2 scale) {
-	float2 nuv = frac(uv * scale);
-	float2 rawLerpFac = 2 * (nuv - float2(0.5f, 0.5f));
-	rawLerpFac = rawLerpFac * rawLerpFac; //^2 (also abs)
-	float lerpFac = max(rawLerpFac.x, rawLerpFac.y);
-	lerpFac = lerpFac * lerpFac; //^4
-	lerpFac = lerpFac * lerpFac; //^6
-	lerpFac = lerpFac * lerpFac; //^8
-	lerpFac = lerpFac * lerpFac; //^10
-	float n1 = tex2Dlod(_NoiseTex, float4(nuv, 0, 0)).x;
-	float n2 = tex2Dlod(_NoiseTex, float4(nuv + _NoiseTex_TexelSize.xy * 2 * (scale + float2(1,1)), 0, 0)).x; //10 pixel buffer when scale=5
-	return lerp(n1, n2, lerpFac * 0.5f);
-}
-
 
 struct v2f {
     float4  pos : SV_POSITION;
-    //float2  uv : TEXCOORD0;
 	float2  nuv : TEXCOORD0;
 	float2  suv : TEXCOORD1;
 	float2  posCamDiff : TEXCOORD2;
+#if levelheat
+    float2  uv : TEXCOORD3;
+#endif
 };
 
 float4 _MainTex_ST;
@@ -469,6 +465,9 @@ v2f vert (appdata_full v)
 	float absBackScale = abs(LZC_ConvergenceScale); //prevents ridiculous results when BackgroundScale is < 0, especially: -1 caused division by 0
 		//GeneralScale does not affect posCamDiff, so use realUV for it as a simplification
 	o.posCamDiff = (lerp(float2(0.5f,0.5f), realUV, LZC_ConvergenceScale) - LZC_CamPos) / (absBackScale + 0.5f * (1 - absBackScale));
+#if levelheat
+	o.uv = uv;
+#endif
     return o;
 }
 
@@ -498,6 +497,18 @@ half4 frag (v2f i) : SV_Target
 	}
 
 	float2 initGrabPos = i.suv - moveStep * (totalTests + noiseOffset) * LZC_PivotDepth; //start at the END and then move BACKWARDS
+
+#if levelheat
+    float heatEffectCol = tex2D(_NoiseTex, half2(i.uv.x, i.uv.y*0.5 - _RAIN*0.123));
+    heatEffectCol = 0.5 + 0.5 * sin(heatEffectCol*3.14 * 8 + i.uv.y*36.231 - _RAIN*2.63);
+    heatEffectCol *= 0.5 + 0.5 * sin(tex2D(_NoiseTex, half2((1.0 - i.uv.x) * 2, i.uv.y*0.5 - _RAIN*0.1862))*3.14 * 8 
+                                           + i.uv.y*50.231 - _RAIN*4.75442);
+    heatEffectCol = 1 - heatEffectCol;
+    heatEffectCol = pow(heatEffectCol, 30);
+
+    //half4 heatTexCol = tex2D(levelTexture, float2(i.uv.x, i.uv.y + lerp(-0.01, 0.02, heatEffectCol)*i.clr.w));
+	initGrabPos.y = initGrabPos.y + _screenSize.y * lerp(-0.01, 0.02, heatEffectCol) * LZC_LevelHeatAmount;
+#endif
 
 #if LZC_DYNAMICOPTIMIZATION
 	float2 absCamDiff = abs(i.posCamDiff);
@@ -785,7 +796,7 @@ half4 frag (v2f i) : SV_Target
 		+ float2(bestXDist, bestXDist) * LZC_Warp*0.3f) //fixed offset based on bestXDist and Warp; *0.3f because I think it'll look better
 		/ _screenSize; //convert from texel coordinates to uv
 
-	float noiseVal2 = highFreqNoise(noisePoint - _spriteRect.xy, float2(8.889f, 5)); //subtract spriteRect.xy so that noise doesn't appear to move when the screen is moving
+	float noiseVal2 = tex2Dlod(_NoiseTex, float4((noisePoint - _spriteRect.xy) * float2(8.889f, 5), 0, 0)); //subtract spriteRect.xy so that noise doesn't appear to move when the screen is moving
 
 	float curBrightness = finalCol.r * 0.299f + finalCol.g * 0.587f + finalCol.b * 0.114f;
 	half add = bestXDist * LZC_BackgroundNoise * (noiseVal2 - 0.5f) * (curBrightness + 0.3f); //more noise if pixel is already brighter
