@@ -216,6 +216,7 @@ public class Options : AutoConfigOptions
             UIConfigs[nameof(CameraStopDistance)].greyedOut = AlwaysCentered;
             UIConfigs[nameof(BackDepthForScenesOnly)].greyedOut = BackgroundDepth <= 1;
             UIConfigs[nameof(CenterOptimization)].greyedOut = DynamicOptimization;
+            UIConfigs[nameof(LevelHeatFac)].greyedOut = !LevelHeat;
             UIConfigs[nameof(SuperAccurateThickness)].greyedOut = DepthCurve == DepthCurveOptions.LINEAR || !(Options.LimitProjection || Options.TwoLayers);
 
             OpTab layer2 = Tabs.FirstOrDefault(t => t.name == LAYER2);
