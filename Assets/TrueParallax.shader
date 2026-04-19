@@ -206,7 +206,7 @@ void frag (v2f i)
 
 		//check creature mask, if applicable
 	bool creatureMask = false;
-	if (d > 5) {
+	if (d >= 5) {
 		float4 c = _PreLevelColorGrab.Load(int3(checkPos, 0));
 		if (c.r > 1.0f / 255.0f || c.g > 0 || c.b > 0) {
 			d = 5;
@@ -310,6 +310,7 @@ void frag (v2f i)
 		}
 	#endif
 		if (lCrit) {
+				//copying ends here
 			rDist = 0;
 			backColInts.x = 0; //set rDist = 0 in packed bits
 		}
@@ -459,12 +460,21 @@ v2f vert (appdata_full v)
     o.pos = UnityObjectToClipPos (v.vertex);
     //o.uv = TRANSFORM_TEX (v.texcoord, _MainTex);
 	float2 realUV = TRANSFORM_TEX (v.texcoord, _MainTex);
-	float2 uv = lerp(LZC_CamPos, realUV, LZC_GeneralScale);
+
+		//Apply LZC_GeneralScale
+	//float2 uv = lerp(LZC_CamPos, realUV, LZC_GeneralScale);
+	float2 maxCenterMove = float2(0.5f, 0.5f) * (float2(1,1) - saturate(LZC_GeneralScale)); //saturate because it goes crazy outside that range
+	float2 centerUV = float2(0.5f, 0.5f) + clamp(LZC_CamPos - float2(0.5f, 0.5f), -maxCenterMove, maxCenterMove);
+	float2 uv = (realUV - float2(0.5f, 0.5f)) * LZC_GeneralScale + centerUV;
+
 	o.nuv = uv * float2(16, 9);
 	o.suv = uv * _screenSize;
+
+		//Apply LZC_ConvergenceScale
 	float absBackScale = abs(LZC_ConvergenceScale); //prevents ridiculous results when BackgroundScale is < 0, especially: -1 caused division by 0
+	o.posCamDiff = (lerp(centerUV, uv, LZC_ConvergenceScale) - LZC_CamPos) / (LZC_GeneralScale * (absBackScale + 0.5f * (1 - absBackScale)));
 		//GeneralScale does not affect posCamDiff, so use realUV for it as a simplification
-	o.posCamDiff = (lerp(float2(0.5f,0.5f), realUV, LZC_ConvergenceScale) - LZC_CamPos) / (absBackScale + 0.5f * (1 - absBackScale));
+	//o.posCamDiff = (lerp(float2(0.5f,0.5f), realUV, LZC_ConvergenceScale) - LZC_CamPos) / (absBackScale + 0.5f * (1 - absBackScale));
 #if levelheat
 	o.uv = uv;
 #endif

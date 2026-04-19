@@ -132,8 +132,8 @@ public class Options : AutoConfigOptions
     [Config(ADVANCED, "General Scale", "Scales the image by multiplying the uv coordinates. Higher scales make things look bigger.\nHIGHLY recommended at 1."), LimitRange(0.1f, 10)]
     public static float GeneralScale = 1;
 
-    [Config(ADVANCED, "Parallax Area", "What percentage of the screen has the parallax effect applied to it. Setting this below 1 will cause the screen to be vertically divided.\nKEEP THIS AT 1. This setting was only implemented as a debugging and showcasing feature."), LimitRange(0, 2)]
-    public static float SpriteWidth = 1;
+    [Config(ADVANCED, "No-Parallax Area", "What percentage of the screen has the parallax effect disabled on it. Setting this above 0 will cause the screen to be vertically divided.\nKEEP THIS AT 0. This setting was only implemented as a debugging and showcasing feature."), LimitRange(0, 1)]
+    public static float SpriteOffset = 0;
 
     [Config(ADVANCED, "Log Level", "When this number is higher, less important logs are logged to the LogOutput.log file.", spaceBefore = 10), LimitRange(0, 3)]
     public static int LogLevel = 1;

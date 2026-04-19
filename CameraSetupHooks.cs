@@ -47,7 +47,7 @@ public partial class Plugin
             Futile.stage.AddChildAtIndex(self.SpriteLayers[hudIdx], Futile.stage.GetChildIndex(self.SpriteLayers[hudIdx + 1]));
 
             //create the actual sprite
-            data.sprite = new(Futile.whiteElement) { shader = TrueParallaxFShader, width = self.sSize.x, height = self.sSize.y, anchorX = 0, anchorY = 0, x = self.sSize.x * (1-Options.SpriteWidth) };
+            data.sprite = new(Futile.whiteElement) { shader = TrueParallaxFShader, width = self.sSize.x, height = self.sSize.y, anchorX = 0, anchorY = 0, x = self.sSize.x * Options.SpriteOffset };
             self.ReturnFContainer(PARALLAXCONTAINER).AddChild(data.sprite);
 
             Log("Setup shader constants", 2);

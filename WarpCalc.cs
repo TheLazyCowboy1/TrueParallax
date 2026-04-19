@@ -7,9 +7,17 @@ public partial class CameraData
 {
     public Vector2 CalcPosCamDiff(Vector2 pos)
     {
-        //pos = Vector2.LerpUnclamped(this._camPos, pos, 1.0f / Options.GeneralScale); //GeneralScale is not relevant for posCamDiff
+        Vector2 centerUV = new(0.5f, 0.5f);
+        if (Options.GeneralScale > 1)
+        {
+            float maxCenterMove = 0.5f * (1 - 1.0f / Options.GeneralScale);
+            centerUV = this._camPos - new Vector2(0.5f, 0.5f);
+            centerUV = new Vector2(0.5f, 0.5f)
+                + new Vector2(Mathf.Clamp(centerUV.x, -maxCenterMove, maxCenterMove), Mathf.Clamp(centerUV.y, -maxCenterMove, maxCenterMove));
+        }
+        Vector2 uv = (pos - new Vector2(0.5f, 0.5f)) / Options.GeneralScale + centerUV;
         float absBackScale = Mathf.Abs(Options.ConvergenceScale);
-        Vector2 posCamDiff = (Vector2.LerpUnclamped(new(0.5f, 0.5f), pos, Options.ConvergenceScale) - this._camPos) / (absBackScale + 0.5f * (1 - absBackScale));
+        Vector2 posCamDiff = (Vector2.LerpUnclamped(new(0.5f, 0.5f), uv, Options.ConvergenceScale) - this._camPos) * Options.GeneralScale / (absBackScale + 0.5f * (1 - absBackScale));
         if (!Options.DynamicOptimization)
         {
             posCamDiff.x = Mathf.Clamp(posCamDiff.x, -Options.MaxWarp, Options.MaxWarp);
