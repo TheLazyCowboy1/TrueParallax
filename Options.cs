@@ -113,7 +113,7 @@ public class Options : AutoConfigOptions
     public static float LevelHeatFac = 1;
 
     public enum DepthCurveOptions { INVERSE, LINEAR, PARABOLIC, CUBIC, REALAPPROX, REALISTIC };
-    [Config(ADVANCED, "Depth Curve", "Applies a curve to the room depth. INVERSE = mid-ground looks closer; PARABOLIC, CUBIC, REALAPPROX = mid-ground appears farther; REALISTIC = mathematically accurate proportions.\nLINEAR or PARABOLIC recommended. REALAPPROX is NOT recommended for high or low Effect Strengths. REALISTIC is NOT recommended due to being extremely expensive.", width = 120, spaceAfter = 100)]
+    [Config(ADVANCED, "Depth Curve", "Applies a curve to the room depth. INVERSE = mid-ground looks closer; PARABOLIC, CUBIC, REALAPPROX = mid-ground appears farther; REALISTIC = mathematically accurate proportions.\nLINEAR or PARABOLIC recommended. REALISTIC is NOT recommended due to being extremely expensive.", width = 120, spaceAfter = 100)]
     public static DepthCurveOptions DepthCurve = DepthCurveOptions.LINEAR;
 
     [Config(ADVANCED, "Super Accurate Thickness", "Ensures that the depth curve applies properly to geometry thickness. Adds additional performance cost for a very tiny visual improvement. Does not work for LINEAR or PARABOLIC.\nNOT recommended: The improvement is not worth the cost. This is most useful with the REALISTIC depth curve, but it is also very expensive with that curve.", rightSide = true)]
@@ -131,6 +131,9 @@ public class Options : AutoConfigOptions
     public static float ConvergenceScale = 1;
     [Config(ADVANCED, "General Scale", "Scales the image by multiplying the uv coordinates. Higher scales make things look bigger.\nHIGHLY recommended at 1."), LimitRange(0.1f, 10)]
     public static float GeneralScale = 1;
+
+    [Config(ADVANCED, "Parallax Area", "What percentage of the screen has the parallax effect applied to it. Setting this below 1 will cause the screen to be vertically divided.\nKEEP THIS AT 1. This setting was only implemented as a debugging and showcasing feature."), LimitRange(0, 2)]
+    public static float SpriteWidth = 1;
 
     [Config(ADVANCED, "Log Level", "When this number is higher, less important logs are logged to the LogOutput.log file.", spaceBefore = 10), LimitRange(0, 3)]
     public static int LogLevel = 1;

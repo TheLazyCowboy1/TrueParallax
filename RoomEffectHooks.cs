@@ -79,23 +79,27 @@ public partial class Plugin
     #region LevelHeat
     public static void SetupCameraLevelHeat(RoomCamera camera)
     {
-        if (!Options.LevelHeat)
-            return; //no level heat at all
-        if (!camera.TryGetData(out CameraData data))
-            return; //no camera data somehow
-        Material mat = data.SpriteMaterial;
-        if (mat == null)
-            return; //no material
-
-        string shaderName = camera.levelGraphic.shader.name;
-        bool levelHeat = shaderName == "LevelHeat" || shaderName == "LevelMelt";
-        if (levelHeat)
+        try
         {
-            mat.EnableKeyword("levelheat");
-            mat.SetFloat("LZC_LevelHeatAmount", camera.levelGraphic.alpha * Options.LevelHeatFac);
+            if (!Options.LevelHeat)
+                return; //no level heat at all
+            if (!camera.TryGetData(out CameraData data))
+                return; //no camera data somehow
+            Material mat = data.SpriteMaterial;
+            if (mat == null)
+                return; //no material
+
+            string shaderName = camera.levelGraphic.shader.name;
+            bool levelHeat = shaderName == "LevelHeat" || shaderName == "LevelMelt";
+            if (levelHeat)
+            {
+                mat.EnableKeyword("levelheat");
+                mat.SetFloat("LZC_LevelHeatAmount", camera.levelGraphic.alpha * Options.LevelHeatFac);
+            }
+            else
+                mat.DisableKeyword("levelheat");
         }
-        else
-            mat.DisableKeyword("levelheat");
+        catch (Exception ex) { Error(ex); }
     }
     #endregion
 

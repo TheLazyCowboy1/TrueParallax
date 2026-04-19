@@ -26,7 +26,6 @@ public partial class Plugin
             data.CamPos = new(-1, -1); //don't lerp from previous camera's position
             data.needSetConstants = true; //can't set them here because the material isn't created yet, so we'll have to wait until it is
 
-
             //add full screen effect to camera
 
             //resize FContainer array
@@ -48,7 +47,7 @@ public partial class Plugin
             Futile.stage.AddChildAtIndex(self.SpriteLayers[hudIdx], Futile.stage.GetChildIndex(self.SpriteLayers[hudIdx + 1]));
 
             //create the actual sprite
-            data.sprite = new(Futile.whiteElement) { shader = TrueParallaxFShader, width = self.sSize.x, height = self.sSize.y, anchorX = 0, anchorY = 0 };
+            data.sprite = new(Futile.whiteElement) { shader = TrueParallaxFShader, width = self.sSize.x * Options.SpriteWidth, height = self.sSize.y, anchorX = 0, anchorY = 0 };
             self.ReturnFContainer(PARALLAXCONTAINER).AddChild(data.sprite);
 
             Log("Setup shader constants", 2);
