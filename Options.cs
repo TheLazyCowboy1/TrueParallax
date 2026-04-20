@@ -19,7 +19,7 @@ public class Options : AutoConfigOptions
         new(CAMERA),
         new(LAYER2) { startHeight = 500 },
         new(OPTIMIZATION),
-        new(ADVANCED)
+        new(ADVANCED) { leftMargin = 20, spacing = 20 }
     })
     {
     }
@@ -43,18 +43,17 @@ public class Options : AutoConfigOptions
     [Config(CAMERA, "Movement Stop Distance", "If the camera's distance from its target position is less than this distance, then it does not try to move any closer. Measured as a fraction of the screen size.\nRecommended between 0.002 and 0.01. 0 = camera always tries to inch closer; 1 = camera never moves.", precision = 3), LimitRange(0, 1)]
     public static float CameraStopDistance = 0.005f;
 
-    [Config(CAMERA, "Input Offset", "How much the camera position moves according to the player's inputs.\nGenerally recommended, unless you have a high Camera Move Speed.", precision = 1), LimitRange(-500, 500)]
-    public static float CameraInputOffset = 50;
-
     [Config(CAMERA, "Always Centered", "Locks the camera in the middle of the screen, not following the player at all.\nRecommended if you are using SBCameraScroll and experience motion-sickness. Otherwise, keep this setting OFF!")]
     public static bool AlwaysCentered = false;
     [Config(CAMERA, "Transitions Reset Camera", "Instantly snaps the camera into place whenever going through screen transitions. If disabled, the camera will often pan across the entire screen upon screen transitions.\nHIGHLY recommended, especially if you are prone to motion-sickness. But personally, I think it looks cool when this option is disabled.")]
     public static bool TransitionsResetCamera = true;
 
+    [Config(CAMERA, "Input Offset", "How much the camera position moves according to the player's inputs.\nGenerally recommended, unless you have a high Camera Move Speed.", precision = 1), LimitRange(-500, 500)]
+    public static float CameraInputOffset = 50;
     [Config(CAMERA, "Mouse Sensitivity", "How much the camera moves when the mouse is moved. If 0, mouse movement does not affect the camera.", spaceBefore = 15), LimitRange(-5, 5)]
     public static float MouseSensitivity = 0;
 
-    [Config(CAMERA, "Shift Background Scenes", "Shifts the position of background scenes (like the views above the clouds) slightly to match the movement of the camera.\nRecommended at 0. 1 = background follows player movement; -1 = follows back wall's movement.", spaceBefore = 15), LimitRange(-5, 5)]
+    [Config(CAMERA, "Shift Background Scenes", "Shifts the position of background scenes (like the views above the clouds) slightly to match the movement of the camera.\nRecommended at 0, or maybe 0.5. 1 = background follows player movement; -1 = follows back wall's movement.", spaceBefore = 15), LimitRange(-5, 5)]
     public static float BackgroundShift = 0;
 
     [Config(CAMERA, "Invert Position", "Makes the camera think the player is on the opposite end of the room; thus, camera motion is opposite player motion.\nNOT recommended.", spaceBefore = 15)]
@@ -107,10 +106,14 @@ public class Options : AutoConfigOptions
     [Config(ADVANCED, "Anti-Aliasing", "Attempts to break up straight lines that are noticable when moving the camera slowly. (Not really anti-aliasing). Has a minimal effect when the Effect Strength is high.\nRecommended below 1. May be useful when Dynamic Optimization is enabled."), LimitRange(0, 10)]
     public static float AntiAliasing = 0.1f;
 
-    [Config(ADVANCED, "Level Heat/Melt", "Attempts to re-implement the distortion added by the LevelHeat and VoidMelt Room Effects.")]
+    [Config(ADVANCED, "Level Heat/Melt", "Attempts to re-implement the distortion added by the LevelHeat and VoidMelt Room Effects. Unfortunately, these effects also distort creatures as well as the room.")]
     public static bool LevelHeat = true;
-    [Config(ADVANCED, "Heat Distortion Multiplier", "Multiplies the strength of the heat distortion. Just for fun.\nRecommended at 1, because that's the proper number.", rightSide = true), LimitRange(-5, 5)]
+    [Config(ADVANCED, "Wet Terrain", "Attempts to re-implement the distortion added by the WetTerrain room setting.", rightSide = true)]
+    public static bool WetTerrain = true;
+    [Config(ADVANCED, "Heat Distortion Multiplier", "Multiplies the strength of the heat distortion. Just for fun.\nRecommended at 1, because that's the proper number."), LimitRange(-5, 5)]
     public static float LevelHeatFac = 1;
+    [Config(ADVANCED, "Heat Linear Decrease", "How much the heat distortion decreases as depth increases. This reduces distortion of the background.\nRecommended close to 1, because the background shouldn't be distorted as much.", rightSide = true), LimitRange(0, 1)]
+    public static float LevelHeatDecrease = 0.9f;
 
     public enum DepthCurveOptions { INVERSE, LINEAR, PARABOLIC, CUBIC, REALAPPROX, REALISTIC };
     [Config(ADVANCED, "Depth Curve", "Applies a curve to the room depth. INVERSE = mid-ground looks closer; PARABOLIC, CUBIC, REALAPPROX = mid-ground appears farther; REALISTIC = mathematically accurate proportions.\nLINEAR or PARABOLIC recommended. REALISTIC is NOT recommended due to being extremely expensive.", width = 120, spaceAfter = 100)]
@@ -220,6 +223,7 @@ public class Options : AutoConfigOptions
             UIConfigs[nameof(BackDepthForScenesOnly)].greyedOut = BackgroundDepth <= 1;
             UIConfigs[nameof(CenterOptimization)].greyedOut = DynamicOptimization;
             UIConfigs[nameof(LevelHeatFac)].greyedOut = !LevelHeat;
+            UIConfigs[nameof(LevelHeatDecrease)].greyedOut = !LevelHeat;
             UIConfigs[nameof(SuperAccurateThickness)].greyedOut = DepthCurve == DepthCurveOptions.LINEAR || !(Options.LimitProjection || Options.TwoLayers);
 
             OpTab layer2 = Tabs.FirstOrDefault(t => t.name == LAYER2);

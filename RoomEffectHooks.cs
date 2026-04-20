@@ -11,6 +11,7 @@ public partial class Plugin
     {
         orig(self, newRoom, camPos);
         DisableWetTerrain();
+        SetupCameraWetTerrain(self);
         SetupCameraLevelHeat(self);
     }
     //WetTerrain hook + LevelHeat
@@ -18,6 +19,7 @@ public partial class Plugin
     {
         orig(self, newRoom, camPos);
         DisableWetTerrain();
+        SetupCameraWetTerrain(self);
         SetupCameraLevelHeat(self);
     }
 
@@ -76,7 +78,27 @@ public partial class Plugin
     };
     #endregion
 
-    #region LevelHeat
+    #region CameraModifications
+    public static void SetupCameraWetTerrain(RoomCamera camera)
+    {
+        try
+        {
+            if (!Options.WetTerrain)
+                return; //no wet terrain at all
+            if (!camera.TryGetData(out CameraData data))
+                return; //no camera data somehow
+            Material mat = data.SpriteMaterial;
+            if (mat == null)
+                return; //no material
+
+            if (camera.room.roomSettings.wetTerrain)
+                mat.EnableKeyword("LZC_WETTERRAIN");
+            else
+                mat.DisableKeyword("LZC_WETTERRAIN");
+        }
+        catch (Exception ex) { Error(ex); }
+    }
+
     public static void SetupCameraLevelHeat(RoomCamera camera)
     {
         try

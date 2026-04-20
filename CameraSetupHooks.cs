@@ -139,7 +139,10 @@ public partial class Plugin
         if (Options.TwoLayers && data.layer2Textures.First != null) //also set here in case the material wasn't set up yet when generated
             mat.SetTexture(ShadPropLayer2Tex, data.layer2Textures.First);
 
+        SetupCameraWetTerrain(data.camera);
+
         SetupCameraLevelHeat(data.camera);
+        mat.SetFloat("LZC_LevelHeatDecrease", Options.LevelHeatDecrease);
     }
 
     private static void SetupScreenLevelTex()

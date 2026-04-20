@@ -25,7 +25,8 @@ Shader "TheLazyCowboy1/TrueParallax"
 		LZC_ProjectionMod ("ProjectionMod", Float) = 0.5
 		LZC_MinObjectDepth ("MinObjectDepth", Float) = 1
 		LZC_MaxDepDiff ("MaxDepDiff", Float) = 1
-		LZC_LevelHeatAmount ("LevelHeatAmount", Float) = 0.5
+		LZC_LevelHeatAmount ("LevelHeatAmount", Float) = 0.25
+		LZC_LevelHeatDecrease ("LevelHeatDecrease", Float) = 1
 	}
 	
 	Category 
@@ -358,6 +359,7 @@ CGPROGRAM
 #pragma multi_compile_local _ LZC_PROCESSLAYER2
 #pragma multi_compile_local _ LZC_BACKGROUNDNOISE
 #pragma multi_compile_local _ levelheat levelmelt
+#pragma multi_compile_local _ LZC_WETTERRAIN
 #if LZC_LIMITPROJECTION || LZC_PROCESSLAYER2
 	#pragma multi_compile_local _ LZC_SUPERACCURATETHICKNESS
 #endif
@@ -414,6 +416,12 @@ uniform float LZC_MaxProjection;
 #if levelheat || levelmelt
 uniform float _RAIN;
 uniform float LZC_LevelHeatAmount;
+uniform float LZC_LevelHeatDecrease;
+#elif LZC_WETTERRAIN
+uniform float _RAIN;
+#endif
+#if LZC_WETTERRAIN
+uniform float _waterLevel;
 #endif
 
 #if LZC_REALISTICDEPTH
@@ -447,7 +455,7 @@ struct v2f {
 	float2  nuv : TEXCOORD0;
 	float2  suv : TEXCOORD1;
 	float2  posCamDiff : TEXCOORD2;
-#if levelheat || levelmelt
+#if levelheat || levelmelt || LZC_WETTERRAIN
     float2  uv : TEXCOORD3;
 #endif
 };
@@ -458,11 +466,9 @@ v2f vert (appdata_full v)
 {
     v2f o;
     o.pos = UnityObjectToClipPos (v.vertex);
-    //o.uv = TRANSFORM_TEX (v.texcoord, _MainTex);
 	float2 realUV = TRANSFORM_TEX (v.texcoord, _MainTex);
 
 		//Apply LZC_GeneralScale
-	//float2 uv = lerp(LZC_CamPos, realUV, LZC_GeneralScale);
 	float2 maxCenterMove = float2(0.5f, 0.5f) * (float2(1,1) - saturate(LZC_GeneralScale)); //saturate because it goes crazy outside that range
 	float2 centerUV = float2(0.5f, 0.5f) + clamp(LZC_CamPos - float2(0.5f, 0.5f), -maxCenterMove, maxCenterMove);
 	float2 uv = (realUV - float2(0.5f, 0.5f)) * LZC_GeneralScale + centerUV;
@@ -473,11 +479,11 @@ v2f vert (appdata_full v)
 		//Apply LZC_ConvergenceScale
 	float absBackScale = abs(LZC_ConvergenceScale); //prevents ridiculous results when BackgroundScale is < 0, especially: -1 caused division by 0
 	o.posCamDiff = (lerp(centerUV, uv, LZC_ConvergenceScale) - LZC_CamPos) / (LZC_GeneralScale * (absBackScale + 0.5f * (1 - absBackScale)));
-		//GeneralScale does not affect posCamDiff, so use realUV for it as a simplification
-	//o.posCamDiff = (lerp(float2(0.5f,0.5f), realUV, LZC_ConvergenceScale) - LZC_CamPos) / (absBackScale + 0.5f * (1 - absBackScale));
-#if levelheat || levelmelt
-	o.uv = uv;
+
+#if levelheat || levelmelt || LZC_WETTERRAIN
+	o.uv = realUV - _spriteRect.xy;
 #endif
+
     return o;
 }
 
@@ -529,8 +535,22 @@ half4 frag (v2f i) : SV_Target
 
 	#if levelheat
 		//make the distortion decrease as depth (or in this case, percentage) increases
-		moveStep.y = moveStep.y - heatOffset * LZC_StepSize;
+		moveStep.y = moveStep.y - heatOffset * LZC_StepSize * LZC_LevelHeatDecrease;
 	#endif
+#endif
+
+//WET TERRAIN
+#if LZC_WETTERRAIN
+	if (i.uv.y + _spriteRect.y <= _waterLevel) {
+		float ugh = 0; //does this even make a big difference? It ranges from 0 to 0.1
+			//COPIED FROM LevelColor.shader
+
+		float displace = tex2D(_NoiseTex, float2((i.uv.x * 1.5)  - ugh + _RAIN * 0.01,
+                                         (i.uv.y * 0.25) - ugh + _RAIN * 0.05)   ).x;
+		displace = saturate((sin((displace + i.uv.x + i.uv.y + _RAIN*0.1) * 3 * 3.14)-0.95)*20);
+
+		initGrabPos.y = initGrabPos.y + displace*0.001;
+	}
 #endif
 
 #if LZC_DYNAMICOPTIMIZATION
