@@ -549,7 +549,7 @@ half4 frag (v2f i) : SV_Target
                                          (i.uv.y * 0.25) - ugh + _RAIN * 0.05)   ).x;
 		displace = saturate((sin((displace + i.uv.x + i.uv.y + _RAIN*0.1) * 3 * 3.14)-0.95)*20);
 
-		initGrabPos.y = initGrabPos.y + displace*0.001;
+		initGrabPos.y = initGrabPos.y + _screenSize.y * displace*0.001;
 	}
 #endif
 
