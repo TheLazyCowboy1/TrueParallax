@@ -357,7 +357,7 @@ CGPROGRAM
 #pragma multi_compile_local _ LZC_DYNAMICOPTIMIZATION
 #pragma multi_compile_local _ LZC_PROCESSLAYER2
 #pragma multi_compile_local _ LZC_BACKGROUNDNOISE
-#pragma multi_compile_local _ levelheat
+#pragma multi_compile_local _ levelheat levelmelt
 #if LZC_LIMITPROJECTION || LZC_PROCESSLAYER2
 	#pragma multi_compile_local _ LZC_SUPERACCURATETHICKNESS
 #endif
@@ -411,7 +411,7 @@ uniform float LZC_BackgroundNoise;
 uniform float LZC_MaxProjection;
 #endif
 
-#if levelheat
+#if levelheat || levelmelt
 uniform float _RAIN;
 uniform float LZC_LevelHeatAmount;
 #endif
@@ -447,7 +447,7 @@ struct v2f {
 	float2  nuv : TEXCOORD0;
 	float2  suv : TEXCOORD1;
 	float2  posCamDiff : TEXCOORD2;
-#if levelheat
+#if levelheat || levelmelt
     float2  uv : TEXCOORD3;
 #endif
 };
@@ -475,7 +475,7 @@ v2f vert (appdata_full v)
 	o.posCamDiff = (lerp(centerUV, uv, LZC_ConvergenceScale) - LZC_CamPos) / (LZC_GeneralScale * (absBackScale + 0.5f * (1 - absBackScale)));
 		//GeneralScale does not affect posCamDiff, so use realUV for it as a simplification
 	//o.posCamDiff = (lerp(float2(0.5f,0.5f), realUV, LZC_ConvergenceScale) - LZC_CamPos) / (absBackScale + 0.5f * (1 - absBackScale));
-#if levelheat
+#if levelheat || levelmelt
 	o.uv = uv;
 #endif
     return o;
@@ -508,16 +508,29 @@ half4 frag (v2f i) : SV_Target
 
 	float2 initGrabPos = i.suv - moveStep * (totalTests + noiseOffset) * LZC_PivotDepth; //start at the END and then move BACKWARDS
 
-#if levelheat
-    float heatEffectCol = tex2D(_NoiseTex, half2(i.uv.x, i.uv.y*0.5 - _RAIN*0.123));
-    heatEffectCol = 0.5 + 0.5 * sin(heatEffectCol*3.14 * 8 + i.uv.y*36.231 - _RAIN*2.63);
-    heatEffectCol *= 0.5 + 0.5 * sin(tex2D(_NoiseTex, half2((1.0 - i.uv.x) * 2, i.uv.y*0.5 - _RAIN*0.1862))*3.14 * 8 
-                                           + i.uv.y*50.231 - _RAIN*4.75442);
+//LEVEL HEAT
+#if levelheat || levelmelt
+		//COPIED FROM LevelColor.shader, with minor modifications (notably removing all references to "red")
+    fixed reverse =1;
+	#if levelmelt
+    reverse = -1;
+	#endif //levelmelt
+
+    float heatEffectCol = tex2D(_NoiseTex, half2(i.uv.x, i.uv.y*0.5 - _RAIN*0.123*reverse));
+    heatEffectCol = 0.5 + 0.5 * sin(heatEffectCol*3.14 * 8 + i.uv.y*36.231 - _RAIN*2.63*reverse); //removed reference to red
+    heatEffectCol *= 0.5 + 0.5 * sin(tex2D(_NoiseTex, half2((1.0 - i.uv.x) * 2, i.uv.y*0.5 - _RAIN*0.1862*reverse))*3.14 * 8 
+                                           + i.uv.y*50.231 - _RAIN*4.75442*reverse); //removed reference to red
     heatEffectCol = 1 - heatEffectCol;
     heatEffectCol = pow(heatEffectCol, 30);
 
     //half4 heatTexCol = tex2D(levelTexture, float2(i.uv.x, i.uv.y + lerp(-0.01, 0.02, heatEffectCol)*i.clr.w));
-	initGrabPos.y = initGrabPos.y + _screenSize.y * lerp(-0.01, 0.02, heatEffectCol) * LZC_LevelHeatAmount;
+	float heatOffset = _screenSize.y * lerp(-0.01, 0.02, heatEffectCol) * LZC_LevelHeatAmount;
+	initGrabPos.y = initGrabPos.y + heatOffset;
+
+	#if levelheat
+		//make the distortion decrease as depth (or in this case, percentage) increases
+		moveStep.y = moveStep.y - heatOffset * LZC_StepSize;
+	#endif
 #endif
 
 #if LZC_DYNAMICOPTIMIZATION

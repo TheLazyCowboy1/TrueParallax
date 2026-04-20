@@ -93,11 +93,23 @@ public partial class Plugin
             bool levelHeat = shaderName == "LevelHeat" || shaderName == "LevelMelt";
             if (levelHeat)
             {
-                mat.EnableKeyword("levelheat");
+                if (shaderName == "LevelHeat")
+                {
+                    mat.EnableKeyword("levelheat");
+                    mat.DisableKeyword("levelmelt");
+                }
+                else
+                {
+                    mat.DisableKeyword("levelheat");
+                    mat.EnableKeyword("levelmelt");
+                }
                 mat.SetFloat("LZC_LevelHeatAmount", camera.levelGraphic.alpha * Options.LevelHeatFac);
             }
             else
+            {
                 mat.DisableKeyword("levelheat");
+                mat.DisableKeyword("levelmelt");
+            }
         }
         catch (Exception ex) { Error(ex); }
     }
