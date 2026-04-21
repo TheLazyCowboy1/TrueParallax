@@ -9,16 +9,24 @@ public partial class Plugin
     //WetTerrain hook + LevelHeat
     private void RoomCamera_MoveCamera_Room_int(On.RoomCamera.orig_MoveCamera_Room_int orig, RoomCamera self, Room newRoom, int camPos)
     {
+        bool wetTerrain = newRoom.roomSettings.wetTerrain;
+        newRoom.roomSettings.wetTerrain = false; //this method works with SplitScreen Co-op
         orig(self, newRoom, camPos);
-        DisableWetTerrain();
+        newRoom.roomSettings.wetTerrain = wetTerrain;
+
+        //DisableWetTerrain();
         SetupCameraWetTerrain(self);
         SetupCameraLevelHeat(self);
     }
     //WetTerrain hook + LevelHeat
     private void RoomCamera_WarpMoveCameraActual(On.RoomCamera.orig_WarpMoveCameraActual orig, RoomCamera self, Room newRoom, int camPos)
     {
+        bool wetTerrain = newRoom.roomSettings.wetTerrain;
+        newRoom.roomSettings.wetTerrain = false;
         orig(self, newRoom, camPos);
-        DisableWetTerrain();
+        newRoom.roomSettings.wetTerrain = wetTerrain;
+
+        //DisableWetTerrain();
         SetupCameraWetTerrain(self);
         SetupCameraLevelHeat(self);
     }
@@ -53,6 +61,7 @@ public partial class Plugin
     #endregion
 
     //Disable WetTerrain, which displaces the pixels and causes visual artefacts.
+    //APPARENTLY, this doesn't work well with SplitScreen Co-op, so instead I'll temporarily disable the room effect entirely
     private static void DisableWetTerrain() => Shader.SetGlobalFloat(RainWorld.ShadPropWetTerrain, 0);
 
     #region FullScreenEffectFilter
