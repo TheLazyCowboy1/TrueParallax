@@ -41,6 +41,12 @@ public partial class Plugin
             if (self.fullScreenEffect == null) return;
 
             string name = self.fullScreenEffect.shader.name;
+
+            //SBCameraScroll (perhaps accidentally) changes FShader names, e.g: Fog => SBCameraScroll/Fog
+            int index = name.IndexOf('/');
+            if (index >= 0)
+                name = name.Substring(index+1); //cut out everything before the /
+
             bool reads = ShaderReadsLevel(name);
             bool warps = ShaderWarpsLevel(name);
             if (reads && warps)
@@ -54,6 +60,10 @@ public partial class Plugin
                 self.fullScreenEffect.RemoveFromContainer();
                 self.ReturnFContainer(PARALLAXCONTAINER).AddChild(self.fullScreenEffect);
                 Log("Moved fullScreenEffect to parallax container: " + name, 2);
+            }
+            else
+            {
+                Log("Kept fullScreenEffect in its original container: " + name, 2);
             }
         }
         catch (Exception ex) { Error(ex); }
@@ -134,7 +144,7 @@ public partial class Plugin
                     mat.DisableKeyword("levelheat");
                     mat.EnableKeyword("levelmelt");
                 }
-                mat.SetFloat("LZC_LevelHeatAmount", camera.levelGraphic.alpha * Options.LevelHeatFac);
+                mat.SetFloat(ShadPropLevelHeatAmount, camera.levelGraphic.alpha * Options.LevelHeatFac);
             }
             else
             {

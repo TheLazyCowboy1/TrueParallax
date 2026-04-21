@@ -50,6 +50,7 @@ public partial class Plugin : SimplerPlugin
         ShadPropStepSize = Shader.PropertyToID("LZC_StepSize");
         ShadPropMoveStepScale = Shader.PropertyToID("LZC_MoveStepScale");
         ShadPropLayer2Tex = Shader.PropertyToID("_LZC_Layer2Tex");
+        ShadPropLevelHeatAmount = Shader.PropertyToID("LZC_LevelHeatAmount");
 
         RemoveLevelHeatAndMelt();
     }
@@ -59,7 +60,8 @@ public partial class Plugin : SimplerPlugin
     /// </summary>
     public static int ShadPropCamPos = -1, ShadPropWarp = -1,
         ShadPropTestNum = -1, ShadPropStepSize = -1,
-        ShadPropMoveStepScale = -1, ShadPropLayer2Tex = -1;
+        ShadPropMoveStepScale = -1, ShadPropLayer2Tex = -1,
+        ShadPropLevelHeatAmount = -1;
 
     public static FShader TrueParallaxFShader;
     public static Material ThicknessMapMaterial;
