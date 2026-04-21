@@ -48,9 +48,9 @@ public class Options : AutoConfigOptions
     [Config(CAMERA, "Transitions Reset Camera", "Instantly snaps the camera into place whenever going through screen transitions. If disabled, the camera will often pan across the entire screen upon screen transitions.\nHIGHLY recommended, especially if you are prone to motion-sickness. But personally, I think it looks cool when this option is disabled.")]
     public static bool TransitionsResetCamera = true;
 
-    [Config(CAMERA, "Input Offset", "How much the camera position moves according to the player's inputs.\nGenerally recommended, unless you have a high Camera Move Speed.", precision = 1), LimitRange(-500, 500)]
+    [Config(CAMERA, "Input Offset", "How much the camera position moves according to the player's inputs.\nGenerally recommended, unless you have a high Camera Move Speed.", precision = 1, spaceBefore = 15), LimitRange(-500, 500)]
     public static float CameraInputOffset = 50;
-    [Config(CAMERA, "Mouse Sensitivity", "How much the camera moves when the mouse is moved. If 0, mouse movement does not affect the camera.", spaceBefore = 15), LimitRange(-5, 5)]
+    [Config(CAMERA, "Mouse Sensitivity", "How much the camera moves when the mouse is moved. If 0, mouse movement does not affect the camera."), LimitRange(-5, 5)]
     public static float MouseSensitivity = 0;
 
     [Config(CAMERA, "Shift Background Scenes", "Shifts the position of background scenes (like the views above the clouds) slightly to match the movement of the camera.\nRecommended at 0, or maybe 0.5. 1 = background follows player movement; -1 = follows back wall's movement.", spaceBefore = 15), LimitRange(-5, 5)]
@@ -123,7 +123,7 @@ public class Options : AutoConfigOptions
     public static bool SuperAccurateThickness = false;
     public static bool IsActiveSuperAccurateThickness => SuperAccurateThickness && (TwoLayers || LimitProjection) && DepthCurve != DepthCurveOptions.LINEAR;
 
-    [Config(ADVANCED, "Background Depth", "How far away the background (the sky, basically) appears relative to the room geometry. Literally decreases the Effect Strength for everything except the background.\nRecommended at 1, because the background is usually a solid color, making this just a waste of resources (although For Scenes Only helps with this).", spaceBefore = 40), LimitRange(1, 2)]
+    [Config(ADVANCED, "Background Depth", "How far away the background (the sky, basically) appears relative to the room geometry. Literally decreases the Effect Strength for everything except the background.\nRecommended at 1, because the background is usually a solid color, making this just a waste of resources (although For Scenes Only helps with this).", spaceBefore = 20), LimitRange(1, 2)]
     public static float BackgroundDepth = 1; //1.0 / Layer30Depth
     [Config(ADVANCED, "For Scenes Only", "Sets Background Depth to 1 EXCEPT when a Background Scene (e.g: AboveCloudsView, RoofTopView) is active in the room.\nRecommended for performance reasons. This only applies when Background Depth is > 1.", rightSide = true)]
     public static bool BackDepthForScenesOnly = true;
@@ -137,6 +137,9 @@ public class Options : AutoConfigOptions
 
     [Config(ADVANCED, "No-Parallax Area", "What percentage of the screen has the parallax effect disabled on it. Setting this above 0 will cause the screen to be vertically divided.\nKEEP THIS AT 0. This setting was only implemented as a debugging and showcasing feature."), LimitRange(0, 1)]
     public static float SpriteOffset = 0;
+
+    [Config(ADVANCED, "Enable Parallax for Splitscreen", "Enables the parallax effect for all cameras when the SplitScreen Co-op mod is active. However, only the first camera properly tracks creatures, and having multiple parallax effects active is laggy.\nNOT recommended. It is unlikely that I will ever rewrite the game's shaders just to fix SplitScreen Co-op.")]
+    public static bool SplitscreenParallax = false;
 
     [Config(ADVANCED, "Log Level", "When this number is higher, less important logs are logged to the LogOutput.log file.", spaceBefore = 10), LimitRange(0, 3)]
     public static int LogLevel = 1;

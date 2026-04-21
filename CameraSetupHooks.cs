@@ -15,6 +15,12 @@ public partial class Plugin
 
         try
         {
+            if (!Options.SplitscreenParallax && cameraNumber > 0)
+            {
+                Log("Parallax is disabled for camera#" + cameraNumber, 1);
+                return; //do not set up parallax for this camera
+            }
+
             //create RandomWrite texture
             SetupScreenLevelTex();
 
