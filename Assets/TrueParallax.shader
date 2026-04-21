@@ -47,7 +47,8 @@ Shader "TheLazyCowboy1/TrueParallax"
 		SubShader   
 		{	
 
-			GrabPass { "_ParallaxGrabTex" } //GrabPass to get screen data so that I can then warp it
+			//GrabPass { "_ParallaxGrabTex" } //named GrabPass does not work with SplitScreenCoop
+			GrabPass { } //GrabPass to get screen data so that I can then warp it
 
 			Pass 
 			{
@@ -374,9 +375,9 @@ sampler2D _MainTex;
 uniform float4 _MainTex_TexelSize;
 
 #if defined(SHADER_API_PSSL)
-Texture2D<float4> _ParallaxGrabTex;
+Texture2D<float4> _GrabTexture;
 #else
-Texture2D<float4> _ParallaxGrabTex : register(t0);
+Texture2D<float4> _GrabTexture : register(t0);
 #endif
 
 sampler2D _NoiseTex;
@@ -784,19 +785,19 @@ half4 frag (v2f i) : SV_Target
 		int2 lPos = bestGrabPos + (dir[d] * lDist)/2;
 		int2 rPos = bestGrabPos - (dir[d] * rDist)/2;
 		if (lDist > 0 && rDist > 0) { //both are usable, so lerp between the two colors
-			float4 lCol = _ParallaxGrabTex.Load(int3(lPos, 0));
-			float4 rCol = _ParallaxGrabTex.Load(int3(rPos, 0));
+			float4 lCol = _GrabTexture.Load(int3(lPos, 0));
+			float4 rCol = _GrabTexture.Load(int3(rPos, 0));
 			float totalDist = lDist + rDist;
 			finalCol = (lCol * rDist + rCol * lDist) / totalDist;//lerp(lCol, rCol, lDist / float(lDist + rDist));
 		}
 		else {
 			int dist3 = 0; //for the noise stuff below
 			if (lDist > 0) { //left is good
-				finalCol = _ParallaxGrabTex.Load(int3(lPos, 0)); //so just use left side
+				finalCol = _GrabTexture.Load(int3(lPos, 0)); //so just use left side
 				dist3 = lDist;
 			}
 			else { //right is good
-				finalCol = _ParallaxGrabTex.Load(int3(rPos, 0)); //so just use right side
+				finalCol = _GrabTexture.Load(int3(rPos, 0)); //so just use right side
 				dist3 = rDist;
 			}
 		#if LZC_BACKGROUNDNOISE
@@ -808,11 +809,11 @@ half4 frag (v2f i) : SV_Target
 		}
 	}
 	else {
-		finalCol = _ParallaxGrabTex.Load(int3(bestGrabPos, 0));
+		finalCol = _GrabTexture.Load(int3(bestGrabPos, 0));
 	}
 
 #else
-	half4 finalCol = _ParallaxGrabTex.Load(int3(bestGrabPos, 0));
+	half4 finalCol = _GrabTexture.Load(int3(bestGrabPos, 0));
 #endif
 
 #if !LZC_BACKGROUNDNOISE
