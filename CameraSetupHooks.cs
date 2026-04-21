@@ -46,6 +46,9 @@ public partial class Plugin
             //add the container at the HUD container's current index
             Futile.stage.AddChildAtIndex(self.SpriteLayers[hudIdx], Futile.stage.GetChildIndex(self.SpriteLayers[hudIdx + 1]));
 
+            //SplitScreenCoop compatibility
+            SplitscreenCompat.SafeSplitscreenCompat.OffsetContainer(self, self.SpriteLayers[hudIdx]);
+
             //create the actual sprite
             data.sprite = new(Futile.whiteElement) { shader = TrueParallaxFShader, width = self.sSize.x, height = self.sSize.y, anchorX = 0, anchorY = 0, x = self.sSize.x * Options.SpriteOffset };
             self.ReturnFContainer(PARALLAXCONTAINER).AddChild(data.sprite);

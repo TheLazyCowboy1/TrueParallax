@@ -14,6 +14,9 @@ using RWCustom;
 
 namespace TrueParallax;
 
+[BepInDependency("SBCameraScroll", BepInDependency.DependencyFlags.SoftDependency)]
+[BepInDependency("com.henpemaz.splitscreencoop", BepInDependency.DependencyFlags.SoftDependency)]
+
 [BepInPlugin("LazyCowboy.TrueParallax", "True Parallax", "0.0.1")]
 public partial class Plugin : SimplerPlugin
 {
@@ -30,12 +33,14 @@ public partial class Plugin : SimplerPlugin
     #region Initialization
 
     public static bool SBCameraScrollEnabled = false;
+    public static bool SplitScreenEnabled = false;
 
     public override void ModsApplied()
     {
         base.ModsApplied();
 
         SBCameraScrollEnabled = ModManager.ActiveMods.Any(m => m.id == "SBCameraScroll");
+        SplitScreenEnabled = ModManager.ActiveMods.Any(m => m.id == "henpemaz_splitscreencoop");
 
         LoadAssets();
 
@@ -50,7 +55,7 @@ public partial class Plugin : SimplerPlugin
     }
 
     /// <summary>
-    /// Index of shader variable LZC_CamPos, used for presumably more efficient access to it
+    /// Index of a shader variable (e.g: LZC_CamPos), used for presumably more efficient access to it
     /// </summary>
     public static int ShadPropCamPos = -1, ShadPropWarp = -1,
         ShadPropTestNum = -1, ShadPropStepSize = -1,
