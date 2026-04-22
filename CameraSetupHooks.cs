@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using TrueParallax.ModCompat;
 using UnityEngine;
 
 namespace TrueParallax;
@@ -53,10 +54,10 @@ public partial class Plugin
             Futile.stage.AddChildAtIndex(self.SpriteLayers[hudIdx], Futile.stage.GetChildIndex(self.SpriteLayers[hudIdx + 1]));
 
             //SplitScreenCoop compatibility
-            SplitscreenCompat.SafeSplitscreenCompat.OffsetContainer(self, self.SpriteLayers[hudIdx]);
+            SafeSplitscreenCompat.OffsetContainer(self, self.SpriteLayers[hudIdx]);
 
             //create the actual sprite
-            data.sprite = new(Futile.whiteElement) { shader = TrueParallaxFShader, width = self.sSize.x, height = self.sSize.y, anchorX = 0, anchorY = 0, x = self.sSize.x * Options.SpriteOffset };
+            data.sprite = new(Futile.whiteElement) { shader = TrueParallaxFShader, width = self.sSize.x - 0.5f, height = self.sSize.y - 0.5f, anchorX = 0, anchorY = 0, x = self.sSize.x * Options.SpriteOffset };
             self.ReturnFContainer(PARALLAXCONTAINER).AddChild(data.sprite);
 
             Log("Setup shader constants", 2);

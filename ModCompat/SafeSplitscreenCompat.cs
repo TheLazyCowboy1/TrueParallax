@@ -1,6 +1,7 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
-namespace TrueParallax.SplitscreenCompat;
+namespace TrueParallax.ModCompat;
 
 public static class SafeSplitscreenCompat
 {
@@ -14,9 +15,13 @@ public static class SafeSplitscreenCompat
     /// </summary>
     public static void OffsetContainer(RoomCamera camera, FContainer container)
     {
-        if (Plugin.SplitScreenEnabled)
+        try
         {
-            container.SetPosition(camOffsets[camera.cameraNumber]);
+            if (Plugin.SplitScreenEnabled)
+            {
+                container.SetPosition(camOffsets[camera.cameraNumber]);
+            }
         }
+        catch (Exception ex) { Plugin.Error(ex); }
     }
 }

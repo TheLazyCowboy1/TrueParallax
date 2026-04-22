@@ -164,6 +164,8 @@ public partial class Plugin : SimplerPlugin
 
         try
         {
+            //ModCompat.SafeSBCameraCompat.FixCameraZoom(self);
+
             if (!self.TryGetData(out CameraData data)) return;
 
             if (Options.TransitionsResetCamera)
