@@ -79,8 +79,8 @@ public partial class Plugin
                         readInput = true;
                     }
 
-                    pos = (critPos.Value - self.pos + data.critFollowOffset) / self.sSize
-                        * self.SpriteLayers[0].scale; //multiply by scale to accomodate scale changes by SBCameraScroll
+                    pos = ((critPos.Value - self.pos + data.critFollowOffset) / self.sSize
+                        - new Vector2(0.5f, 0.5f)) * self.SpriteLayers[0].scale + new Vector2(0.5f, 0.5f); //multiply by scale to accomodate SBCameraScroll's zoom feature
                 }
             }
             if (!readInput) data.critFollowOffset.Set(0, 0);
