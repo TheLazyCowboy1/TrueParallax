@@ -78,11 +78,7 @@ public class LayerTexCache
             idx = size - 1; //the last texture in the array
             int width = levelTex.width, height = levelTex.height;
             RenderTexture tex = array[idx].Value ?? CreateRenderTex(width, height); //create a new texture if one doesn't exist
-            if (tex.width != width || tex.height != height) //fix dimensions
-            {
-                tex.width = width;
-                tex.height = height;
-            }
+            ChangeRenderTexSize(ref tex, width, height);
             
             if (Options.LogLevel >= 3)
             {
@@ -94,7 +90,7 @@ public class LayerTexCache
             }
             else Graphics.Blit(levelTex, tex, mat); //don't bother with the Stopwatch
 
-            /* //async is way better in theory, but in practice, it somehow seems even worse somehow than just using normal Graphics.Blit
+            /* //async is way better in theory, but in practice, it somehow seems even worse than just using normal Graphics.Blit
             CommandBuffer cmd = new();
             cmd.Blit(levelTex, tex, mat);
             Graphics.ExecuteCommandBufferAsync(cmd, ComputeQueueType.Default);
@@ -117,14 +113,24 @@ public class LayerTexCache
     //exists just in case; hopefully it won't be used
     private RenderTexture FixRenderTex(RenderTexture tex, Texture levelTex)
     {
-        if (tex.width == levelTex.width && tex.height == levelTex.height)
-            return tex; //it's already fine
+        if (!ChangeRenderTexSize(ref tex, levelTex.width, levelTex.height))
+            return tex; //no need to change anything!
 
-        tex.width = levelTex.width;
-        tex.height = levelTex.height;
         Graphics.Blit(levelTex, tex, mat); //regenerate the texture
         Plugin.Log("Layer2Tex was the wrong size!! Regenerated texture.", 1);
         return tex;
+    }
+
+    private static bool ChangeRenderTexSize(ref RenderTexture tex, int w, int h)
+    {
+        if (tex.width == w && tex.height == h)
+            return false;
+
+        //tex.width = levelTex.width;
+        //tex.height = levelTex.height;
+        tex.Release();
+        tex = CreateRenderTex(w, h);
+        return true;
     }
 
     private static RenderTexture CreateRenderTex(int width, int height) => new(width, height, 0, DefaultFormat.LDR) { filterMode = 0 };

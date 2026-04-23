@@ -73,7 +73,7 @@ public partial class Plugin
     }
     #endregion
 
-    #region Other
+    #region ShaderProperties
     //Sets keywords for the shaders, and sets constants for ThicknessMap.shader
     private static void SetKeywords()
     {
