@@ -77,7 +77,7 @@ public class Options : AutoConfigOptions
     [Config(LAYER2, "Cached Textures", "How many Layer2 textures are saved. Saves processing when going back to previous screens, at the cost of VRAM.\nRecommended at 2. Any higher is usually useless."), LimitRange(1, 8)]
     public static int CachedRenderTextures = 2;
 
-    [Config(LAYER2, "Build Creature Backgrounds", "Attempts to infer the room geometry behind creatures by checking the pixels around them. Has a significant performance cost. Also applies to dynamic level elements.\nRecommended if you are using a high Effect Strength and have a stable framerate.", spaceBefore = 15)]
+    [Config(LAYER2, "Build Creature Backgrounds", "Attempts to infer the room geometry behind creatures by checking the pixels around them. Has a significant performance cost. Also applies to dynamic level elements.\nRecommended if you are using a high Effect Strength and have a stable framerate. Does NOT work with SBCameraScroll's experimental camera zoom option.", spaceBefore = 15)]
     public static bool BuildCreatureBackground = false;
     [Config(LAYER2, "Creature Background Samples", "How many pixels around the creature are checked. Will affect performance.\nRecommended below 20."), LimitRange(1, 31)]
     public static int CreatureBackgroundTests = 10;

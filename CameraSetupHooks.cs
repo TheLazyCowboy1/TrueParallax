@@ -57,7 +57,13 @@ public partial class Plugin
             SafeSplitscreenCompat.OffsetContainer(self, self.SpriteLayers[hudIdx]);
 
             //create the actual sprite
-            data.sprite = new(Futile.whiteElement) { shader = TrueParallaxFShader, width = self.sSize.x - 0.5f, height = self.sSize.y - 0.5f, anchorX = 0, anchorY = 0, x = self.sSize.x * Options.SpriteOffset };
+            data.sprite = new(Futile.whiteElement) {
+                shader = TrueParallaxFShader,
+                width = self.sSize.x, height = self.sSize.y,
+                anchorX = 0, anchorY = 0, //so that it's centered, basically
+            //OFFSET BY 0.5 to fix weird rounding artefacts
+                x = self.sSize.x * Options.SpriteOffset + 0.5f, y = 0.5f
+            };
             self.ReturnFContainer(PARALLAXCONTAINER).AddChild(data.sprite);
 
             Log("Setup shader constants", 2);

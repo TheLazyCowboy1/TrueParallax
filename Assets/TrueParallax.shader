@@ -135,23 +135,24 @@ inline uint terrainDep(int2 pos) {
 
 #if LZC_BUILDCREATUREBACKGROUND
 
+static int2 intLevelOffset = int2(-_spriteRect.xy * _screenSize);
 inline int depthOfTexel(int2 pos) {
 	float4 c = _PreLevelColorGrab.Load(int3(pos, 0));
 	if (c.r > 1.0f / 255.0f || c.g > 0 || c.b > 0) {
 		return 5;
 	}
 
-	int2 textCoord = pos - int2(_spriteRect.xy * _screenSize);
+	int2 textCoord = pos + intLevelOffset;
 	return depthOfPixel(_LevelTex.Load(int3(textCoord, 0)).r);
 }
 
 uniform int LZC_CreatureBackgroundTests;
 
-#if COMBINEDLEVEL
-uniform float LZC_ProjectionMod;
-uniform float LZC_MinObjectDepth;
-uniform float LZC_MaxDepDiff;
-#endif
+	#if COMBINEDLEVEL
+	uniform float LZC_ProjectionMod;
+	uniform float LZC_MinObjectDepth;
+	uniform float LZC_MaxDepDiff;
+	#endif
 
 #define dirCount 2
 //#define NONLINEARTESTS
@@ -171,9 +172,9 @@ inline float2 packBits(uint4 backColInts) {
 
 struct v2f {
     float4  pos : SV_POSITION;
-    float2  uv : TEXCOORD0;
-	float2  suv : TEXCOORD1;
-	float2  luv : TEXCOORD2;
+    //float2  uv : TEXCOORD0;
+	float2  suv : TEXCOORD0;
+	float2  luv : TEXCOORD1;
 };
 
 float4 _MainTex_ST;
@@ -182,19 +183,20 @@ v2f vert (appdata_full v)
 {
     v2f o;
     o.pos = UnityObjectToClipPos (v.vertex);
-    o.uv = TRANSFORM_TEX (v.texcoord, _MainTex);
-	o.suv = o.uv * _screenSize;
-	//o.luv = (o.uv - _spriteRect.xy) / ((_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize);
-	o.luv = (o.uv - _spriteRect.xy) * _screenSize;
+    //o.uv = TRANSFORM_TEX (v.texcoord, _MainTex);
+	float2 uv = TRANSFORM_TEX (v.texcoord, _MainTex);
+	o.suv = uv * _screenSize;
+	o.luv = (uv - _spriteRect.xy) / ((_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize);
+	//o.luv = (uv - _spriteRect.xy) * _screenSize;
     return o;
 }
 
 void frag (v2f i)
 {
-	int2 textCoord = int2(round(i.luv));
+	int2 textCoord = int2(i.luv);
 	float4 lev = _LevelTex.Load(int3(textCoord, 0));
 
-	int2 checkPos = int2(round(i.suv));
+	int2 checkPos = int2(i.suv);
 
 	uint ld = depthOfPixel(lev.r);
 	uint d = ld;
@@ -482,7 +484,8 @@ v2f vert (appdata_full v)
 	o.posCamDiff = (lerp(centerUV, uv, LZC_ConvergenceScale) - LZC_CamPos) / (LZC_GeneralScale * (absBackScale + 0.5f * (1 - absBackScale)));
 
 #if levelheat || levelmelt || LZC_WETTERRAIN
-	o.uv = realUV - _spriteRect.xy;
+	o.uv = (realUV - _spriteRect.xy) / (_spriteRect.zw - _spriteRect.xy); //this is actually the level uv
+	//o.uv = realUV - _spriteRect.xy;
 #endif
 
     return o;
@@ -580,10 +583,10 @@ half4 frag (v2f i) : SV_Target
 	float thicknessMod = LZC_Layer30Depth / 30.0f; //just to reduce multiplications slightly
 #endif
 
-	int2 bestGrabPos = int2(round(i.suv)); //as a fallback that ideally should never be used
+	int2 bestGrabPos = int2(i.suv); //as a fallback that ideally should never be used
 
 	float percentage = 0.0002f; //very tiny margin of error, just in case there's some weird imprecision error
-	float2 grabPos = initGrabPos + float2(0.5f, 0.5f); //adjust coords slightly so that int2(round(grabPos)) becomes int2(grabPos)
+	float2 grabPos = initGrabPos;// + float2(0.5f, 0.5f); //adjust coords slightly so that int2(round(grabPos)) becomes int2(grabPos)
 
 		//LOOP
 

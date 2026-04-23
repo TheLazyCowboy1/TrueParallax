@@ -55,6 +55,9 @@ public partial class Plugin
         {
             if (!self.TryGetData(out CameraData data)) return;
 
+
+            float moveSpeed = Options.CameraMoveSpeed * moveMod;
+
             Vector2 pos = new(0.5f, 0.5f);
 
             //Follow creatures
@@ -66,17 +69,18 @@ public partial class Plugin
                 if (critPos != null)
                 {
                     //inch offset toward 0
-                    data.critFollowOffset = LerpAndTick(data.critFollowOffset, Vector2.zero, Options.CameraMoveSpeed * moveMod, moveMod * Options.CameraMoveSpeed * 0.01f);
+                    data.critFollowOffset = LerpAndTick(data.critFollowOffset, Vector2.zero, moveSpeed, moveSpeed * 0.01f);
 
                     //offset by player input
                     var input = (crit as Player)?.input[0] ?? crit.inputWithDiagonals;
                     if (input != null)
                     {
-                        data.critFollowOffset = Vector2.ClampMagnitude(data.critFollowOffset + input.Value.analogueDir * moveMod * Options.CameraInputOffset * Options.CameraMoveSpeed, Options.CameraInputOffset);
+                        data.critFollowOffset = Vector2.ClampMagnitude(data.critFollowOffset + input.Value.analogueDir * Options.CameraInputOffset * moveSpeed, Options.CameraInputOffset);
                         readInput = true;
                     }
 
-                    pos = (critPos.Value - self.pos + data.critFollowOffset) / self.sSize;
+                    pos = (critPos.Value - self.pos + data.critFollowOffset) / self.sSize
+                        * self.SpriteLayers[0].scale; //multiply by scale to accomodate scale changes by SBCameraScroll
                 }
             }
             if (!readInput) data.critFollowOffset.Set(0, 0);
@@ -87,22 +91,18 @@ public partial class Plugin
                 try
                 {
                     //inch offset toward 0
-                    data.mouseOffset = LerpAndTick(data.mouseOffset, Vector2.zero, Options.CameraMoveSpeed * moveMod, moveMod * Options.CameraMoveSpeed * 0.01f);
+                    data.mouseOffset = LerpAndTick(data.mouseOffset, Vector2.zero, moveSpeed * 1.5f, moveSpeed * 0.01f);
 
-                    float mouseX = Options.MouseSensitivity * Input.GetAxis("Mouse X") * 0.25f;
+                    float mouseX = Options.MouseSensitivity * Input.GetAxis("Mouse X");
                     if (mouseX != 0f)
                     {
-                        //float strength = Mathf.Clamp01(Mathf.Abs(mouseX));
-                        //pos.x += strength * ((mouseX > 0 ? 1f : 0f) - pos.x);
-                        data.mouseOffset.x += Mathf.Clamp(mouseX, -2, 2) * moveMod * Options.CameraMoveSpeed; //clamp just for sanity
+                        data.mouseOffset.x += Mathf.Clamp(mouseX, -10, 10) * Options.CameraMoveSpeed * moveSpeed * 1.5f; //clamp just for sanity
                     }
 
-                    float mouseY = Options.MouseSensitivity * Input.GetAxis("Mouse Y") * 0.25f;// * 0.5625f; //0.5625 = 9/16 
+                    float mouseY = Options.MouseSensitivity * Input.GetAxis("Mouse Y");// * 0.5625f; //0.5625 = 9/16 
                     if (mouseY != 0f)
                     {
-                        //float strength = Mathf.Clamp01(Mathf.Abs(mouseY));
-                        //pos.y += strength * ((mouseY > 0 ? 1f : 0f) - pos.y);
-                        data.mouseOffset.y += Mathf.Clamp(mouseY, -2, 2) * moveMod * Options.CameraMoveSpeed;
+                        data.mouseOffset.y += Mathf.Clamp(mouseY, -10, 10) * Options.CameraMoveSpeed * moveSpeed * 1.5f;
                     }
 
                     pos += data.mouseOffset;
@@ -125,7 +125,7 @@ public partial class Plugin
             else
             {
                 if ((data.CamPos - pos).sqrMagnitude > Options.CameraStopDistance * Options.CameraStopDistance) //don't move when very close
-                    data.CamPos = LerpAndTick(data.CamPos, pos, moveMod * Options.CameraMoveSpeed, moveMod * Options.CameraMoveSpeed * 0.005f);
+                    data.CamPos = LerpAndTick(data.CamPos, pos, moveSpeed, moveSpeed * 0.005f);
             }
         }
         catch (Exception ex) { Error(ex); }
