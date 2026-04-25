@@ -458,8 +458,15 @@ struct v2f {
 	float2  nuv : TEXCOORD0;
 	float2  suv : TEXCOORD1;
 	float2  posCamDiff : TEXCOORD2;
+#if LZC_DYNAMICOPTIMIZATION
+	float2  estTests : TEXCOORD3;
+#endif
 #if levelheat || levelmelt || LZC_WETTERRAIN
+	#if LZC_DYNAMICOPTIMIZATION
+    float2  uv : TEXCOORD4;
+	#else
     float2  uv : TEXCOORD3;
+	#endif
 #endif
 };
 
@@ -482,6 +489,10 @@ v2f vert (appdata_full v)
 		//Apply LZC_ConvergenceScale
 	float absBackScale = abs(LZC_ConvergenceScale); //prevents ridiculous results when BackgroundScale is < 0, especially: -1 caused division by 0
 	o.posCamDiff = (lerp(centerUV, uv, LZC_ConvergenceScale) - LZC_CamPos) / (LZC_GeneralScale * (absBackScale + 0.5f * (1 - absBackScale)));
+
+#if LZC_DYNAMICOPTIMIZATION
+	o.estTests = o.posCamDiff * LZC_MoveStepScale * LZC_TestNum * LZC_TestNum;
+#endif
 
 #if levelheat || levelmelt || LZC_WETTERRAIN
 	o.uv = (realUV - _spriteRect.xy) / (_spriteRect.zw - _spriteRect.xy); //this is actually the level uv
@@ -558,14 +569,21 @@ half4 frag (v2f i) : SV_Target
 #endif
 
 #if LZC_DYNAMICOPTIMIZATION
-	float2 absCamDiff = abs(i.posCamDiff);
-	if (absCamDiff.x < LZC_MaxWarp.x && absCamDiff.y < LZC_MaxWarp.y) { //don't optimize above MaxWarp, because those wouldn't actually be optimizations
+	//float2 absCamDiff = abs(i.posCamDiff);
+	//if (absCamDiff.x < LZC_MaxWarp.x && absCamDiff.y < LZC_MaxWarp.y) { //don't optimize above MaxWarp, because those wouldn't actually be optimizations
+	/*
 		float2 adjustedDiff = LZC_MaxWarp / absCamDiff;
 		float optimization = min(min(adjustedDiff.x, adjustedDiff.y), 0.25f * LZC_TestNum); //can't be less than 4 totalTests
 		stepSize = stepSize * optimization;
 		moveStep = moveStep * optimization;
 		totalTests = ceil(totalTests / optimization);
-	}
+	*/
+		float2 absTests = abs(i.estTests);
+		totalTests = clamp(4, ceil(max(absTests.x, absTests.y)), LZC_TestNum);
+		float optimization = (float)LZC_TestNum / (float)totalTests;
+		stepSize = stepSize * optimization;
+		moveStep = moveStep * optimization;
+	//}
 	#if LZC_PROCESSLAYER2
 	float minThickness = stepSize; //otherwise, layer1 can seemingly just disappear when stepSize is high
 	#endif
