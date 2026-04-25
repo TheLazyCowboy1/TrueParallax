@@ -121,7 +121,7 @@ public partial class Plugin
 
         mat.SetFloat(ShadPropWarp, data.currentWarp);
 
-        float maxUsedWarp = Options.IsActiveCenterOptimization ? data.CalcMaxUsedWarp() : data.currentWarp;
+        float maxUsedWarp = Options.IsActiveCenterOptimization ? data.CalcMaxUsedWarp() : (data.currentWarp * Options.MaxWarp);
         int testNum = Mathf.Max(2, (int)Mathf.Ceil(Mathf.Abs(maxUsedWarp) / Options.OptimizationFac));
 
         mat.SetInt(ShadPropTestNum, testNum);

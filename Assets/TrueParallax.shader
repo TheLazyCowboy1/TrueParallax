@@ -491,7 +491,7 @@ v2f vert (appdata_full v)
 	o.posCamDiff = (lerp(centerUV, uv, LZC_ConvergenceScale) - LZC_CamPos) / (LZC_GeneralScale * (absBackScale + 0.5f * (1 - absBackScale)));
 
 #if LZC_DYNAMICOPTIMIZATION
-	o.estTests = o.posCamDiff * LZC_MoveStepScale * LZC_TestNum * LZC_TestNum;
+	o.estTests = o.posCamDiff * LZC_MoveStepScale * LZC_TestNum;
 #endif
 
 #if levelheat || levelmelt || LZC_WETTERRAIN

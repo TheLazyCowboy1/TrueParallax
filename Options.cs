@@ -90,7 +90,7 @@ public class Options : AutoConfigOptions
     [Config(OPTIMIZATION, "Optimization", "Reduces processing costs, at the risk of visual artefacts due to \"skipping over\" pixels.\nRecommended between 1 and 2. A good compromise is 1.5."), LimitRange(0.25f, 4)]
     public static float OptimizationFac = 1;
 
-    [Config(OPTIMIZATION, "Dynamic Optimization", "Reduces processing costs (by about 50% on average) for pixels closer to the camera, but can cause some minor visual artefacts (serrated edges, pixelated backgrounds).\nRecommended to EITHER set Optimization to 1.5, OR enable this and use Max Warp.")]
+    [Config(OPTIMIZATION, "Dynamic Optimization", "Reduces processing costs (by about 50% on average) for pixels closer to the camera, but can cause some minor visual artefacts (serrated edges, sometimes pixelated backgrounds).\nHIGHLY recommended if you have performance issues.")]
     public static bool DynamicOptimization = false;
     [Config(OPTIMIZATION, "Center Optimization", "Reduces processing costs (by about 33% on average) when the camera is closer to the center of the screen, but can cause some foreground object to wiggle slightly.\nRecommended as a less aggressive alternative to Dynamic Optimization. Disable if you have both motion-sickness and high frame-rates.")]
     public static bool CenterOptimization = true;
@@ -171,8 +171,8 @@ public class Options : AutoConfigOptions
                 "cost = EffectStrength * MaxWarp / Optimization\n" +
                 "Thus, Effect Strength is the primary factor for performance cost, and Max Warp and Optimization are used to directly reduce it.\n" +
                 "\nOther optimizations:"
-                + (myBools.dynamicOptimization ? "\n* Enabling Dynamic Optimization improves performance by roughly 50%." : "")
-                + (myBools.centerOptimization ? "\n* Enabling Center Optimization improves performance by roughly 33%." : "")
+                + (myBools.dynamicOptimization ? $"\n* Enabling Dynamic Optimization improves performance by roughly {(CenterOptimization ? "50" : "100")}%." : "")
+                + (myBools.centerOptimization ? "\n* Alternatively, enabling Center Optimization improves performance by roughly 50%." : "")
                 + (myBools.secondLayer ? "\n* Disabling Second Layer could improve performance by 50-100%, because it is highly expensive." : "")
                 + (myBools.limitProjection ? "\n* Disabling Limit Projection could improve performance by up to 50%; but I recommend keeping it on anyway." : "")
                 + (myBools.backgroundNoise ? "\n* Setting Background Noise to 0 should improve performance by perhaps 10% (exact improvement is untested)." : "")
