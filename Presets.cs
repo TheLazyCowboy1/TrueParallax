@@ -26,7 +26,7 @@ public partial class Options
         
         tab.AddItems(
             new OpLabel(50, 500, "Load Preset", true),
-            presetsBox = new(new Configurable<string>(""), new(50, 450), 200, GetAllPresets(), 5, true),
+            presetsBox = new(new Configurable<string>(""), new(50, 460), 200, GetAllPresets(), 5, true),
             loadButton = new(new(350, 450), new UnityEngine.Vector2(150, 50), "Load Preset", 40) { description = "Overrides all your current configs with the selected preset."},
 
             new OpLabel(50, 300, "Save Preset", true),
@@ -111,7 +111,7 @@ public partial class Options
                 string dir = Path.GetDirectoryName(files[i]);
                 foreach (string f in Directory.EnumerateFiles(dir))
                 {
-                    if (f.ToLowerInvariant() == files[i])
+                    if (f.Equals(files[i], StringComparison.InvariantCultureIgnoreCase))
                     {
                         files[i] = f;
                         break;
