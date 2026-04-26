@@ -5,8 +5,9 @@ using System.Linq;
 
 namespace TrueParallax;
 
-public class Options : AutoConfigOptions
+public partial class Options : AutoConfigOptions
 {
+    private const string PRESETS = "Presets";
     private const string BASICS = "Basics";
     private const string CAMERA = "Camera";
     private const string LAYER2 = "Layer2";
@@ -15,6 +16,7 @@ public class Options : AutoConfigOptions
 
     public Options() : base(new TabInfo[]
     {
+        new(PRESETS),
         new(BASICS) { spacing = 40, startHeight = 500 },
         new(CAMERA),
         new(LAYER2) { startHeight = 500 },
@@ -212,6 +214,8 @@ public class Options : AutoConfigOptions
         GetTab(OPTIMIZATION).AddItems(
             new OptimizationLabel(50, 200)
             );
+
+        SetupPresetsTab();
     }
 
     public override void Update()
@@ -241,6 +245,8 @@ public class Options : AutoConfigOptions
 
             UIConfigs[nameof(CreatureBackgroundTests)].greyedOut = !TwoLayers || !BuildCreatureBackground;
             UIConfigs[nameof(DefaultLevelThickness)].greyedOut = !TwoLayers || BuildCreatureBackground;
+
+            PresetsUpdate();
         }
         catch (Exception ex) { Plugin.Error(ex); }
     }

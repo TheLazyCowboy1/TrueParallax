@@ -74,7 +74,7 @@ public abstract class SimplerPlugin : BaseUnityPlugin
 
     public void Awake()
     {
-        EasyExtEnum.Register();
+        //EasyExtEnum.Register();
 
         Initialize();
         Log("Plugin awoken");
@@ -114,8 +114,8 @@ public abstract class SimplerPlugin : BaseUnityPlugin
 
         try
         {
-            if (RainMeadowEnabled)
-                MeadowExt.RemoveHooks();
+            //if (RainMeadowEnabled)
+                //MeadowExt.RemoveHooks();
         } catch { }
 
         RemoveHooks();
@@ -138,8 +138,8 @@ public abstract class SimplerPlugin : BaseUnityPlugin
         {
             if (RainMeadowEnabled)
             {
-                AutoSync.RegisterSyncedVars();
-                MeadowExt.ApplyHooks();
+                //AutoSync.RegisterSyncedVars();
+                //MeadowExt.ApplyHooks();
             }
         }
         catch (Exception ex) { Error("Rain Meadow is apparently inactive: " + ex); RainMeadowEnabled = false; }

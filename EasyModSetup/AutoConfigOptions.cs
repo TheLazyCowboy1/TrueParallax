@@ -38,14 +38,14 @@ public abstract class AutoConfigOptions : OptionInterface
     {
         orig(self);
 
-        (SimplerPlugin.ConfigOptions as AutoConfigOptions).SetAllValues();
+        (SimplerPlugin.ConfigOptions as AutoConfigOptions).SetAllFields();
     }
 
     private static void ConfigHolder_Save(On.OptionInterface.ConfigHolder.orig_Save orig, ConfigHolder self)
     {
         orig(self);
 
-        (SimplerPlugin.ConfigOptions as AutoConfigOptions).SetAllValues();
+        (SimplerPlugin.ConfigOptions as AutoConfigOptions).SetAllFields();
     }
     #endregion
 
@@ -158,7 +158,7 @@ public abstract class AutoConfigOptions : OptionInterface
         return n;
     }
 
-    private struct ConfigInfo
+    public struct ConfigInfo
     {
         public ConfigurableBase config;
         public string tab;
@@ -173,7 +173,7 @@ public abstract class AutoConfigOptions : OptionInterface
     }
 
     //private ConfigInfo[] ConfigInfos;
-    private Dictionary<string, ConfigInfo> ConfigInfos;
+    public Dictionary<string, ConfigInfo> ConfigInfos;
     public TabInfo[] TabInfos;
     public Dictionary<string, UIconfig> UIConfigs;
 
@@ -304,14 +304,32 @@ public abstract class AutoConfigOptions : OptionInterface
     }
     private void SetValue(ConfigInfo info) => SetValue(info, GetType());
 
-    public void SetAllValues()
+    public void SetAllFields()
     {
         Type type = GetType();
         foreach (ConfigInfo info in ConfigInfos.Values)
         {
             SetValue(info, type);
         }
-        SimplerPlugin.Log("Set config values for " + mod?.id);
+        SimplerPlugin.Log("Set option values for " + mod?.id);
+    }
+
+
+    private void SetConfig(ConfigInfo info, Type type)
+    {
+        info.config.BoxedValue = type.GetField(info.config.key).GetValue(this);
+        info.config.BoundUIconfig.ShowConfig(); //updates the value displayed by the UIconfig
+    }
+    private void SetConfig(ConfigInfo info) => SetConfig(info, GetType());
+
+    public void SetAllConfigs()
+    {
+        Type type = GetType();
+        foreach (ConfigInfo info in ConfigInfos.Values)
+        {
+            SetConfig(info, type);
+        }
+        SimplerPlugin.Log("Set configs for " + mod?.id);
     }
 
 }
