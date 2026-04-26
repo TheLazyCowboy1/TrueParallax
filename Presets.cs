@@ -25,13 +25,13 @@ public partial class Options
 
         
         tab.AddItems(
-            new OpLabel(100, 500, "Load Preset", true),
-            presetsBox = new(new Configurable<string>(""), new(100, 450), 200, GetAllPresets(), 10),
-            loadButton = new(new(400, 450), new UnityEngine.Vector2(150, 50), "Load Preset") { description = "Overrides all your current configs with the selected preset."},
+            new OpLabel(50, 500, "Load Preset", true),
+            presetsBox = new(new Configurable<string>(""), new(50, 450), 200, GetAllPresets(), 5, false),
+            loadButton = new(new(350, 450), new UnityEngine.Vector2(150, 50), "Load Preset", 40) { description = "Overrides all your current configs with the selected preset."},
 
-            new OpLabel(100, 300, "Save Preset", true),
-            saveNameBox = new(new Configurable<string>("My Preset"), new(100, 250), 200) { description = "The name of the preset you would like to save. Using the name of an existing preset will overwrite it."},
-            saveButton = new(new(400, 250), new UnityEngine.Vector2(150, 50), "Save Preset") { description = "Saves your current options as a preset, overwriting any former presets with that name."},
+            new OpLabel(50, 300, "Save Preset", true),
+            saveNameBox = new(new Configurable<string>("My Preset"), new(50, 250), 200) { description = "The name of the preset you would like to save. Using the name of an existing preset will overwrite it."},
+            saveButton = new(new(350, 250), new UnityEngine.Vector2(150, 50), "Save Preset", 40) { description = "Saves your current options as a preset, overwriting any former presets with that name."},
 
             fileButton = new(new(200, 100), new UnityEngine.Vector2(150, 50), "View Presets Folder") { description = "View your presets in the file explorer."}
             );
@@ -64,6 +64,15 @@ public partial class Options
     {
         trigger.Menu.PlaySound(SoundID.MENU_Button_Standard_Button_Pressed);
         SavePreset(saveNameBox.value);
+
+        try
+        {
+            //replace the preset list
+            ListItem[] oldItems = presetsBox._itemList;
+            presetsBox.AddItems(true, GetAllPresets().Select(s => new ListItem(s)).ToArray());
+            presetsBox.RemoveItems(false, oldItems.Select(i => i.name).ToArray());
+        }
+        catch (Exception ex) { Plugin.Error(ex); }
     }
 
     private void FileButton_OnPressDone(UIfocusable trigger)
@@ -95,7 +104,7 @@ public partial class Options
             //string[] files = Directory.GetFiles(Path.Combine(Plugin.PluginPath, PRESET_SUBFOLDER));
             for (int i = 0; i < files.Length; i++)
             {
-                files[i] = Path.GetFileName(files[i]); //remove the full path
+                files[i] = Path.GetFileNameWithoutExtension(files[i]); //remove the full path and extension
             }
             if (files.Length > 0)
                 return files;
@@ -114,7 +123,10 @@ public partial class Options
                 s += info.config.key + PRESET_SEPARATOR + info.config.BoxedValue + '\n';
             }
             //File.WriteAllText(Path.Combine(Plugin.PluginPath, PRESET_SUBFOLDER, name) + ".txt", s);
-            File.WriteAllText(AssetManager.ResolveFilePath(Path.Combine(PRESET_SUBFOLDER, name) + ".txt"), s); //this will usually save in the StreamingAssets folder
+            string path = AssetManager.ResolveFilePath(Path.Combine(PRESET_SUBFOLDER, name) + ".txt");
+            string fileName = Path.GetFileName(path);
+            path = path.Substring(0, path.Length - fileName.Length) + name + ".txt"; //replace name so that it's not all lowercase
+            File.WriteAllText(path, s); //this will usually save in the StreamingAssets folder
 
             Plugin.Log("Saved options preset: " + name);
         }
