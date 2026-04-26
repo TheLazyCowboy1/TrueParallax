@@ -115,7 +115,7 @@ public partial class Options
                 foreach (string f in Directory.EnumerateFiles(dir))
                 {
                     string f2 = Path.GetFileNameWithoutExtension(f);
-                    if (f2 == files[i])
+                    if (f2.Equals(files[i], StringComparison.InvariantCultureIgnoreCase))
                     {
                         files[i] = f2;
                         break;
