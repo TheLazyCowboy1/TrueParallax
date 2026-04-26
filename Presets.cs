@@ -107,20 +107,24 @@ public partial class Options
 
             for (int i = 0; i < files.Length; i++)
             {
-                //search for the files original name
                 string dir = Path.GetDirectoryName(files[i]);
+
+                files[i] = Path.GetFileNameWithoutExtension(files[i]); //remove the full path and extension
+
+                //search for the files original name
                 foreach (string f in Directory.EnumerateFiles(dir))
                 {
-                    if (f.Equals(files[i], StringComparison.InvariantCultureIgnoreCase))
+                    string f2 = Path.GetFileNameWithoutExtension(f);
+                    if (f2 == files[i])
                     {
-                        files[i] = f;
+                        files[i] = f2;
                         break;
                     }
                 }
 
-                files[i] = Path.GetFileNameWithoutExtension(files[i]); //remove the full path and extension
             }
-            if (files.Length > 0)
+
+            if (files.Length > 0) //cannot return an empty list
                 return files;
         }
         catch (Exception ex) { Plugin.Error(ex); }
