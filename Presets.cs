@@ -97,10 +97,11 @@ public partial class Options
             {
                 files[i] = Path.GetFileName(files[i]); //remove the full path
             }
-            return files;
+            if (files.Length > 0)
+                return files;
         }
         catch (Exception ex) { Plugin.Error(ex); }
-        return new string[0];
+        return new string[1] {""};
     }
 
     public void SavePreset(string name)
