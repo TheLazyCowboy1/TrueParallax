@@ -26,7 +26,7 @@ public partial class Options
         
         tab.AddItems(
             new OpLabel(50, 500, "Load Preset", true),
-            presetsBox = new(new Configurable<string>(""), new(50, 450), 200, GetAllPresets(), 5, false),
+            presetsBox = new(new Configurable<string>(""), new(50, 450), 200, GetAllPresets(), 5, true),
             loadButton = new(new(350, 450), new UnityEngine.Vector2(150, 50), "Load Preset", 40) { description = "Overrides all your current configs with the selected preset."},
 
             new OpLabel(50, 300, "Save Preset", true),
@@ -35,6 +35,8 @@ public partial class Options
 
             fileButton = new(new(200, 100), new UnityEngine.Vector2(150, 50), "View Presets Folder") { description = "View your presets in the file explorer."}
             );
+
+        presetsBox.PosY -= presetsBox._rectList.size.y; //move down so that the list extends BELOW the original y coordinate
 
         presetsBox.OnValueChanged += PresetsBox_OnValueChanged;
         loadButton.OnPressDone += LoadButton_OnPressDone;
@@ -102,8 +104,20 @@ public partial class Options
         {
             string[] files = AssetManager.ListDirectory(PRESET_SUBFOLDER, false, false, false);
             //string[] files = Directory.GetFiles(Path.Combine(Plugin.PluginPath, PRESET_SUBFOLDER));
+
             for (int i = 0; i < files.Length; i++)
             {
+                //search for the files original name
+                string dir = Path.GetDirectoryName(files[i]);
+                foreach (string f in Directory.EnumerateFiles(dir))
+                {
+                    if (f.ToLowerInvariant() == files[i])
+                    {
+                        files[i] = f;
+                        break;
+                    }
+                }
+
                 files[i] = Path.GetFileNameWithoutExtension(files[i]); //remove the full path and extension
             }
             if (files.Length > 0)
@@ -122,6 +136,7 @@ public partial class Options
             {
                 s += info.config.key + PRESET_SEPARATOR + info.config.BoxedValue + '\n';
             }
+
             //File.WriteAllText(Path.Combine(Plugin.PluginPath, PRESET_SUBFOLDER, name) + ".txt", s);
             string path = AssetManager.ResolveFilePath(Path.Combine(PRESET_SUBFOLDER, name) + ".txt");
             string fileName = Path.GetFileName(path);
@@ -137,8 +152,8 @@ public partial class Options
     {
         try
         {
-            //string path = AssetManager.ResolveFilePath(Path.Combine(PRESET_SUBFOLDER, name) + ".txt");
-            string path = Path.Combine(Plugin.PluginPath, PRESET_SUBFOLDER, name) + ".txt";
+            string path = AssetManager.ResolveFilePath(Path.Combine(PRESET_SUBFOLDER, name) + ".txt");
+            //string path = Path.Combine(Plugin.PluginPath, PRESET_SUBFOLDER, name) + ".txt";
             if (!File.Exists(path))
             {
                 Plugin.Error("Could not find preset file: " + path);
@@ -163,6 +178,7 @@ public partial class Options
                     if (ConfigInfos.TryGetValue(key, out ConfigInfo info))
                     {
                         info.config.BoxedValue = val;
+                        info.config.BoundUIconfig.ShowConfig(); //update the UI component
                     }
                     else
                     {
