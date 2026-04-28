@@ -174,7 +174,9 @@ public partial class Plugin : SimplerPlugin
                 int fpsCap = Custom.rainWorld.options.fpsCap;
                 float targetFrameRate = Mathf.Min(Options.DynamicAdjustmentThreshold, fpsCap < 1 ? 300 : fpsCap * 0.75f); //don't penalize for being under 75% of fpsCap
                 float warpScale = 1.0f / (data.averageDeltaTime * targetFrameRate); //if deltaTime is too high, decrease warp. If too low, increase
-                warpScale *= warpScale; //take more drastic action when needed
+                if (warpScale > 1)
+                    warpScale += 0.5f * (warpScale - 1); //increase 50% more quickly
+                warpScale = Mathf.Clamp(warpScale, 0.5f, 2);
 
                 float absWarp = Mathf.Abs(Options.Warp);
                 if (warpScale < 1 || Mathf.Abs(data.totalWarp) < Options.Warp) //don't log when irrelevant
