@@ -131,6 +131,8 @@ public partial class Plugin
 
         Vector2 sSize = Custom.rainWorld.screenSize;
         mat.SetVector(ShadPropMoveStepScale, data.currentWarp / testNum * new Vector2(1, sSize.y / sSize.x));
+
+        mat.SetFloat(ShadPropMaxProjection, Mathf.Max(data.CurrentMaxProjection, 1.0f / testNum)); //don't let it get so low we can't see anything
     }
     private static void SetCameraConstants(CameraData data)
     {
@@ -146,7 +148,7 @@ public partial class Plugin
         mat.SetFloat("LZC_Layer30Depth", data.CurrentLayer30Depth);
         mat.SetFloat("LZC_AntiAliasingFac", Options.AntiAliasing);
         mat.SetFloat("LZC_BackgroundNoise", Options.BackgroundNoise);
-        mat.SetFloat("LZC_MaxProjection", data.CurrentMaxProjection);
+        //mat.SetFloat("LZC_MaxProjection", data.CurrentMaxProjection); //moved to WarpConstants, because it can change at very low warps
 
         mat.SetInt("LZC_CreatureBackgroundTests", Options.CreatureBackgroundTests);
         mat.SetInt("LZC_DefaultLevelThickness", Options.DefaultLevelThickness);

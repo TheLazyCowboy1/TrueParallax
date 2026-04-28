@@ -35,6 +35,14 @@ public partial class Plugin : SimplerPlugin
     public static bool SBCameraScrollEnabled = false;
     public static bool SplitScreenEnabled = false;
 
+    /// <summary>
+    /// Index of a shader variable (e.g: LZC_CamPos), used for presumably more efficient access to it
+    /// </summary>
+    public static int ShadPropCamPos = -1, ShadPropWarp = -1,
+        ShadPropTestNum = -1, ShadPropStepSize = -1,
+        ShadPropMoveStepScale = -1, ShadPropLayer2Tex = -1,
+        ShadPropLevelHeatAmount = -1, ShadPropMaxProjection = -1;
+
     public override void ModsApplied()
     {
         base.ModsApplied();
@@ -51,17 +59,10 @@ public partial class Plugin : SimplerPlugin
         ShadPropMoveStepScale = Shader.PropertyToID("LZC_MoveStepScale");
         ShadPropLayer2Tex = Shader.PropertyToID("_LZC_Layer2Tex");
         ShadPropLevelHeatAmount = Shader.PropertyToID("LZC_LevelHeatAmount");
+        ShadPropMaxProjection = Shader.PropertyToID("LZC_MaxProjection");
 
         RemoveLevelHeatAndMelt();
     }
-
-    /// <summary>
-    /// Index of a shader variable (e.g: LZC_CamPos), used for presumably more efficient access to it
-    /// </summary>
-    public static int ShadPropCamPos = -1, ShadPropWarp = -1,
-        ShadPropTestNum = -1, ShadPropStepSize = -1,
-        ShadPropMoveStepScale = -1, ShadPropLayer2Tex = -1,
-        ShadPropLevelHeatAmount = -1;
 
     public static FShader TrueParallaxFShader;
     public static Material ThicknessMapMaterial;
