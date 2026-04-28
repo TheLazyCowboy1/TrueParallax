@@ -101,7 +101,7 @@ public partial class Options : AutoConfigOptions
     [Config(OPTIMIZATION, "Max Warp", "Caps the strength of the parallax effect, only affecting the further parts of the screen. This can significantly improve performance.\nIF using Dynamic Optimization, recommended between 0.5 and 0.8. OTHERWISE, keep above 0.8."), LimitRange(0, 1)]
     public static float MaxWarp = 1;
 
-    [Config(OPTIMIZATION, "Target Minimum Framerate", "Attempts to maintain a stable framerate by dynamically lowering the Effect Strength if the frame rate is below the threshold.\n0 = Effect Strength is always constant; 30 = Effect Strength is lowered if FPS is below 30.", spaceBefore = 10), LimitRange(0, 300)]
+    [Config(OPTIMIZATION, "Target Minimum Framerate", "Attempts to maintain a stable framerate by dynamically lowering the Effect Strength if the frame rate is drops below this number.\n0 = Effect Strength is always constant; 30 = Effect Strength is lowered if FPS is below 30.", spaceBefore = 10), LimitRange(0, 300)]
     public static float DynamicAdjustmentThreshold = 30;
 
     //ADVANCED

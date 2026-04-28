@@ -173,16 +173,16 @@ public partial class Plugin : SimplerPlugin
             {
                 int fpsCap = Custom.rainWorld.options.fpsCap;
                 float targetFrameRate = Mathf.Min(Options.DynamicAdjustmentThreshold, fpsCap < 1 ? 300 : fpsCap * 0.75f); //don't penalize for being under 75% of fpsCap
-                float warpScale = 1.0f / (data.averageDeltaTime * targetFrameRate); //if deltaTime is too high, decrease warp. If too low, increase
+                float warpScale = 1.0f / (Mathf.Clamp(data.averageDeltaTime, 0.0001f, 1) * targetFrameRate); //if deltaTime is too high, decrease warp. If too low, increase
                 if (warpScale > 1)
-                    warpScale += 0.5f * (warpScale - 1); //increase 50% more quickly
-                warpScale = Mathf.Clamp(warpScale, 0.5f, 2);
+                    warpScale += 0.5f * (warpScale - 1); //increase 50% more quickly than decrease
+                warpScale = Mathf.Clamp(warpScale, 0.6f, 1.7f); //arbitrary contraints
 
                 float absWarp = Mathf.Abs(Options.Warp);
-                if (warpScale < 1 || Mathf.Abs(data.totalWarp) < Options.Warp) //don't log when irrelevant
+                if (warpScale < 1 || Mathf.Abs(data.totalWarp) < absWarp) //don't log when irrelevant
                     Plugin.Log($"Adjusting Warp. warpScale = {warpScale}. old totalWarp = {data.totalWarp}. new totalWarp = {data.totalWarp * warpScale}", 2);
 
-                data.averageDeltaTime *= 0.8f; //decrease averageDeltaTime to make up for the screen transition
+                data.averageDeltaTime *= 0.9f; //decrease averageDeltaTime to make up for the screen transition
                 data.totalWarp = Mathf.Clamp(data.totalWarp * warpScale, -absWarp, absWarp); //don't let it exceed the original Warp factor
                 data.currentWarp = data.totalWarp;
                 SetWarpConstants(data);

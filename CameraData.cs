@@ -36,7 +36,7 @@ public partial class CameraData
     public float CurrentLayer30Depth => activeBackgroundScene ? 1.0f / Options.BackgroundDepth : 1;
     public float CurrentMaxProjection => Options.MaxProjection * (Options.IsActiveSuperAccurateThickness ? 1 : CurrentLayer30Depth);
 
-    public float averageDeltaTime = 0.0001f; //basically 0
+    public float averageDeltaTime = -1f; //don't factor in initial loading time
 
     public FSprite sprite;
     public bool needSetConstants;
