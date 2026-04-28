@@ -58,7 +58,9 @@ public partial class Options : AutoConfigOptions
     [Config(CAMERA, "Shift Background Scenes", "Shifts the position of background scenes (like the views above the clouds) slightly to match the movement of the camera.\nRecommended at 0, or maybe 0.5. 1 = background follows player movement; -1 = follows back wall's movement.", spaceBefore = 15), LimitRange(-5, 5)]
     public static float BackgroundShift = 0;
 
-    [Config(CAMERA, "Invert Position", "Makes the camera think the player is on the opposite end of the room; thus, camera motion is opposite player motion.\nNOT recommended.", spaceBefore = 15)]
+    [Config(CAMERA, "Camera Motion Curve", "Applies a curve to the camera's motion. Positive values causes the camera to favor being near the edges of the screen; zero means linear motion; negative values mean the camera favors the middle.\nRecommended between 0 and 0.5. Low/negative values allow the camera sometimes to never quite show the edges of the screen, which I find irritating.", spaceBefore = 15), LimitRange(-5, 1)]
+    public static float CameraMotionCurve = 0.1f;
+    [Config(CAMERA, "Invert Position", "Makes the camera think the player is on the opposite end of the room; thus, camera motion is opposite player motion.\nNOT recommended.")]
     public static bool InvertPos = false;
     [Config(CAMERA, "Dynamic Zoom", "How much the camera zooms out when moving towards the center of the screen.\nNOT recommended; keep at 0. 0 = zoom remains constant; 1 = the parallax effect is entirely disabled when standing in the center of the screen."), LimitRange(0, 1)]
     public static float DynamicZoom = 0;

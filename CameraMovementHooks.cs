@@ -121,10 +121,12 @@ public partial class Plugin
                 catch { }
             }
 
-            pos.x = Mathf.Clamp01(pos.x);
-            pos.y = Mathf.Clamp01(pos.y);
+            pos.Set(Mathf.Clamp01(pos.x), Mathf.Clamp01(pos.y)); //clamp 0 to 1
 
-            if (Options.InvertPos)
+            if (Options.CameraMotionCurve != 0) //apply smoothing curve
+                pos.Set(SmoothCurve(pos.x, Options.CameraMotionCurve), SmoothCurve(pos.y, Options.CameraMotionCurve));
+
+            if (Options.InvertPos) //invert position
                 pos = Vector2.one - pos;
 
             //Actually change camera position
@@ -152,6 +154,7 @@ public partial class Plugin
         Vector2 t = d * Mathf.Min(tick / d.magnitude, 1); //don't move more than magnitude = don't overshoot
         return l + t;
     }
+    private static float SmoothCurve(float x, float s) => x*(3 - 3*s + s*x*(6 - 4*x)) / (3 - s);
 
     //Sets the CamPos
     public static void SetCamPos(RoomCamera self, float lerpFac)
