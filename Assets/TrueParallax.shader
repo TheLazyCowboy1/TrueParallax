@@ -83,6 +83,7 @@ Texture2D<float4> _SlopedTerrainMask;
 #if LZC_PROCESSLAYER2
 //sampler2D _LZC_Layer2Tex;
 Texture2D<float4> _LZC_Layer2Tex;
+uniform float LZC_StepSize;
 #endif
 
 #if LZC_PROCESSLAYER2
@@ -230,12 +231,12 @@ void frag (v2f i)
 		//CREATURES
 	if (creatureMask) {
 	#if LZC_BUILDCREATUREBACKGROUND
-		uint4 backColInts = GenerateBackground(checkPos, LZC_CreatureBackgroundTests, 0, 0, 10);
+		uint4 backColInts = GenerateBackground(checkPos, LZC_CreatureBackgroundTests, LZC_StepSize * 30, 0, 10);
 			//pack in bytes, same as below
 		_LZC_LevelTex[checkPos] = float4(r, packBits(backColInts), backColInts.w / 255.0f);
 	#else
 		_LZC_LevelTex[checkPos] = float4(r,
-			1 / 255.0f, //thickness = 1
+			max(1, LZC_StepSize * 30) / 255.0f, //thickness = 1
 			0, //layer2 = none
 			0); //distance = 0
 	#endif
@@ -559,7 +560,6 @@ half4 frag (v2f i) : SV_Target
 	if (i.uv.y + _spriteRect.y <= _waterLevel) {
 		float ugh = 0; //does this even make a big difference? It ranges from 0 to 0.1
 			//COPIED FROM LevelColor.shader
-
 		float displace = tex2D(_NoiseTex, float2((i.uv.x * 1.5)  - ugh + _RAIN * 0.01,
                                          (i.uv.y * 0.25) - ugh + _RAIN * 0.05)   ).x;
 		displace = saturate((sin((displace + i.uv.x + i.uv.y + _RAIN*0.1) * 3 * 3.14)-0.95)*20);
@@ -569,21 +569,12 @@ half4 frag (v2f i) : SV_Target
 #endif
 
 #if LZC_DYNAMICOPTIMIZATION
-	//float2 absCamDiff = abs(i.posCamDiff);
-	//if (absCamDiff.x < LZC_MaxWarp.x && absCamDiff.y < LZC_MaxWarp.y) { //don't optimize above MaxWarp, because those wouldn't actually be optimizations
-	/*
-		float2 adjustedDiff = LZC_MaxWarp / absCamDiff;
-		float optimization = min(min(adjustedDiff.x, adjustedDiff.y), 0.25f * LZC_TestNum); //can't be less than 4 totalTests
-		stepSize = stepSize * optimization;
-		moveStep = moveStep * optimization;
-		totalTests = ceil(totalTests / optimization);
-	*/
-		float2 absTests = abs(i.estTests);
-		totalTests = clamp(4, ceil(max(absTests.x, absTests.y)), LZC_TestNum);
-		float optimization = (float)LZC_TestNum / (float)totalTests;
-		stepSize = stepSize * optimization;
-		moveStep = moveStep * optimization;
-	//}
+	float2 absTests = abs(i.estTests);
+	totalTests = clamp(4, ceil(max(absTests.x, absTests.y)), LZC_TestNum);
+	float optimization = (float)LZC_TestNum / (float)totalTests;
+	stepSize = stepSize * optimization;
+	moveStep = moveStep * optimization;
+
 	#if LZC_PROCESSLAYER2
 	float minThickness = stepSize; //otherwise, layer1 can seemingly just disappear when stepSize is high
 	#endif
