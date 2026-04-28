@@ -17,6 +17,8 @@ public partial class CameraData
     public Vector2 mouseOffset = new(0, 0);
 
     public bool posDirty = true;
+    ///<summary>Basically only exists to be referenced by DynamicZoom. Otherwise, it is the same as currentWarp.</summary>
+    public float totalWarp = Options.Warp;
     public float currentWarp = Options.Warp;
     private Vector2 _backgroundShift;
     public Vector2 BackgroundShift
@@ -55,6 +57,7 @@ public partial class CameraData
         list.Remove(camera.cameraNumber);
         camera = null;
     }
+
 }
 
 public static class CameraEXT

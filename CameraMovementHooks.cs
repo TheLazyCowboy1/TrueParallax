@@ -1,5 +1,4 @@
-﻿using RWCustom;
-using System;
+﻿using System;
 using System.Linq;
 using UnityEngine;
 
@@ -16,10 +15,9 @@ public partial class Plugin
 
             if (self.TryGetData(out CameraData data))
             {
+                bool inactive = data.sprite == null || data.sprite.container == null || data.sprite.container.GetChildIndex(data.sprite) < 0;
                 //add back the parallax sprite if it was removed for some reason
-                if (data.sprite == null
-                    || data.sprite.container == null
-                    || data.sprite.container.GetChildIndex(data.sprite) < 0)
+                if (inactive && !ParallaxShouldBeInactive(data))
                 {
                     FContainer container = self.ReturnFContainer(PARALLAXCONTAINER);
                     if (container == null)
@@ -27,10 +25,17 @@ public partial class Plugin
                     else
                     {
                         container.AddChildAtIndex(data.sprite, 0);
-                        Log("Parallax sprite was removed from container! Re-added it to container", 2);
+                        Log("Re-added parallax sprite to container.", 2);
                     }
                 }
+                //remove the parallax sprite if it shouldn't be there; basically just for ending cutscenes
+                else if (data.sprite != null && !inactive && ParallaxShouldBeInactive(data))
+                {
+                    data.sprite.RemoveFromContainer();
+                    Log("Removed parallax sprite from container.", 2);
+                }
             }
+
         }
         catch (Exception ex) { Error(ex); }
 
@@ -48,6 +53,9 @@ public partial class Plugin
     #endregion
 
     #region Calculations
+
+    public static bool ParallaxShouldBeInactive(CameraData data) => data.camera.voidSeaMode || data.camera.freeMoveRect != null || (!Options.SplitscreenParallax && data.camera.cameraNumber > 0);
+
     //Determines what the CamPos should be
     public static void UpdateCamPos(RoomCamera self, float moveMod = 1)
     {
@@ -185,7 +193,7 @@ public partial class Plugin
                     centerDistance = 4 * Mathf.LerpUnclamped(camDiff2.x + camDiff2.y, centerDistance, centerDistance); //if centerDistance is low, make it circular rather than square
                     float centerWarpFac = Mathf.LerpUnclamped(1, centerDistance * (2 - centerDistance), Options.DynamicZoom);
 
-                    data.currentWarp = Options.Warp * centerWarpFac;
+                    data.currentWarp = data.totalWarp * centerWarpFac;
 
                     SetWarpConstants(data);
                 }

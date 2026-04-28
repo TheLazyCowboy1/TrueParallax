@@ -169,6 +169,22 @@ public partial class Plugin : SimplerPlugin
             if (Options.TransitionsResetCamera)
                 data.CamPos = new(-1, -1); //don't lerp from previous position
 
+            if (Options.DynamicAdjustmentThreshold > 0)
+            {
+                int fpsCap = Custom.rainWorld.options.fpsCap;
+                float targetFrameRate = Mathf.Min(Options.DynamicAdjustmentThreshold, fpsCap < 1 ? 300 : fpsCap * 0.9f); //don't penalize for being under 90% of fpsCap
+                float warpScale = 1.0f / (Time.smoothDeltaTime * targetFrameRate); //if deltaTime is too high, decrease warp. If too low, increase
+
+
+                float absWarp = Mathf.Abs(Options.Warp);
+                if (warpScale < 1 || Mathf.Abs(data.totalWarp) < Options.Warp) //don't log when irrelevant
+                    Plugin.Log($"Adjusting Warp. warpScale = {warpScale}. old totalWarp = {data.totalWarp}. new totalWarp = {data.totalWarp * warpScale}", 2);
+
+                data.totalWarp = Mathf.Clamp(data.totalWarp * warpScale, -absWarp, absWarp); //don't let it exceed the original Warp factor
+                data.currentWarp = data.totalWarp;
+                SetWarpConstants(data);
+            }
+
             if (Options.TwoLayers)
             {
                 data.layer2Textures.Resize(Options.CachedRenderTextures); //ensure it's the right size

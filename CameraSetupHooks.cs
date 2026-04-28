@@ -118,6 +118,8 @@ public partial class Plugin
     public static void SetWarpConstants(CameraData data)
     {
         Material mat = data.SpriteMaterial;
+        if (mat == null)
+            return;
 
         mat.SetFloat(ShadPropWarp, data.currentWarp);
 
