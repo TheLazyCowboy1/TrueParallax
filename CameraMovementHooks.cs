@@ -34,6 +34,9 @@ public partial class Plugin
                     data.sprite.RemoveFromContainer();
                     Log("Removed parallax sprite from container.", 2);
                 }
+
+                if (Options.DynamicAdjustmentThreshold > 0)
+                    data.UpdateDeltaTime();
             }
 
         }
