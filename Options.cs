@@ -59,11 +59,12 @@ public partial class Options : AutoConfigOptions
     public static float BackgroundShift = 0;
 
     [Config(CAMERA, "Camera Motion Curve", "Applies a curve to the camera's motion. Positive values causes the camera to favor being near the edges of the screen; zero means linear motion; negative values mean the camera favors the middle.\nRecommended between 0 and 0.5. Low/negative values allow the camera sometimes to never quite show the edges of the screen, which I find irritating.", spaceBefore = 15), LimitRange(-5, 1)]
-    public static float CameraMotionCurve = 0.1f;
+    public static float CameraMotionCurve = 0.3f;
     [Config(CAMERA, "Invert Position", "Makes the camera think the player is on the opposite end of the room; thus, camera motion is opposite player motion.\nNOT recommended.")]
     public static bool InvertPos = false;
     [Config(CAMERA, "Dynamic Zoom", "How much the camera zooms out when moving towards the center of the screen.\nNOT recommended; keep at 0. 0 = zoom remains constant; 1 = the parallax effect is entirely disabled when standing in the center of the screen."), LimitRange(0, 1)]
     public static float DynamicZoom = 0;
+    public static bool IsActiveDynamicZoom => !AlwaysCentered && DynamicZoom > 0;
 
     //LAYER2
 
@@ -230,13 +231,14 @@ public partial class Options : AutoConfigOptions
         try
         {
             UIConfigs[nameof(MaxProjection)].greyedOut = !LimitProjection;
+
             UIConfigs[nameof(CameraMoveSpeed)].greyedOut = AlwaysCentered;
             UIConfigs[nameof(CameraStopDistance)].greyedOut = AlwaysCentered;
-            UIConfigs[nameof(BackDepthForScenesOnly)].greyedOut = BackgroundDepth <= 1;
-            UIConfigs[nameof(CenterOptimization)].greyedOut = DynamicOptimization;
-            UIConfigs[nameof(LevelHeatFac)].greyedOut = !LevelHeat;
-            UIConfigs[nameof(LevelHeatDecrease)].greyedOut = !LevelHeat;
-            UIConfigs[nameof(SuperAccurateThickness)].greyedOut = DepthCurve == DepthCurveOptions.LINEAR || !(Options.LimitProjection || Options.TwoLayers);
+            UIConfigs[nameof(TransitionsResetCamera)].greyedOut = AlwaysCentered;
+            UIConfigs[nameof(CameraInputOffset)].greyedOut = AlwaysCentered;
+            UIConfigs[nameof(CameraMotionCurve)].greyedOut = AlwaysCentered;
+            UIConfigs[nameof(InvertPos)].greyedOut = AlwaysCentered;
+            UIConfigs[nameof(DynamicZoom)].greyedOut = AlwaysCentered;
 
             OpTab layer2 = Tabs.FirstOrDefault(t => t.name == LAYER2);
             if (layer2 != null)
@@ -247,9 +249,15 @@ public partial class Options : AutoConfigOptions
                 }
             }
             layer2Label.Hidden = TwoLayers;
-
             UIConfigs[nameof(CreatureBackgroundTests)].greyedOut = !TwoLayers || !BuildCreatureBackground;
             UIConfigs[nameof(DefaultLevelThickness)].greyedOut = !TwoLayers || BuildCreatureBackground;
+
+            UIConfigs[nameof(CenterOptimization)].greyedOut = DynamicOptimization;
+
+            UIConfigs[nameof(BackDepthForScenesOnly)].greyedOut = BackgroundDepth <= 1;
+            UIConfigs[nameof(LevelHeatFac)].greyedOut = !LevelHeat;
+            UIConfigs[nameof(LevelHeatDecrease)].greyedOut = !LevelHeat;
+            UIConfigs[nameof(SuperAccurateThickness)].greyedOut = DepthCurve == DepthCurveOptions.LINEAR || !(Options.LimitProjection || Options.TwoLayers);
 
             PresetsUpdate();
         }

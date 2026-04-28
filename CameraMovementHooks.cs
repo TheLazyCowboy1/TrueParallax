@@ -190,7 +190,7 @@ public partial class Plugin
             {
                 mat.SetVector(ShadPropCamPos, data.CamPos);
 
-                if (Options.DynamicZoom > 0)
+                if (Options.IsActiveDynamicZoom)
                 {
                     Vector2 camDiff2 = data.CamPos - new Vector2(0.5f, 0.5f);
                     camDiff2 *= camDiff2;
