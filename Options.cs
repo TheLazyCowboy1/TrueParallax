@@ -28,7 +28,7 @@ public partial class Options : AutoConfigOptions
 
     //BASICS
     [Config(BASICS, "Effect Strength", "How strong the parallax effect is. Higher numbers will decrease performance and make the camera more zoomed in.\nRecommended between 50 and 200.", spaceAfter = 20, precision = 1), LimitRange(-1000, 1000)]
-    public static float Warp = 50;
+    public static float Warp = 100;
 
     [Config(BASICS, "Limit Projection", "Limits the thickness of objects like poles and creatures, but at a slight performance cost.\nHIGHLY recommended, because otherwise creatures look very stretched.")]
     public static bool LimitProjection = true;

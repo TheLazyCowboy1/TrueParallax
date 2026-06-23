@@ -1,16 +1,14 @@
 ﻿using Menu.Remix.MixedUI;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TrueParallax;
 
 public partial class Options
 {
     #region UI
+    private const string DEFAULT_PRESET = "Default";
     private OpListBox presetsBox;
     private OpTextBox saveNameBox;
     private OpHoldButton loadButton, saveButton, fileButton;
@@ -26,7 +24,7 @@ public partial class Options
         
         tab.AddItems(
             new OpLabel(50, 500, "Load Preset", true),
-            presetsBox = new(new Configurable<string>(""), new(50, 460), 200, GetAllPresets(), 5, true),
+            presetsBox = new(new Configurable<string>(DEFAULT_PRESET), new(50, 460), 200, GetAllPresets(), 5, true),
             loadButton = new(new(350, 450), new UnityEngine.Vector2(150, 50), "Load Preset", 40) { description = "Overrides all your current configs with the selected preset."},
 
             new OpLabel(50, 300, "Save Preset", true),
@@ -124,11 +122,12 @@ public partial class Options
 
             }
 
-            if (files.Length > 0) //cannot return an empty list
-                return files;
+            //if (files.Length > 0) //cannot return an empty list
+            //return files;
+            return files.Prepend(DEFAULT_PRESET).ToArray();
         }
         catch (Exception ex) { Plugin.Error(ex); }
-        return new string[1] {""};
+        return new string[1] {DEFAULT_PRESET};
     }
 
     public void SavePreset(string name)
@@ -156,40 +155,52 @@ public partial class Options
     {
         try
         {
-            string path = AssetManager.ResolveFilePath(Path.Combine(PRESET_SUBFOLDER, name) + ".txt");
-            //string path = Path.Combine(Plugin.PluginPath, PRESET_SUBFOLDER, name) + ".txt";
-            if (!File.Exists(path))
+            if (name == DEFAULT_PRESET) //just reset everything to its default value
             {
-                Plugin.Error("Could not find preset file: " + path);
-                return;
-            }
-            string[] lines = File.ReadAllLines(path);
-            foreach (string l in lines)
-            {
-                try
+                foreach (var kvp in ConfigInfos)
                 {
-                    if (l.Length < 3) continue; //not possibly a valid line
-
-                    int idx = l.IndexOf(PRESET_SEPARATOR);
-                    if (idx < 0)
-                    {
-                        Plugin.Error("Error parsing the following preset line: " + l);
-                        continue;
-                    }
-
-                    string key = l.Substring(0, idx); //everything up to SEPARATOR
-                    string val = l.Substring(idx + 1); //everything after SEPARATOR
-                    if (ConfigInfos.TryGetValue(key, out ConfigInfo info))
-                    {
-                        info.config.BoxedValue = val;
-                        info.config.BoundUIconfig.ShowConfig(); //update the UI component
-                    }
-                    else
-                    {
-                        Plugin.Error("Could not find config with the following key: " + key);
-                    }
+                    ConfigurableBase c = kvp.Value.config;
+                    c.BoxedValue = c.defaultValue;
+                    c.BoundUIconfig?.ShowConfig();
                 }
-                catch (Exception ex) { Plugin.Error($"Error with line: {l}  : {ex}"); }
+            }
+            else //load the config info from the file
+            {
+                string path = AssetManager.ResolveFilePath(Path.Combine(PRESET_SUBFOLDER, name) + ".txt");
+                //string path = Path.Combine(Plugin.PluginPath, PRESET_SUBFOLDER, name) + ".txt";
+                if (!File.Exists(path))
+                {
+                    Plugin.Error("Could not find preset file: " + path);
+                    return;
+                }
+                string[] lines = File.ReadAllLines(path);
+                foreach (string l in lines)
+                {
+                    try
+                    {
+                        if (l.Length < 3) continue; //not possibly a valid line
+
+                        int idx = l.IndexOf(PRESET_SEPARATOR);
+                        if (idx < 0)
+                        {
+                            Plugin.Error("Error parsing the following preset line: " + l);
+                            continue;
+                        }
+
+                        string key = l.Substring(0, idx); //everything up to SEPARATOR
+                        string val = l.Substring(idx + 1); //everything after SEPARATOR
+                        if (ConfigInfos.TryGetValue(key, out ConfigInfo info))
+                        {
+                            info.config.BoxedValue = val;
+                            info.config.BoundUIconfig?.ShowConfig(); //update the UI component
+                        }
+                        else
+                        {
+                            Plugin.Error("Could not find config with the following key: " + key);
+                        }
+                    }
+                    catch (Exception ex) { Plugin.Error($"Error with line: {l}  : {ex}"); }
+                }
             }
 
             //we just set the configs, so now set the corresponding fields
