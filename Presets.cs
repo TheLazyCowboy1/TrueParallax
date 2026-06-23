@@ -52,7 +52,8 @@ public partial class Options
 
     private void PresetsBox_OnValueChanged(UIconfig config, string value, string oldValue)
     {
-        saveNameBox.value = value;
+        //saveNameBox.value = value;
+        saveNameBox.value = presetsBox._GetDisplayValue();
     }
 
     private void LoadButton_OnPressDone(UIfocusable trigger)
