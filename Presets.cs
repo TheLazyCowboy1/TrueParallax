@@ -1,5 +1,6 @@
 ﻿using Menu.Remix.MixedUI;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -9,6 +10,7 @@ public partial class Options
 {
     #region UI
     private const string DEFAULT_PRESET = "Default";
+    private const string DEFAULT_DESCRIPTION = "The default, recommended settings for this mod.";
     private OpListBox presetsBox;
     private OpTextBox saveNameBox;
     private OpHoldButton loadButton, saveButton, fileButton;
@@ -21,7 +23,6 @@ public partial class Options
             return;
         }
 
-        
         tab.AddItems(
             new OpLabel(50, 500, "Load Preset", true),
             presetsBox = new(new Configurable<string>(DEFAULT_PRESET), new(50, 460), 200, GetAllPresets(), 5, true),
@@ -69,7 +70,7 @@ public partial class Options
         {
             //replace the preset list
             ListItem[] oldItems = presetsBox._itemList;
-            presetsBox.AddItems(true, GetAllPresets().Select(s => new ListItem(s)).ToArray());
+            presetsBox.AddItems(true, GetAllPresets().ToArray());
             presetsBox.RemoveItems(false, oldItems.Select(i => i.name).ToArray());
         }
         catch (Exception ex) { Plugin.Error(ex); }
@@ -95,9 +96,11 @@ public partial class Options
     #region Files
     public const string PRESET_SUBFOLDER = "ParallaxPresets";
     public const char PRESET_SEPARATOR = '=';
+    private const string PRESET_DESCRIPTION_KEY = "PRESET_DESCRIPTION";
 
-    public string[] GetAllPresets()
+    public List<ListItem> GetAllPresets()
     {
+        List<ListItem> list = new() { new(DEFAULT_PRESET, DEFAULT_PRESET, 0) { desc = DEFAULT_DESCRIPTION } };
         try
         {
             string[] files = AssetManager.ListDirectory(PRESET_SUBFOLDER, false, false, false);
@@ -107,27 +110,37 @@ public partial class Options
             {
                 string dir = Path.GetDirectoryName(files[i]);
 
-                files[i] = Path.GetFileNameWithoutExtension(files[i]); //remove the full path and extension
+                string name = Path.GetFileNameWithoutExtension(files[i]); //remove the full path and extension
 
                 //search for the files original name
                 foreach (string f in Directory.EnumerateFiles(dir))
                 {
                     string f2 = Path.GetFileNameWithoutExtension(f);
-                    if (f2.Equals(files[i], StringComparison.InvariantCultureIgnoreCase))
+                    if (f2.Equals(name, StringComparison.InvariantCultureIgnoreCase))
                     {
-                        files[i] = f2;
+                        name = f2;
                         break;
                     }
                 }
 
+                ListItem it = new(files[i], name, list.Count);
+                try
+                {
+                    string line = File.ReadLines(files[i]).First();
+                    string prefix = PRESET_DESCRIPTION_KEY + PRESET_SEPARATOR;
+                    if (line.StartsWith(prefix))
+                        it.desc = line.Substring(prefix.Length);
+                } catch { }
+                list.Add(it);
             }
 
             //if (files.Length > 0) //cannot return an empty list
             //return files;
-            return files.Prepend(DEFAULT_PRESET).ToArray();
+            //return files.Prepend(DEFAULT_PRESET).ToArray();
         }
         catch (Exception ex) { Plugin.Error(ex); }
-        return new string[1] {DEFAULT_PRESET};
+        //return new string[1] {DEFAULT_PRESET};
+        return list;
     }
 
     public void SavePreset(string name)
@@ -151,11 +164,12 @@ public partial class Options
         catch (Exception ex) { Plugin.Error(ex); }
     }
 
-    public void LoadPreset(string name)
+    //public void LoadPreset(string name)
+    public void LoadPreset(string path)
     {
         try
         {
-            if (name == DEFAULT_PRESET) //just reset everything to its default value
+            if (path == DEFAULT_PRESET) //just reset everything to its default value
             {
                 foreach (var kvp in ConfigInfos)
                 {
@@ -166,7 +180,7 @@ public partial class Options
             }
             else //load the config info from the file
             {
-                string path = AssetManager.ResolveFilePath(Path.Combine(PRESET_SUBFOLDER, name) + ".txt");
+                //string path = AssetManager.ResolveFilePath(Path.Combine(PRESET_SUBFOLDER, name) + ".txt");
                 //string path = Path.Combine(Plugin.PluginPath, PRESET_SUBFOLDER, name) + ".txt";
                 if (!File.Exists(path))
                 {
@@ -174,11 +188,13 @@ public partial class Options
                     return;
                 }
                 string[] lines = File.ReadAllLines(path);
-                foreach (string l in lines)
+                for (int i = 0; i < lines.Length; i++)
                 {
+                    string l = lines[i];
                     try
                     {
                         if (l.Length < 3) continue; //not possibly a valid line
+                        if (i == 0 && l == PRESET_DESCRIPTION_KEY) continue; //not a real config
 
                         int idx = l.IndexOf(PRESET_SEPARATOR);
                         if (idx < 0)
@@ -206,7 +222,7 @@ public partial class Options
             //we just set the configs, so now set the corresponding fields
             SetAllFields();
 
-            Plugin.Log("Loaded options preset: " + name);
+            Plugin.Log("Loaded options preset: " + path);
 
         }
         catch (Exception ex) { Plugin.Error(ex); }
