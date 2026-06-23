@@ -126,10 +126,10 @@ public partial class Options
                 ListItem it = new(files[i], name, list.Count);
                 try
                 {
-                    string line = File.ReadLines(files[i]).First();
+                    string line = File.ReadLines(files[i]).First(); //check the first line
                     string prefix = PRESET_DESCRIPTION_KEY + PRESET_SEPARATOR;
-                    if (line.StartsWith(prefix))
-                        it.desc = line.Substring(prefix.Length);
+                    if (line.StartsWith(prefix)) //for the PRESET_DESCRIPTION key
+                        it.desc = line.Substring(prefix.Length).Replace("<LINE>", "\n"); //and use it as the description
                 } catch { }
                 list.Add(it);
             }
