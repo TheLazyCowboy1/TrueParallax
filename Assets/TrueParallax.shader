@@ -286,8 +286,11 @@ void frag (v2f i)
 		int2 lOffset = (dir[dirIdx] * lDist)/2;
 
 		int2 lPos = checkPos + lOffset;
-		float4 lCritCol = _PreLevelColorGrab.Load(int3(lPos, 0));
-		bool lCrit = lCritCol.r > 1.0f / 255.0f || lCritCol.g > 0 || lCritCol.b > 0;
+		bool lCrit = lPos.x < 0 || lPos.y < 0 || lPos.x >= int(_screenSize.x) || lPos.y >= int(_screenSize.y); //check if out of bounds
+		if (!lCrit) { //check for creatures
+			float4 lCritCol = _PreLevelColorGrab.Load(int3(lPos, 0));
+			lCrit = lCritCol.r > 1.0f / 255.0f || lCritCol.g > 0 || lCritCol.b > 0;
+		}
 	#if COMBINEDLEVEL
 		if (!lCrit) { //check if LevelTexCombiner is messing this pixel up
 			lPos = textCoord + lOffset;
@@ -306,8 +309,11 @@ void frag (v2f i)
 
 		//copy left-side code for simplicity
 		int2 lPos = checkPos + lOffset;
-		float4 lCritCol = _PreLevelColorGrab.Load(int3(lPos, 0));
-		bool lCrit = lCritCol.r > 1.0f / 255.0f || lCritCol.g > 0 || lCritCol.b > 0;
+		bool lCrit = lPos.x < 0 || lPos.y < 0 || lPos.x >= int(_screenSize.x) || lPos.y >= int(_screenSize.y); //check if out of bounds
+		if (!lCrit) { //check for creatures
+			float4 lCritCol = _PreLevelColorGrab.Load(int3(lPos, 0));
+			lCrit = lCritCol.r > 1.0f / 255.0f || lCritCol.g > 0 || lCritCol.b > 0;
+		}
 	#if COMBINEDLEVEL
 		if (!lCrit) { //check if LevelTexCombiner is messing this pixel up
 			lPos = textCoord + lOffset;
