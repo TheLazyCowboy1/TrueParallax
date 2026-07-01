@@ -9,6 +9,10 @@ namespace TrueParallax;
 
 public partial class Plugin
 {
+    public const string PARALLAXCONTAINER = "PARALLAX";//"HUD";
+
+    public static RenderTexture ScreenLevelTex;
+
     #region Hooks
     private void RoomCamera_ctor(On.RoomCamera.orig_ctor orig, RoomCamera self, RainWorldGame game, int cameraNumber)
     {

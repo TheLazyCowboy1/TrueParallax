@@ -6,6 +6,7 @@ using BepInEx;
 using EasyModSetup;
 using UnityEngine;
 using RWCustom;
+using TrueParallax.ModCompat;
 
 #pragma warning disable CS0618
 
@@ -129,6 +130,9 @@ public partial class Plugin : SimplerPlugin
         On.RoomCamera.ApplyPositionChange += RoomCamera_ApplyPositionChange;
 
         On.RoomCamera.ClearAllSprites += RoomCamera_ClearAllSprites;
+
+        if (SBCameraScrollEnabled)
+            SBCameraScrollMod.ApplyHooks();
     }
 
     public override void RemoveHooks()
@@ -147,12 +151,10 @@ public partial class Plugin : SimplerPlugin
         On.RoomCamera.ApplyPositionChange -= RoomCamera_ApplyPositionChange;
 
         On.RoomCamera.ClearAllSprites -= RoomCamera_ClearAllSprites;
+
+        if (SBCameraScrollEnabled)
+            SBCameraScrollMod.RemoveHooks();
     }
-
-
-    public const string PARALLAXCONTAINER = "PARALLAX";//"HUD";
-
-    public static RenderTexture ScreenLevelTex;
 
     #endregion
 

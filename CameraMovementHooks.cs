@@ -15,7 +15,7 @@ public partial class Plugin
 
             if (self.TryGetData(out CameraData data))
             {
-                bool inactive = data.sprite == null || data.sprite.container == null || data.sprite.container.GetChildIndex(data.sprite) < 0;
+                bool inactive = data.Inactive;
                 //add back the parallax sprite if it was removed for some reason
                 if (inactive && !ParallaxShouldBeInactive(data))
                 {
@@ -90,8 +90,19 @@ public partial class Plugin
                         readInput = true;
                     }
 
-                    pos = ((critPos.Value - self.pos + data.critFollowOffset) / self.sSize
-                        - new Vector2(0.5f, 0.5f)) * self.SpriteLayers[0].scale + new Vector2(0.5f, 0.5f); //multiply by scale to accomodate SBCameraScroll's zoom feature
+                    if (Options.CameraBasedPosition)
+                    {
+                        pos = (self.pos + data.critFollowOffset + 0.5f * self.sSize / self.SpriteLayers[0].scale) / new Vector2(self.room.PixelWidth, self.room.PixelHeight);
+                    }
+                    else if (Options.RoomBasedPosition && self.room != null)
+                    {
+                        pos = (critPos.Value + data.critFollowOffset) / new Vector2(self.room.PixelWidth, self.room.PixelHeight);
+                    }
+                    else
+                    {
+                        pos = ((critPos.Value - self.pos + data.critFollowOffset) / self.sSize
+                            - new Vector2(0.5f, 0.5f)) * self.SpriteLayers[0].scale + new Vector2(0.5f, 0.5f); //multiply by scale to accomodate SBCameraScroll's zoom feature
+                    }
                 }
             }
             if (!readInput) data.critFollowOffset.Set(0, 0);
