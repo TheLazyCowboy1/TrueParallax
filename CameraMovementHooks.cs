@@ -174,7 +174,7 @@ public partial class Plugin
             {
                 if (ModCompat.SBCameraScrollMod.UpdateSBCameraPos(self, out Vector2 newPos, data.CamPos))
                 {
-                    data.CamPos = pos;
+                    data.CamPos = newPos;
                     return;
                 }
             }
