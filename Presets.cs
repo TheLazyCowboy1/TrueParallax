@@ -67,12 +67,15 @@ public partial class Options
     {
         trigger.Menu.PlaySound(SoundID.MENU_Button_Standard_Button_Pressed);
 
+        string name = saveNameBox.value;
         string desc = "";
-        ListItem existingPreset = presetsBox._itemList.FirstOrDefault(i => i.displayName == saveNameBox.value);
+        ListItem existingPreset = presetsBox._itemList.FirstOrDefault(i => i.displayName == name);
         if (existingPreset != default)
+        {
             desc = existingPreset.desc;
-
-        SavePreset(saveNameBox.value, desc);
+            Plugin.Log($"Found decription for preset {name}: {desc}", 2);
+        }
+        SavePreset(name, desc);
 
         try
         {
@@ -158,7 +161,7 @@ public partial class Options
             string s = "";
             if (description != "")
             {
-                s += PRESET_DESCRIPTION_KEY + PRESET_SEPARATOR + '\n';
+                s += PRESET_DESCRIPTION_KEY + PRESET_SEPARATOR + description + '\n';
             }
             foreach (ConfigInfo info in ConfigInfos.Values)
             {

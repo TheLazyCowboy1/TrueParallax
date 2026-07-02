@@ -57,6 +57,7 @@ public static class SBCameraScrollMod
     public static Vector2 GetSBPlayerPos(RoomCamera cam)
     {
         var fields = cam.GetFields();
-        return (fields.on_screen_position - cam.pos) / cam.sSize;
+        Vector2 half = new(0.5f, 0.5f);
+        return half + (fields.on_screen_position - cam.pos) / cam.sSize; //SB's position is offset by half of sSize, for some reason
     }
 }

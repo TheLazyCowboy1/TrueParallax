@@ -71,11 +71,10 @@ public partial class Plugin
 
             Vector2 pos = new(0.5f, 0.5f);
 
-            bool sbCameraMode = false;
-            if (Options.UseSBPlayerPos && Plugin.SBCameraScrollEnabled)
+            bool sbCameraMode = Options.UseSBPlayerPos && Plugin.SBCameraScrollEnabled;
+            if (sbCameraMode)
             {
                 pos = ModCompat.SBCameraScrollMod.GetSBPlayerPos(self);
-                sbCameraMode = true;
             }
             else //calculate player on-screen position
             {
