@@ -65,12 +65,13 @@ public partial class Options : AutoConfigOptions
     [Config(CAMERA, "Dynamic Zoom", "How much the camera zooms out when moving towards the center of the screen.\nNOT recommended; keep at 0. 0 = zoom remains constant; 1 = the parallax effect is entirely disabled when standing in the center of the screen."), LimitRange(0, 1)]
     public static float DynamicZoom = 0;
     public static bool IsActiveDynamicZoom => !AlwaysCentered && DynamicZoom > 0;
-    [Config(CAMERA, "Room-Based Camera Position", "TEST OPTION: Changes the camera position to be the player's position within the entire room, rather than the on-screen position.")]
-    public static bool RoomBasedPosition = false;
+
     [Config(CAMERA, "Camera-Based Camera Position", "TEST OPTION: Changes the camera position to be the CAMERA's position within the room; only useful with SBCameraScroll.")]
     public static bool CameraBasedPosition = false;
     [Config(CAMERA, "Adjust SBCamera Position", "TEST OPTION: Adjusts SBCameraScroll's camera position to, uh, make it better?."), LimitRange(-5, 5)]
     public static float AdjustSBCameraFac = 0;
+    [Config(CAMERA, "Use SB Player Position", "TEST OPTION: Uses SBCameraScroll's calculated player on-screen position, for consistency.")]
+    public static bool UseSBPlayerPos = false;
 
     //LAYER2
 

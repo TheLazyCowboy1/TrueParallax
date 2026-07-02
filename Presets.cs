@@ -66,7 +66,13 @@ public partial class Options
     private void SaveButton_OnPressDone(UIfocusable trigger)
     {
         trigger.Menu.PlaySound(SoundID.MENU_Button_Standard_Button_Pressed);
-        SavePreset(saveNameBox.value);
+
+        string desc = "";
+        ListItem existingPreset = presetsBox._itemList.FirstOrDefault(i => i.displayName == saveNameBox.value);
+        if (existingPreset != default)
+            desc = existingPreset.desc;
+
+        SavePreset(saveNameBox.value, desc);
 
         try
         {
@@ -145,11 +151,15 @@ public partial class Options
         return list;
     }
 
-    public void SavePreset(string name)
+    public void SavePreset(string name, string description = "")
     {
         try
         {
             string s = "";
+            if (description != "")
+            {
+                s += PRESET_DESCRIPTION_KEY + PRESET_SEPARATOR + '\n';
+            }
             foreach (ConfigInfo info in ConfigInfos.Values)
             {
                 s += info.config.key + PRESET_SEPARATOR + info.config.BoxedValue + '\n';

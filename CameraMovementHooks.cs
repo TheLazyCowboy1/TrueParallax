@@ -71,41 +71,49 @@ public partial class Plugin
 
             Vector2 pos = new(0.5f, 0.5f);
 
-            //Follow creatures
-            var crit = self.followAbstractCreature?.realizedCreature;
-            bool readInput = false;
-            if (!Options.AlwaysCentered && crit != null)
+            bool sbCameraMode = false;
+            if (Options.UseSBPlayerPos && Plugin.SBCameraScrollEnabled)
             {
-                Vector2? critPos = (crit.inShortcut ? self.game.shortcuts.OnScreenPositionOfInShortCutCreature(self.room, crit) : crit.mainBodyChunk.pos);
-                if (critPos != null)
+                pos = ModCompat.SBCameraScrollMod.GetSBPlayerPos(self);
+                sbCameraMode = true;
+            }
+            else //calculate player on-screen position
+            {
+                //Follow creatures
+                var crit = self.followAbstractCreature?.realizedCreature;
+                bool readInput = false;
+                if (!Options.AlwaysCentered && crit != null)
                 {
-                    //inch offset toward 0
-                    data.critFollowOffset = LerpAndTick(data.critFollowOffset, Vector2.zero, moveSpeed, moveSpeed * 0.01f);
+                    Vector2? critPos = (crit.inShortcut ? self.game.shortcuts.OnScreenPositionOfInShortCutCreature(self.room, crit) : crit.mainBodyChunk.pos);
+                    if (critPos != null)
+                    {
+                        //inch offset toward 0
+                        data.critFollowOffset = LerpAndTick(data.critFollowOffset, Vector2.zero, moveSpeed, moveSpeed * 0.01f);
 
-                    //offset by player input
-                    var input = (crit as Player)?.input[0] ?? crit.inputWithDiagonals;
-                    if (input != null)
-                    {
-                        data.critFollowOffset = Vector2.ClampMagnitude(data.critFollowOffset + input.Value.analogueDir * Options.CameraInputOffset * moveSpeed, Options.CameraInputOffset);
-                        readInput = true;
-                    }
+                        //offset by player input
+                        var input = (crit as Player)?.input[0] ?? crit.inputWithDiagonals;
+                        if (input != null)
+                        {
+                            data.critFollowOffset = Vector2.ClampMagnitude(data.critFollowOffset + input.Value.analogueDir * Options.CameraInputOffset * moveSpeed, Options.CameraInputOffset);
+                            readInput = true;
+                        }
 
-                    if (Options.CameraBasedPosition)
-                    {
-                        pos = (self.pos + data.critFollowOffset + 0.5f * self.sSize / self.SpriteLayers[0].scale) / new Vector2(self.room.PixelWidth, self.room.PixelHeight);
-                    }
-                    else if (Options.RoomBasedPosition && self.room != null)
-                    {
-                        pos = (critPos.Value + data.critFollowOffset) / new Vector2(self.room.PixelWidth, self.room.PixelHeight);
-                    }
-                    else
-                    {
-                        pos = ((critPos.Value - self.pos + data.critFollowOffset) / self.sSize
-                            - new Vector2(0.5f, 0.5f)) * self.SpriteLayers[0].scale + new Vector2(0.5f, 0.5f); //multiply by scale to accomodate SBCameraScroll's zoom feature
+                        if (Options.CameraBasedPosition)
+                        {
+                            pos = (self.pos + data.critFollowOffset + 0.5f * self.sSize) / new Vector2(self.room.PixelWidth, self.room.PixelHeight);
+                        }
+                        else
+                        {
+                            pos = (critPos.Value - self.pos + data.critFollowOffset) / self.sSize;
+                        }
                     }
                 }
+                if (!readInput) data.critFollowOffset.Set(0, 0);
             }
-            if (!readInput) data.critFollowOffset.Set(0, 0);
+
+            //multiply by scale to accomodate SBCameraScroll's zoom feature
+            Vector2 half = new(0.5f, 0.5f);
+            pos = (pos - half) * self.SpriteLayers[0].scale + half;
 
             //Mouse movement
             if (Options.MouseSensitivity > 0)
@@ -145,6 +153,10 @@ public partial class Plugin
             {
                 data.CamPos = pos;
                 data.lastCamPos = pos; //also set lastCamPos, so there's no interpolation
+            }
+            else if (sbCameraMode)
+            {
+                data.CamPos = pos; //ignore moveSpeed and all that
             }
             else
             {

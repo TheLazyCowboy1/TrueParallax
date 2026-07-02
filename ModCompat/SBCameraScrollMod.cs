@@ -53,4 +53,10 @@ public static class SBCameraScrollMod
         var cameraFields = room_camera.GetFields();
         cameraFields.on_screen_position = (cameraFields.on_screen_position - RoomCenter) * AreaScale + RoomCenter;
     }
+
+    public static Vector2 GetSBPlayerPos(RoomCamera cam)
+    {
+        var fields = cam.GetFields();
+        return (fields.on_screen_position - cam.pos) / cam.sSize;
+    }
 }
