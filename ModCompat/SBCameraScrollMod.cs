@@ -1,7 +1,15 @@
 ﻿using MonoMod.RuntimeDetour;
 using SBCameraScroll;
 using System;
+using System.Reflection;
+using System.Security;
+using System.Security.Permissions;
 using UnityEngine;
+
+#pragma warning disable CS0618
+
+[module: UnverifiableCode]
+[assembly: SecurityPermission(SecurityAction.RequestMinimum, SkipVerification = true)]
 
 namespace TrueParallax.ModCompat;
 
@@ -57,7 +65,63 @@ public static class SBCameraScrollMod
     public static Vector2 GetSBPlayerPos(RoomCamera cam)
     {
         var fields = cam.GetFields();
+        return PlayerPosToScreenPos(cam, fields.on_screen_position);
+    }
+
+    private static Vector2 PlayerPosToScreenPos(RoomCamera cam, Vector2 pos)
+    {
         Vector2 half = new(0.5f, 0.5f);
-        return half + (fields.on_screen_position - cam.pos) / cam.sSize; //SB's position is offset by half of sSize, for some reason
+        return half + (pos - cam.pos) / cam.sSize; //SB's position is offset by half of sSize, for some reason
+    }
+    private static Vector2 ScreenPosToPlayerPos(RoomCamera cam, Vector2 pos)
+    {
+        Vector2 half = new(0.5f, 0.5f);
+        return (pos - half) * cam.sSize + cam.pos;
+    }
+
+    private readonly static BindingFlags BindingFlags = BindingFlags.Instance | BindingFlags.NonPublic;
+    private readonly static MethodInfo MoveCameraTowardsTarget = typeof(PositionTypeCamera).GetMethod("Move_Camera_Towards_Target", BindingFlags);
+    private readonly static FieldInfo SwitchCamPositionCam = typeof(SwitchTypeCamera).GetField("_position_type_camera", BindingFlags);
+    public static bool UpdateSBCameraPos(RoomCamera cam, out Vector2 pos, Vector2 lastPos)
+    {
+        pos = new();
+
+        //get position camera
+        var fields = cam.GetFields();
+        PositionTypeCamera positionCam = (fields.type_camera as PositionTypeCamera);
+        if (positionCam == null && fields.type_camera is SwitchTypeCamera switchCam)
+        {
+            positionCam = SwitchCamPositionCam.GetValue(switchCam) as PositionTypeCamera;
+        }
+        if (positionCam == null) return false;
+
+        //save the true, original camera positions
+        Vector2 origPos = cam.pos;
+        Vector2 origLastPos = cam.lastPos;
+
+        //hijack the camera positions to perform the calculation
+        //cam.pos = ScreenPosToPlayerPos(cam, pos);
+        cam.lastPos = ScreenPosToPlayerPos(cam, lastPos);
+
+        //calculation
+        MoveCameraTowardsTarget.Invoke(positionCam, new object[] { fields.on_screen_position, Vector2.zero });
+
+        //restore original camera positions
+        Vector2 tempPos = cam.pos;
+        cam.pos = origPos;
+        cam.lastPos = origLastPos;
+
+        //set the pos using the data from the calculation
+        pos = PlayerPosToScreenPos(cam, tempPos);
+        //lastPos = PlayerPosToScreenPos(cam, cam.lastPos);
+
+        return true;
+    }
+
+
+    public static void SetupCustomCamera(RoomCamera cam)
+    {
+        var fields = cam.GetFields();
+        fields.type_camera = new CustomSBCamera(cam, fields);
     }
 }

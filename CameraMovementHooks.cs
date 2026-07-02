@@ -59,6 +59,39 @@ public partial class Plugin
 
     public static bool ParallaxShouldBeInactive(CameraData data) => data.camera.voidSeaMode || data.camera.freeMoveRect != null || (!Options.SplitscreenParallax && data.camera.cameraNumber > 0);
 
+    public static Vector2? GetCritPos(RoomCamera self, CameraData data, bool updateOffset = false, float moveSpeed = 0)
+    {
+        Vector2? critPos = null;
+
+        //Follow creatures
+        var crit = self.followAbstractCreature?.realizedCreature;
+        if (crit != null)
+        {
+            critPos = (crit.inShortcut ? self.game.shortcuts.OnScreenPositionOfInShortCutCreature(self.room, crit) : crit.mainBodyChunk.pos);
+        }
+
+        //Update offset
+        if (updateOffset)
+        {
+            bool readInput = false;
+            if (critPos != null)
+            {
+                //inch offset toward 0
+                data.critFollowOffset = LerpAndTick(data.critFollowOffset, Vector2.zero, moveSpeed, moveSpeed * 0.01f);
+
+                //offset by player input
+                var input = (crit as Player)?.input[0] ?? crit.inputWithDiagonals;
+                if (input != null)
+                {
+                    data.critFollowOffset = Vector2.ClampMagnitude(data.critFollowOffset + input.Value.analogueDir * Options.CameraInputOffset * moveSpeed, Options.CameraInputOffset);
+                    readInput = true;
+                }
+            }
+            if (!readInput) data.critFollowOffset.Set(0, 0);
+        }
+
+        return critPos;
+    }
     //Determines what the CamPos should be
     public static void UpdateCamPos(RoomCamera self, float moveMod = 1)
     {
@@ -76,38 +109,18 @@ public partial class Plugin
             {
                 pos = ModCompat.SBCameraScrollMod.GetSBPlayerPos(self);
             }
-            else //calculate player on-screen position
+            else if (!Options.AlwaysCentered) //calculate player on-screen position
             {
-                //Follow creatures
-                var crit = self.followAbstractCreature?.realizedCreature;
-                bool readInput = false;
-                if (!Options.AlwaysCentered && crit != null)
+                Vector2? critPos = GetCritPos(self, data, true);
+
+                if (Options.CameraBasedPosition)
                 {
-                    Vector2? critPos = (crit.inShortcut ? self.game.shortcuts.OnScreenPositionOfInShortCutCreature(self.room, crit) : crit.mainBodyChunk.pos);
-                    if (critPos != null)
-                    {
-                        //inch offset toward 0
-                        data.critFollowOffset = LerpAndTick(data.critFollowOffset, Vector2.zero, moveSpeed, moveSpeed * 0.01f);
-
-                        //offset by player input
-                        var input = (crit as Player)?.input[0] ?? crit.inputWithDiagonals;
-                        if (input != null)
-                        {
-                            data.critFollowOffset = Vector2.ClampMagnitude(data.critFollowOffset + input.Value.analogueDir * Options.CameraInputOffset * moveSpeed, Options.CameraInputOffset);
-                            readInput = true;
-                        }
-
-                        if (Options.CameraBasedPosition)
-                        {
-                            pos = (self.pos + data.critFollowOffset + 0.5f * self.sSize) / new Vector2(self.room.PixelWidth, self.room.PixelHeight);
-                        }
-                        else
-                        {
-                            pos = (critPos.Value - self.pos + data.critFollowOffset) / self.sSize;
-                        }
-                    }
+                    pos = (self.pos + data.critFollowOffset + 0.5f * self.sSize) / new Vector2(self.room.PixelWidth, self.room.PixelHeight);
                 }
-                if (!readInput) data.critFollowOffset.Set(0, 0);
+                else if (critPos != null)
+                {
+                    pos = (critPos.Value - self.pos + data.critFollowOffset) / self.sSize;
+                }
             }
 
             //multiply by scale to accomodate SBCameraScroll's zoom feature
@@ -147,20 +160,28 @@ public partial class Plugin
             if (Options.InvertPos) //invert position
                 pos = Vector2.one - pos;
 
+
             //Actually change camera position
+
             if (data.CamPos.x < 0 || data.CamPos.y < 0) //invalid old camPos; don't lerp with it
             {
                 data.CamPos = pos;
                 data.lastCamPos = pos; //also set lastCamPos, so there's no interpolation
+                return;
             }
-            else if (sbCameraMode)
+
+            if (sbCameraMode)
             {
-                data.CamPos = pos; //ignore moveSpeed and all that
+                if (ModCompat.SBCameraScrollMod.UpdateSBCameraPos(self, out Vector2 newPos, data.CamPos))
+                {
+                    data.CamPos = pos;
+                    return;
+                }
             }
-            else
+
+            if ((data.CamPos - pos).sqrMagnitude > Options.CameraStopDistance * Options.CameraStopDistance) //don't move when very close
             {
-                if ((data.CamPos - pos).sqrMagnitude > Options.CameraStopDistance * Options.CameraStopDistance) //don't move when very close
-                    data.CamPos = LerpAndTick(data.CamPos, pos, moveSpeed, moveSpeed * 0.005f);
+                data.CamPos = LerpAndTick(data.CamPos, pos, moveSpeed, moveSpeed * 0.005f);
             }
         }
         catch (Exception ex) { Error(ex); }

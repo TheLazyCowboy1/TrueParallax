@@ -72,6 +72,11 @@ public partial class Plugin
 
             Log("Setup shader constants", 2);
 
+            if (Options.CustomSBCamera && Plugin.SBCameraScrollEnabled)
+            {
+                SBCameraScrollMod.SetupCustomCamera(self);
+            }
+
         }
         catch (Exception ex) { Error(ex); }
     }
