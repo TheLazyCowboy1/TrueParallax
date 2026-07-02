@@ -16,14 +16,17 @@ namespace TrueParallax.ModCompat;
 public static class SBCameraScrollMod
 {
     private static Hook PositionHook = null;
+    private static Hook PositionCamUpdateHook = null;
 
     public static void ApplyHooks()
     {
-        PositionHook = new((Delegate)SBCameraScroll.RoomCameraMod.UpdateOnScreenPosition, Hook_UpdateOnScreenPosition);
+        PositionHook = new((Delegate)RoomCameraMod.UpdateOnScreenPosition, Hook_UpdateOnScreenPosition);
+        PositionCamUpdateHook = new(typeof(PositionTypeCamera).GetMethod(nameof(PositionTypeCamera.Update)), Hook_PositionCameraUpdate);
     }
     public static void RemoveHooks()
     {
-        PositionHook.Undo();
+        PositionHook?.Undo();
+        PositionCamUpdateHook?.Undo();
     }
 
     private static string LastRoomName;
@@ -59,8 +62,29 @@ public static class SBCameraScrollMod
 
         //scale around RoomCenter by AreaScale
         var cameraFields = room_camera.GetFields();
-        cameraFields.on_screen_position = (cameraFields.on_screen_position - RoomCenter) * AreaScale + RoomCenter;
+        Vector2 center = RoomCenter - 0.5f * room_camera.sSize; //why does SB offset by -0.5*sSize? Idk. But reflect it here.
+        cameraFields.on_screen_position = (cameraFields.on_screen_position - center) * AreaScale + center;
     }
+
+    private readonly static FieldInfo PositionCamRoomCam = typeof(SwitchTypeCamera).GetField("_room_camera", BindingFlags);
+    private static void Hook_PositionCameraUpdate(Action<PositionTypeCamera> orig, PositionTypeCamera self)
+    {
+        orig(self);
+        return;
+
+        if (!Options.CustomSBCamera)
+        {
+            orig(self);
+            return;
+        }
+
+        RoomCamera cam = PositionCamRoomCam.GetValue(self) as RoomCamera;
+        //self.UpdateOnScreenPosition(self._room_camera);
+
+        //_room_camera.pos += (data.CamPos - data.lastCamPos) * _room_camera.sSize; //idiotically simple; will it actually work, lol?
+        //CheckBorders(_room_camera, ref _room_camera.pos);
+    }
+
 
     public static Vector2 GetSBPlayerPos(RoomCamera cam)
     {
@@ -104,7 +128,7 @@ public static class SBCameraScrollMod
         cam.lastPos = ScreenPosToPlayerPos(cam, lastPos);
 
         //calculation
-        MoveCameraTowardsTarget.Invoke(positionCam, new object[] { fields.on_screen_position, Vector2.zero });
+        MoveCameraTowardsTarget.Invoke(positionCam, new object[] { fields.on_screen_position + positionCam.camera_offset, Vector2.zero });
 
         //restore original camera positions
         Vector2 tempPos = cam.pos;

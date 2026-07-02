@@ -71,12 +71,6 @@ public partial class Plugin
             self.ReturnFContainer(PARALLAXCONTAINER).AddChild(data.sprite);
 
             Log("Setup shader constants", 2);
-
-            if (Options.CustomSBCamera && Plugin.SBCameraScrollEnabled)
-            {
-                SBCameraScrollMod.SetupCustomCamera(self);
-            }
-
         }
         catch (Exception ex) { Error(ex); }
     }
