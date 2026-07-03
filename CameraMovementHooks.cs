@@ -214,7 +214,7 @@ public partial class Plugin
         Vector2 t = d * Mathf.Min(tick / d.magnitude, 1); //don't move more than magnitude = don't overshoot
         return l + t;
     }
-    public static float SmoothCurve(float x, float s) => x*(3 - 3*s + s*x*(6 - 4*x)) / (3 - s);
+    public static float SmoothCurve(float x, float s) => (x < 0 || x > 1) ? x : x*(3 - 3*s + s*x*(6 - 4*x)) / (3 - s);
 
     //Sets the CamPos
     public static void SetCamPos(RoomCamera self, float lerpFac)

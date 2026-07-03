@@ -42,16 +42,24 @@ public static class SBCameraScrollMod
 
         //Vector2 offset = Options.AdjustSBCameraFac * data.CalculateWarp(new(0.5f, 0.5f));
         //room_camera.GetFields().on_screen_position += offset;
+        CalcRoomScaleFac(room_camera, data);
 
-        string roomName = room_camera.room.abstractRoom.name;
+        //scale around RoomCenter by AreaScale
+        var cameraFields = room_camera.GetFields();
+        Vector2 center = RoomCenter - 0.5f * room_camera.sSize; //why does SB offset by -0.5*sSize? Idk. But reflect it here.
+        cameraFields.on_screen_position = (cameraFields.on_screen_position - center) * AreaScale + center;
+    }
+    private static void CalcRoomScaleFac(RoomCamera cam, CameraData data)
+    {
+        string roomName = cam.room.abstractRoom.name;
         if (roomName != LastRoomName) //only calculate this if it has changed
         {
             //calculate camera movement box
-            var roomFields = room_camera.room.abstractRoom.GetFields();
+            var roomFields = cam.room.abstractRoom.GetFields();
 
             Vector2 roomSize = new(roomFields.total_width, roomFields.total_height);
             RoomCenter = roomFields.min_camera_position + 0.5f * roomSize;
-            Vector2 movementArea = roomSize - room_camera.sSize;
+            Vector2 movementArea = roomSize - cam.sSize;
 
             float expand = Mathf.Max(0, Options.AdjustSBCameraFac * 2 * data.totalWarp * data.DepthCurve(5f / 30f));
             Vector2 newMovementArea = movementArea + new Vector2(expand, expand);
@@ -59,11 +67,6 @@ public static class SBCameraScrollMod
             if (movementArea.x <= 0) AreaScale.x = 1; //don't scale x if the camera can't move horizontally anyway
             if (movementArea.y <= 0) AreaScale.y = 1;
         }
-
-        //scale around RoomCenter by AreaScale
-        var cameraFields = room_camera.GetFields();
-        Vector2 center = RoomCenter - 0.5f * room_camera.sSize; //why does SB offset by -0.5*sSize? Idk. But reflect it here.
-        cameraFields.on_screen_position = (cameraFields.on_screen_position - center) * AreaScale + center;
     }
 
     private static void Hook_PositionCameraUpdate(Action<PositionTypeCamera> orig, PositionTypeCamera self)
@@ -89,11 +92,8 @@ public static class SBCameraScrollMod
         //scale around RoomCenter
         if (Options.AdjustSBCameraFac != 0)
         {
-            string roomName = cam.room.abstractRoom.name;
-            if (LastRoomName == roomName) //this should always be true, since we just updated it above
-            {
-                targetPos = (targetPos - RoomCenter) * AreaScale + RoomCenter;
-            }
+            CalcRoomScaleFac(cam, data);
+            targetPos = (targetPos - RoomCenter) * AreaScale + RoomCenter;
         }
 
         //apply SmoothCurve
@@ -101,11 +101,16 @@ public static class SBCameraScrollMod
         {
             var fields = cam.room.abstractRoom.GetFields();
             Vector2 roomSize = new(fields.total_width, fields.total_height);
-            Vector2 camArea = roomSize - cam.sSize; //the area where the camera can actually move
+            Vector2 movementArea = roomSize - cam.sSize; //the area where the camera can actually move
             Vector2 topCorner = fields.min_camera_position + 0.5f * cam.sSize;
-            Vector2 fracPos = (targetPos - topCorner) / camArea;
-            fracPos.Set(Plugin.SmoothCurve(fracPos.x, Options.CameraMotionCurve), Plugin.SmoothCurve(fracPos.y, Options.CameraMotionCurve));
-            targetPos = fracPos * camArea + topCorner;
+
+            //Vector2 smooth = movementArea / cam.sSize;
+            //smooth.Set(Mathf.Min(Options.CameraMotionCurve, smooth.x), Mathf.Min(Options.CameraMotionCurve, smooth.y));
+            Vector2 smooth = new(Options.CameraMotionCurve, Options.CameraMotionCurve);
+
+            Vector2 fracPos = (targetPos - topCorner) / movementArea;
+            fracPos.Set(Plugin.SmoothCurve(fracPos.x, smooth.x), Plugin.SmoothCurve(fracPos.y, smooth.y));
+            targetPos = fracPos * movementArea + topCorner;
         }
 
         targetPos -= 0.5f * cam.sSize; //because we want player to be in center, not top corner
