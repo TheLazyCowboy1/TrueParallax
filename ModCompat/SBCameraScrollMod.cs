@@ -102,9 +102,10 @@ public static class SBCameraScrollMod
             var fields = cam.room.abstractRoom.GetFields();
             Vector2 roomSize = new(fields.total_width, fields.total_height);
             Vector2 camArea = roomSize - cam.sSize; //the area where the camera can actually move
-            Vector2 fracPos = (targetPos - fields.min_camera_position) / camArea;
+            Vector2 topCorner = fields.min_camera_position + 0.5f * cam.sSize;
+            Vector2 fracPos = (targetPos - topCorner) / camArea;
             fracPos.Set(Plugin.SmoothCurve(fracPos.x, Options.CameraMotionCurve), Plugin.SmoothCurve(fracPos.y, Options.CameraMotionCurve));
-            targetPos = fracPos * camArea + fields.min_camera_position;
+            targetPos = fracPos * camArea + topCorner;
         }
 
         targetPos -= 0.5f * cam.sSize; //because we want player to be in center, not top corner
