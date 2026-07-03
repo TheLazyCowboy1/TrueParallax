@@ -66,23 +66,18 @@ public static class SBCameraScrollMod
         cameraFields.on_screen_position = (cameraFields.on_screen_position - center) * AreaScale + center;
     }
 
-    private readonly static FieldInfo PositionCamRoomCam = typeof(SwitchTypeCamera).GetField("_room_camera", BindingFlags);
     private static void Hook_PositionCameraUpdate(Action<PositionTypeCamera> orig, PositionTypeCamera self)
     {
-        orig(self);
-        return;
-
-        if (!Options.CustomSBCamera)
+        if (!Options.CustomSBCamera || !self._room_camera.TryGetData(out CameraData data))
         {
             orig(self);
             return;
         }
 
-        RoomCamera cam = PositionCamRoomCam.GetValue(self) as RoomCamera;
-        //self.UpdateOnScreenPosition(self._room_camera);
+        RoomCameraMod.UpdateOnScreenPosition(self._room_camera);
 
-        //_room_camera.pos += (data.CamPos - data.lastCamPos) * _room_camera.sSize; //idiotically simple; will it actually work, lol?
-        //CheckBorders(_room_camera, ref _room_camera.pos);
+        self._room_camera.pos += (data.CamPos - data.lastCamPos) * self._room_camera.sSize; //idiotically simple; will it actually work, lol?
+        RoomCameraMod.CheckBorders(self._room_camera, ref self._room_camera.pos);
     }
 
 
@@ -103,9 +98,9 @@ public static class SBCameraScrollMod
         return (pos - half) * cam.sSize + cam.pos;
     }
 
-    private readonly static BindingFlags BindingFlags = BindingFlags.Instance | BindingFlags.NonPublic;
-    private readonly static MethodInfo MoveCameraTowardsTarget = typeof(PositionTypeCamera).GetMethod("Move_Camera_Towards_Target", BindingFlags);
-    private readonly static FieldInfo SwitchCamPositionCam = typeof(SwitchTypeCamera).GetField("_position_type_camera", BindingFlags);
+    //private readonly static BindingFlags BindingFlags = BindingFlags.Instance | BindingFlags.NonPublic;
+    //private readonly static MethodInfo MoveCameraTowardsTarget = typeof(PositionTypeCamera).GetMethod("Move_Camera_Towards_Target", BindingFlags);
+    //private readonly static FieldInfo SwitchCamPositionCam = typeof(SwitchTypeCamera).GetField("_position_type_camera", BindingFlags);
     public static bool UpdateSBCameraPos(RoomCamera cam, out Vector2 pos, Vector2 lastPos)
     {
         pos = new();
@@ -115,7 +110,7 @@ public static class SBCameraScrollMod
         PositionTypeCamera positionCam = (fields.type_camera as PositionTypeCamera);
         if (positionCam == null && fields.type_camera is SwitchTypeCamera switchCam)
         {
-            positionCam = SwitchCamPositionCam.GetValue(switchCam) as PositionTypeCamera;
+            positionCam = switchCam._position_type_camera;//SwitchCamPositionCam.GetValue(switchCam) as PositionTypeCamera;
         }
         if (positionCam == null) return false;
 
@@ -128,7 +123,8 @@ public static class SBCameraScrollMod
         cam.lastPos = ScreenPosToPlayerPos(cam, lastPos);
 
         //calculation
-        MoveCameraTowardsTarget.Invoke(positionCam, new object[] { fields.on_screen_position + positionCam.camera_offset, Vector2.zero });
+        //MoveCameraTowardsTarget.Invoke(positionCam, new object[] { fields.on_screen_position + positionCam.camera_offset, Vector2.zero });
+        positionCam.Move_Camera_Towards_Target(fields.on_screen_position + positionCam.camera_offset, Vector2.zero);
 
         //restore original camera positions
         Vector2 tempPos = cam.pos;
