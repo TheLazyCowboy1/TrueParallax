@@ -52,6 +52,11 @@ public partial class Plugin
         orig(self);
 
         UpdateCamPos(self);
+
+        if (Plugin.SBCameraScrollEnabled && Options.CustomSBCamera)
+        {
+            ModCompat.SBCameraScrollMod.AfterParallaxPosSet();
+        }
     }
     #endregion
 
@@ -111,15 +116,17 @@ public partial class Plugin
             }
             else if (!Options.AlwaysCentered) //calculate player on-screen position
             {
-                Vector2? critPos = GetCritPos(self, data, true);
+                Vector2? critPos = GetCritPos(self, data, true, moveSpeed);
 
+                //Vector2 camPos = (Plugin.SBCameraScrollEnabled && Options.CustomSBCamera) ? self.lastPos : self.pos;
+                Vector2 camPos = self.pos;
                 if (Options.CameraBasedPosition)
                 {
-                    pos = (self.pos + data.critFollowOffset + 0.5f * self.sSize) / new Vector2(self.room.PixelWidth, self.room.PixelHeight);
+                    pos = (camPos + data.critFollowOffset + 0.5f * self.sSize) / new Vector2(self.room.PixelWidth, self.room.PixelHeight);
                 }
                 else if (critPos != null)
                 {
-                    pos = (critPos.Value - self.pos + data.critFollowOffset) / self.sSize;
+                    pos = (critPos.Value - camPos + data.critFollowOffset) / self.sSize;
                 }
             }
 
@@ -190,7 +197,7 @@ public partial class Plugin
         }
         catch (Exception ex) { Error(ex); }
     }
-    private static Vector2 LerpAndTick(Vector2 a, Vector2 b, float lerp, float tick)
+    public static Vector2 LerpAndTick(Vector2 a, Vector2 b, float lerp, float tick)
     {
         //lerp
         Vector2 l = Vector2.LerpUnclamped(a, b, lerp);
@@ -201,7 +208,7 @@ public partial class Plugin
         Vector2 t = d * Mathf.Min(tick / d.magnitude, 1); //don't move more than magnitude = don't overshoot
         return l + t;
     }
-    private static float SmoothCurve(float x, float s) => x*(3 - 3*s + s*x*(6 - 4*x)) / (3 - s);
+    public static float SmoothCurve(float x, float s) => x*(3 - 3*s + s*x*(6 - 4*x)) / (3 - s);
 
     //Sets the CamPos
     public static void SetCamPos(RoomCamera self, float lerpFac)
