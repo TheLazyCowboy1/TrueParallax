@@ -76,7 +76,8 @@ public static class SBCameraScrollMod
 
         RoomCameraMod.UpdateOnScreenPosition(self._room_camera);
 
-        self._room_camera.pos += (data.CamPos - data.lastCamPos) * self._room_camera.sSize; //idiotically simple; will it actually work, lol?
+        Vector2 half = new(0.5f, 0.5f);
+        self._room_camera.pos = self._room_camera.lastPos + (data.CamPos - half) * self._room_camera.sSize; //idiotically simple; will it actually work, lol?
         RoomCameraMod.CheckBorders(self._room_camera, ref self._room_camera.pos);
     }
 
@@ -138,10 +139,4 @@ public static class SBCameraScrollMod
         return true;
     }
 
-
-    public static void SetupCustomCamera(RoomCamera cam)
-    {
-        var fields = cam.GetFields();
-        fields.type_camera = new CustomSBCamera(cam, fields);
-    }
 }

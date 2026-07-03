@@ -182,7 +182,11 @@ public partial class Plugin
             if ((data.CamPos - pos).sqrMagnitude > Options.CameraStopDistance * Options.CameraStopDistance) //don't move when very close
             {
                 data.CamPos = LerpAndTick(data.CamPos, pos, moveSpeed, moveSpeed * 0.005f);
+                return;
             }
+
+            data.lastCamPos = data.CamPos; //at least stop it from moving, if nothing else
+
         }
         catch (Exception ex) { Error(ex); }
     }
