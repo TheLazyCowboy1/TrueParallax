@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RWCustom;
+using System;
 using System.Linq;
 using UnityEngine;
 
@@ -52,11 +53,6 @@ public partial class Plugin
         orig(self);
 
         UpdateCamPos(self);
-
-        if (Plugin.SBCameraScrollEnabled && Options.CustomSBCamera)
-        {
-            ModCompat.SBCameraScrollMod.AfterParallaxPosSet();
-        }
     }
     #endregion
 
@@ -186,13 +182,23 @@ public partial class Plugin
                 }
             }
 
-            if ((data.CamPos - pos).sqrMagnitude > Options.CameraStopDistance * Options.CameraStopDistance) //don't move when very close
+            /*if ((data.CamPos - pos).sqrMagnitude > Options.CameraStopDistance * Options.CameraStopDistance) //don't move when very close
             {
                 data.CamPos = LerpAndTick(data.CamPos, pos, moveSpeed, moveSpeed * 0.005f);
                 return;
             }
-
             data.lastCamPos = data.CamPos; //at least stop it from moving, if nothing else
+            */
+            if (Mathf.Abs(pos.x - data.CamPos.x) > Options.CameraStopDistance)
+                pos.x = Custom.LerpAndTick(data.CamPos.x, pos.x, moveSpeed, moveSpeed * 0.005f);
+            else
+                pos.x = data.CamPos.x; //don't move
+            if (Mathf.Abs(pos.y - data.CamPos.y) > Options.CameraStopDistance)
+                pos.y = Custom.LerpAndTick(data.CamPos.y, pos.y, moveSpeed, moveSpeed * 0.005f);
+            else
+                pos.y = data.CamPos.y; //don't move
+
+            data.CamPos = pos;
 
         }
         catch (Exception ex) { Error(ex); }

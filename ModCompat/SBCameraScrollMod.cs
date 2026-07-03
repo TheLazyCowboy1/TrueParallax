@@ -1,4 +1,5 @@
 ﻿using MonoMod.RuntimeDetour;
+using RWCustom;
 using SBCameraScroll;
 using System;
 using System.Security;
@@ -100,44 +101,32 @@ public static class SBCameraScrollMod
         {
             var fields = cam.room.abstractRoom.GetFields();
             Vector2 roomSize = new(fields.total_width, fields.total_height);
-            Vector2 fracPos = (targetPos - fields.min_camera_position) / roomSize;
+            Vector2 camArea = roomSize - cam.sSize; //the area where the camera can actually move
+            Vector2 fracPos = (targetPos - fields.min_camera_position) / camArea;
             fracPos.Set(Plugin.SmoothCurve(fracPos.x, Options.CameraMotionCurve), Plugin.SmoothCurve(fracPos.y, Options.CameraMotionCurve));
-            targetPos = fracPos * roomSize + fields.min_camera_position;
+            targetPos = fracPos * camArea + fields.min_camera_position;
         }
 
         targetPos -= 0.5f * cam.sSize; //because we want player to be in center, not top corner
 
-        if (((targetPos - cam.lastPos) / cam.sSize).sqrMagnitude > Options.CameraStopDistance * Options.CameraStopDistance) //don't move when very close
+        /*if (((targetPos - cam.lastPos) / cam.sSize).sqrMagnitude > Options.CameraStopDistance * Options.CameraStopDistance) //don't move when very close
         {
             cam.pos = Plugin.LerpAndTick(cam.lastPos, targetPos, moveSpeed, moveSpeed * 0.005f);
             return;
-        }
+        }*/
+        if (Mathf.Abs(targetPos.x - cam.lastPos.x) / cam.sSize.x > Options.CameraStopDistance)
+            cam.pos.x = Custom.LerpAndTick(cam.lastPos.x, targetPos.x, moveSpeed, moveSpeed * 0.005f);
+        else
+            cam.pos.x = cam.lastPos.x;
+        if (Mathf.Abs(targetPos.y - cam.lastPos.y) / cam.sSize.x > Options.CameraStopDistance)
+            cam.pos.y = Custom.LerpAndTick(cam.lastPos.y, targetPos.y, moveSpeed, moveSpeed * 0.005f);
+        else
+            cam.pos.y = cam.lastPos.y;
 
-        cam.pos = cam.lastPos; //don't move
+        RoomCameraMod.CheckBorders(cam, ref cam.pos); //very important step I forgot, lol
+
+        //cam.pos = cam.lastPos; //don't move
         return;
-
-        CamWaitingForUpdate = self;
-
-        self._room_camera.pos = self._room_camera.lastPos;
-        //AfterParallaxPosSet();
-    }
-    private static PositionTypeCamera CamWaitingForUpdate = null;
-    public static void AfterParallaxPosSet()
-    {
-        return;
-        if (CamWaitingForUpdate == null || !CamWaitingForUpdate._room_camera.TryGetData(out CameraData data))
-        {
-            CamWaitingForUpdate = null;
-            return;
-        }
-        RoomCamera cam = CamWaitingForUpdate._room_camera;
-        CamWaitingForUpdate = null;
-
-        Vector2 half = new(0.5f, 0.5f);
-        Vector2 camDiff = data.CamPos - half;
-        //Vector2 absDiff = new(Mathf.Abs(camDiff.x), Mathf.Abs(camDiff.y));
-        cam.pos = cam.lastPos + camDiff * cam.sSize; //idiotically simple; will it actually work, lol?
-        RoomCameraMod.CheckBorders(cam, ref cam.pos);
     }
 
 
