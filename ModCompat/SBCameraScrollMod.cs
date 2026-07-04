@@ -101,24 +101,20 @@ public static class SBCameraScrollMod
         targetPos -= 0.5f * cam.sSize; //because we want player to be in center, not top corner
         */
 
+        //apply borders
+        var fields = cam.room.abstractRoom.GetFields();
+        Vector2 roomSize = new(fields.total_width, fields.total_height);
+        Vector2 corner = fields.min_camera_position;
+        Vector2 border = new(Options.CustomCameraBorderPixels, Options.CustomCameraBorderPixels);
+
+        Vector2 fracPos = (targetPos - corner - border) / (roomSize - border - border);
+
         //apply SmoothCurve
         if (Options.CustomCameraCurve != 0)
         {
-            var fields = cam.room.abstractRoom.GetFields();
-            Vector2 roomSize = new(fields.total_width, fields.total_height);
-            /*
-            Vector2 movementArea = roomSize - cam.sSize; //the area where the camera can actually move
-            Vector2 topCorner = fields.min_camera_position;
-
-            Vector2 fracPos = (targetPos - topCorner) / movementArea;
-            fracPos.Set(Plugin.SmoothCurve(fracPos.x, Options.CameraMotionCurve), Plugin.SmoothCurve(fracPos.y, Options.CameraMotionCurve));
-            targetPos = fracPos * movementArea + topCorner;
-            */
-            Vector2 corner = fields.min_camera_position;
-            Vector2 fracPos = (targetPos - corner) / roomSize;
             fracPos.Set(Plugin.SmoothCurve(Mathf.Clamp01(fracPos.x), Options.CustomCameraCurve), Plugin.SmoothCurve(Mathf.Clamp01(fracPos.y), Options.CustomCameraCurve));
-            targetPos = fracPos * (roomSize - cam.sSize) + corner;
         }
+        targetPos = fracPos * (roomSize - cam.sSize) + corner;
 
         RoomCameraMod.CheckBorders(cam, ref targetPos); //very important step I forgot, lol
 
