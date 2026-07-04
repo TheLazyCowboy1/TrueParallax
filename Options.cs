@@ -74,6 +74,8 @@ public partial class Options : AutoConfigOptions
     public static bool UseSBPlayerPos = false;
     [Config(CAMERA, "Use Custom SB Camera", "TEST OPTION: Replaced SBCameraScroll's Position camera with my own version of it, for consistency.")]
     public static bool CustomSBCamera = false;
+    [Config(CAMERA, "Custom Camera Motion Curve", "TEST OPTION: Adjusts SBCameraScroll's camera position to, uh, make it better?.", rightSide = true), LimitRange(-5, 1)]
+    public static float CustomCameraCurve = 1;
 
     //LAYER2
 
