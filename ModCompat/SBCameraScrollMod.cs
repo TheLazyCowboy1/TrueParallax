@@ -125,11 +125,14 @@ public static class SBCameraScrollMod
         }
         else
         {
-            if (Mathf.Abs(targetPos.x - cam.lastPos.x) / cam.sSize.x > Options.CameraStopDistance)
+            data.xMovement = Mathf.Abs(targetPos.x - cam.lastPos.x) / cam.sSize.x > (data.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
+            if (data.xMovement)
                 cam.pos.x = Custom.LerpAndTick(cam.lastPos.x, targetPos.x, moveSpeed, moveSpeed * 0.005f * cam.sSize.x);
             else
                 cam.pos.x = cam.lastPos.x;
-            if (Mathf.Abs(targetPos.y - cam.lastPos.y) / cam.sSize.x > Options.CameraStopDistance)
+
+            data.yMovement = Mathf.Abs(targetPos.y - cam.lastPos.y) / cam.sSize.y > (data.yMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
+            if (data.yMovement)
                 cam.pos.y = Custom.LerpAndTick(cam.lastPos.y, targetPos.y, moveSpeed, moveSpeed * 0.005f * cam.sSize.y);
             else
                 cam.pos.y = cam.lastPos.y;

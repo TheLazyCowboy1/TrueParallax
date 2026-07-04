@@ -161,7 +161,7 @@ public partial class Options
             string s = "";
             if (description != "")
             {
-                s += PRESET_DESCRIPTION_KEY + PRESET_SEPARATOR + description + '\n';
+                s += PRESET_DESCRIPTION_KEY + PRESET_SEPARATOR + description.Replace("\n", "<LINE>") + '\n';
             }
             foreach (ConfigInfo info in ConfigInfos.Values)
             {

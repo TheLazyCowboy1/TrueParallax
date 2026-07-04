@@ -16,6 +16,8 @@ public partial class CameraData
     public Vector2 critFollowOffset = new(0, 0);
     public Vector2 mouseOffset = new(0, 0);
 
+    public bool xMovement = false, yMovement = false;
+
     public bool posDirty = true;
     ///<summary>Basically only exists to be referenced by DynamicZoom. Otherwise, it is the same as currentWarp.</summary>
     public float totalWarp = Options.Warp;
