@@ -2,8 +2,10 @@
 using RWCustom;
 using SBCameraScroll;
 using System;
+using System.Runtime.CompilerServices;
 using System.Security;
 using System.Security.Permissions;
+using TrueParallax.Tools;
 using UnityEngine;
 
 #pragma warning disable CS0618
@@ -69,75 +71,83 @@ public static class SBCameraScrollMod
         }
     }
 
+    private class CustomCameraData
+    {
+        public bool xMovement = false, yMovement = false;
+        public Vector2 lastPos = new();
+    }
+    private static ResizableArray<CustomCameraData> customDataList = new(2);
+
     private static void Hook_PositionCameraUpdate(Action<PositionTypeCamera> orig, PositionTypeCamera self)
     {
-        if (!Options.CustomSBCamera || !self._room_camera.TryGetData(out CameraData data))
+        try
         {
-            orig(self);
-            return;
-        }
+            if (!Options.CustomSBCamera || !self._room_camera.TryGetData(out CameraData data))
+            {
+                orig(self);
+                return;
+            }
 
-        RoomCamera cam = self._room_camera;
-        Vector2 onScreenPosition = cam.GetFields().on_screen_position;
-        RoomCameraMod.UpdateOnScreenPosition(cam); //done just in case
+            RoomCamera cam = self._room_camera;
+            Vector2 onScreenPosition = cam.GetFields().on_screen_position;
+            RoomCameraMod.UpdateOnScreenPosition(cam); //done just in case
 
-        float moveSpeed = Options.CameraMoveSpeed;
-        Vector2? critPos = Plugin.GetCritPos(cam, data, Options.AlwaysCentered || Options.UseSBPlayerPos, moveSpeed);
-        if (critPos == null)
-        {
-            cam.pos = cam.lastPos; //don't move
-            return;
-        }
-        Vector2 targetPos = critPos.Value;
+            float moveSpeed = Options.CameraMoveSpeed;
+            Vector2? critPos = Plugin.GetCritPos(cam, data, Options.AlwaysCentered || Options.UseSBPlayerPos, moveSpeed);
+            if (critPos == null)
+            {
+                cam.pos = cam.lastPos; //don't move
+                return;
+            }
+            Vector2 targetPos = critPos.Value + data.critFollowOffset;
 
-        //scale around RoomCenter
-        /*
-        if (Options.AdjustSBCameraFac != 0)
-        {
-            CalcRoomScaleFac(cam, data);
-            targetPos = (targetPos - RoomCenter) * AreaScale + RoomCenter;
-        }
+            //apply borders
+            var fields = cam.room.abstractRoom.GetFields();
+            Vector2 roomSize = new(fields.total_width, fields.total_height);
+            Vector2 corner = fields.min_camera_position;
+            Vector2 border = new(Options.CustomCameraBorderPixels, Options.CustomCameraBorderPixels);
 
-        targetPos -= 0.5f * cam.sSize; //because we want player to be in center, not top corner
-        */
+            Vector2 fracPos = (targetPos - corner - border) / (roomSize - border - border);
 
-        //apply borders
-        var fields = cam.room.abstractRoom.GetFields();
-        Vector2 roomSize = new(fields.total_width, fields.total_height);
-        Vector2 corner = fields.min_camera_position;
-        Vector2 border = new(Options.CustomCameraBorderPixels, Options.CustomCameraBorderPixels);
+            //apply SmoothCurve
+            if (Options.CustomCameraCurve != 0)
+            {
+                fracPos.Set(Plugin.SmoothCurve(Mathf.Clamp01(fracPos.x), Options.CustomCameraCurve), Plugin.SmoothCurve(Mathf.Clamp01(fracPos.y), Options.CustomCameraCurve));
+            }
+            targetPos = fracPos * (roomSize - cam.sSize) + corner;
 
-        Vector2 fracPos = (targetPos - corner - border) / (roomSize - border - border);
+            RoomCameraMod.CheckBorders(cam, ref targetPos); //very important step I forgot, lol
 
-        //apply SmoothCurve
-        if (Options.CustomCameraCurve != 0)
-        {
-            fracPos.Set(Plugin.SmoothCurve(Mathf.Clamp01(fracPos.x), Options.CustomCameraCurve), Plugin.SmoothCurve(Mathf.Clamp01(fracPos.y), Options.CustomCameraCurve));
-        }
-        targetPos = fracPos * (roomSize - cam.sSize) + corner;
 
-        RoomCameraMod.CheckBorders(cam, ref targetPos); //very important step I forgot, lol
+            if (!customDataList.TryGetValue(cam.cameraNumber, out CustomCameraData customData))
+                customDataList.Add(cam.cameraNumber, customData = new());
 
-        //Actually set position
-        if (cam.pos == onScreenPosition && cam.lastPos == onScreenPosition) //camera position was probably just reset
-        {
-            cam.pos = targetPos; //no smoothing
-        }
-        else
-        {
-            data.xMovement = Mathf.Abs(targetPos.x - cam.lastPos.x) / cam.sSize.x > (data.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
-            if (data.xMovement)
-                cam.pos.x = Custom.LerpAndTick(cam.lastPos.x, targetPos.x, moveSpeed, moveSpeed * 0.005f * cam.sSize.x);
+            //Actually set position
+            if (cam.lastPos == onScreenPosition && cam.lastPos != customData.lastPos) //camera position was probably just reset
+            {
+                cam.pos = targetPos; //no smoothing
+            }
             else
-                cam.pos.x = cam.lastPos.x;
+            {
+                customData.xMovement = Mathf.Abs(targetPos.x - cam.lastPos.x) / cam.sSize.x > (customData.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
+                if (customData.xMovement)
+                    cam.pos.x = Custom.LerpAndTick(cam.lastPos.x, targetPos.x, moveSpeed, moveSpeed * 0.005f * cam.sSize.x);
+                else
+                    cam.pos.x = cam.lastPos.x;
 
-            data.yMovement = Mathf.Abs(targetPos.y - cam.lastPos.y) / cam.sSize.y > (data.yMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
-            if (data.yMovement)
-                cam.pos.y = Custom.LerpAndTick(cam.lastPos.y, targetPos.y, moveSpeed, moveSpeed * 0.005f * cam.sSize.y);
-            else
-                cam.pos.y = cam.lastPos.y;
+                customData.yMovement = Mathf.Abs(targetPos.y - cam.lastPos.y) / cam.sSize.y > (customData.yMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
+                if (customData.yMovement)
+                    cam.pos.y = Custom.LerpAndTick(cam.lastPos.y, targetPos.y, moveSpeed, moveSpeed * 0.005f * cam.sSize.y);
+                else
+                    cam.pos.y = cam.lastPos.y;
+            }
+            customData.lastPos = cam.pos;
         }
-
+        catch (Exception ex)
+        {
+            Plugin.Error(ex);
+            self._room_camera.pos = self._room_camera.lastPos; //don't move
+        }
     }
 
 

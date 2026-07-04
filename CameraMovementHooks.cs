@@ -72,7 +72,7 @@ public partial class Plugin
         }
 
         //Update offset
-        if (updateOffset)
+        if (updateOffset && Options.CameraInputOffset != 0)
         {
             bool readInput = false;
             if (critPos != null)
