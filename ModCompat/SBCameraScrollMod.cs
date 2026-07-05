@@ -142,7 +142,7 @@ public static class SBCameraScrollMod
                     delta.y = Custom.LerpAndTick(cam.lastPos.y, targetPos.y, moveSpeed, moveSpeed * 0.005f * cam.sSize.y) - cam.lastPos.y;
 
                 Vector2 maxDelta = customData.lastDelta;
-                maxDelta.Set(Mathf.Abs(maxDelta.x) + Options.CameraMaxAcceleration * delta.x, Mathf.Abs(maxDelta.y) + Options.CameraMaxAcceleration * delta.y);
+                maxDelta.Set(Mathf.Abs(maxDelta.x) + Mathf.Abs(Options.CameraMaxAcceleration * delta.x), Mathf.Abs(maxDelta.y) + Mathf.Abs(Options.CameraMaxAcceleration * delta.y));
                 delta.Set(Mathf.Clamp(delta.x, -maxDelta.x, maxDelta.x), Mathf.Clamp(delta.y, -maxDelta.y, maxDelta.y));
 
                 cam.pos = cam.lastPos + delta;

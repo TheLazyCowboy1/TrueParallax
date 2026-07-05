@@ -202,7 +202,7 @@ public partial class Plugin
 
             //Cap acceleration
             Vector2 maxDelta = data.CamPos - data.lastCamPos;
-            maxDelta.Set(Mathf.Abs(maxDelta.x) + Options.CameraMaxAcceleration * delta.x, Mathf.Abs(maxDelta.y) + Options.CameraMaxAcceleration * delta.y);
+            maxDelta.Set(Mathf.Abs(maxDelta.x) + Mathf.Abs(Options.CameraMaxAcceleration * delta.x), Mathf.Abs(maxDelta.y) + Mathf.Abs(Options.CameraMaxAcceleration * delta.y));
             delta.Set(Mathf.Clamp(delta.x, -maxDelta.x, maxDelta.x), Mathf.Clamp(delta.y, -maxDelta.y, maxDelta.y));
 
             data.CamPos = data.CamPos + delta;
