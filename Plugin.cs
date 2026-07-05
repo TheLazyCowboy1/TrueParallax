@@ -7,6 +7,7 @@ using EasyModSetup;
 using UnityEngine;
 using RWCustom;
 using TrueParallax.ModCompat;
+using System.Collections.Generic;
 
 #pragma warning disable CS0618
 
@@ -134,23 +135,43 @@ public partial class Plugin : SimplerPlugin
         On.RoomCamera.ClearAllSprites += RoomCamera_ClearAllSprites;
 
         On.CustomDecal.DrawSprites += CustomDecal_DrawSprites;
+        On.RoomCamera.DrawUpdate += RoomCamera_DrawUpdate1;
 
         if (SBCameraScrollEnabled)
             SBCameraScrollMod.ApplyHooks();
     }
 
+    private void RoomCamera_DrawUpdate1(On.RoomCamera.orig_DrawUpdate orig, RoomCamera self, float timeStacker, float timeSpeed)
+    {
+        orig(self, timeStacker, timeSpeed);
+
+        try
+        {
+            Vector2 levPos = self.levelGraphic.GetPosition();
+            foreach (TriangleMesh mesh in decalsToUpdate)
+            {
+                for (int i = 0; i < mesh.vertices.Length; i++)
+                    mesh.MoveVertice(i, new(Mathf.Round(mesh.vertices[i].x - levPos.x) + levPos.x + 0.25f,
+                        Mathf.Round(mesh.vertices[i].y - levPos.y) + levPos.y + 0.25f));
+            }
+            decalsToUpdate.Clear();
+        } catch (Exception ex) { Error(ex); }
+    }
+
+    private HashSet<TriangleMesh> decalsToUpdate = new();
     private void CustomDecal_DrawSprites(On.CustomDecal.orig_DrawSprites orig, CustomDecal self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
     {
-        orig(self, sLeaser, rCam, timeStacker, new(Mathf.Floor(camPos.x), Mathf.Floor(camPos.y)));
-        /*
+        orig(self, sLeaser, rCam, timeStacker, camPos);
+        
         try
         {
             if (sLeaser?.sprites == null || sLeaser.sprites.Length < 1 || sLeaser.sprites[0] is not TriangleMesh mesh)
                 return;
-            for (int i = 0; i < mesh.vertices.Length; i++)
-                mesh.MoveVertice(i, new(Mathf.Floor(mesh.vertices[i].x), Mathf.Floor(mesh.vertices[i].y)));
+            //for (int i = 0; i < mesh.vertices.Length; i++)
+            //    mesh.MoveVertice(i, new(Mathf.Floor(mesh.vertices[i].x) + 0.5f, Mathf.Floor(mesh.vertices[i].y) + 0.5f));
+            decalsToUpdate.Add(mesh);
         } catch (Exception ex) { Error(ex); }
-        */
+        
     }
 
     public override void RemoveHooks()
