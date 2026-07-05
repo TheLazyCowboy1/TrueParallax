@@ -42,7 +42,8 @@ public partial class Plugin : SimplerPlugin
     public static int ShadPropCamPos = -1, ShadPropWarp = -1,
         ShadPropTestNum = -1, ShadPropStepSize = -1,
         ShadPropMoveStepScale = -1, ShadPropLayer2Tex = -1,
-        ShadPropLevelHeatAmount = -1, ShadPropMaxProjection = -1;
+        ShadPropLevelHeatAmount = -1, ShadPropMaxProjection = -1,
+        ShadPropUVOffset = -1;
 
     public override void ModsApplied()
     {
@@ -61,6 +62,7 @@ public partial class Plugin : SimplerPlugin
         ShadPropLayer2Tex = Shader.PropertyToID("_LZC_Layer2Tex");
         ShadPropLevelHeatAmount = Shader.PropertyToID("LZC_LevelHeatAmount");
         ShadPropMaxProjection = Shader.PropertyToID("LZC_MaxProjection");
+        ShadPropUVOffset = Shader.PropertyToID("LZC_UVOffset");
 
         RemoveLevelHeatAndMelt();
     }
@@ -139,15 +141,16 @@ public partial class Plugin : SimplerPlugin
 
     private void CustomDecal_DrawSprites(On.CustomDecal.orig_DrawSprites orig, CustomDecal self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
     {
-        orig(self, sLeaser, rCam, timeStacker, camPos);
-
+        orig(self, sLeaser, rCam, timeStacker, new(Mathf.Floor(camPos.x), Mathf.Floor(camPos.y)));
+        /*
         try
         {
             if (sLeaser?.sprites == null || sLeaser.sprites.Length < 1 || sLeaser.sprites[0] is not TriangleMesh mesh)
                 return;
             for (int i = 0; i < mesh.vertices.Length; i++)
-                mesh.MoveVertice(i, new(Mathf.Round(mesh.vertices[i].x), Mathf.Round(mesh.vertices[i].y)));
+                mesh.MoveVertice(i, new(Mathf.Floor(mesh.vertices[i].x), Mathf.Floor(mesh.vertices[i].y)));
         } catch (Exception ex) { Error(ex); }
+        */
     }
 
     public override void RemoveHooks()

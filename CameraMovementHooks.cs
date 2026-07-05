@@ -224,7 +224,7 @@ public partial class Plugin
     public static float SmoothCurve(float x, float s) => (x < 0 || x > 1) ? x : x*(3 - 3*s + s*x*(6 - 4*x)) / (3 - s);
 
     //Sets the CamPos
-    public static void SetCamPos(RoomCamera self, float lerpFac)
+    public static void SetCamPos(RoomCamera self, float timeStacker)
     {
         try
         {
@@ -256,6 +256,10 @@ public partial class Plugin
             if (mat != null)
             {
                 mat.SetVector(ShadPropCamPos, data.CamPos);
+
+                Vector2 camDrawPos = Vector2.Lerp(self.lastPos, self.pos, timeStacker);
+                Vector2 flooredPos = new(Mathf.Floor(camDrawPos.x), Mathf.Floor(camDrawPos.y));
+                mat.SetVector(ShadPropUVOffset, camDrawPos - flooredPos);
 
                 if (Options.IsActiveDynamicZoom)
                 {

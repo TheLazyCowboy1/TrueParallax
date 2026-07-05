@@ -400,13 +400,14 @@ RWTexture2D<float> _LZC_LevelTex : register(u1);
 //uniform float2 _LZC_LevelTex_TexelSize; //DOES NOT WORK for RWTexture2D
 uniform float2 _screenSize;
 uniform float4 _spriteRect;
-uniform float2 _LevelTex_TexelSize;
+//uniform float2 _LevelTex_TexelSize;
 
 #if LZC_PROCESSLAYER2
 Texture2D<float4> _PreLevelColorGrab;
 #endif
 
 uniform float2 LZC_CamPos;
+uniform float2 LZC_UVOffset;
 uniform float LZC_ConvergenceScale;
 uniform float2 LZC_GeneralScale;
 uniform float LZC_Warp;
@@ -492,7 +493,7 @@ v2f vert (appdata_full v)
 	float2 uv = (realUV - float2(0.5f, 0.5f)) * LZC_GeneralScale + centerUV;
 
 	o.nuv = uv * float2(16, 9);
-	o.suv = floor(uv * _screenSize);
+	o.suv = floor(uv * _screenSize) + LZC_UVOffset;
 
 		//Apply LZC_ConvergenceScale
 	float absBackScale = abs(LZC_ConvergenceScale); //prevents ridiculous results when BackgroundScale is < 0, especially: -1 caused division by 0
@@ -508,10 +509,10 @@ v2f vert (appdata_full v)
 #endif
 
 		//Determine sub-pixel offset
-	float2 subpixelOffset = -_spriteRect.xy * _screenSize;// - float2(0.5f, 0.5f); //Futile rounding stuffs I don't understand
+	//float2 subpixelOffset = -_spriteRect.xy * _screenSize;// - float2(0.5f, 0.5f); //Futile rounding stuffs I don't understand
 	//float2 levScale = (_spriteRect.zw - _spriteRect.xy) * _screenSize / _LevelTex_TexelSize; //should = 1 normally
 	//lev0SUV *= levScale;
-	o.suv = o.suv + 10 * (subpixelOffset - floor(subpixelOffset));
+	//o.suv = o.suv + 100 * frac(subpixelOffset);
 	//int2 levTexPos = (uv - _spriteRect.xy) / ((_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize);
 
     return o;
