@@ -131,8 +131,23 @@ public partial class Plugin : SimplerPlugin
 
         On.RoomCamera.ClearAllSprites += RoomCamera_ClearAllSprites;
 
+        On.CustomDecal.DrawSprites += CustomDecal_DrawSprites;
+
         if (SBCameraScrollEnabled)
             SBCameraScrollMod.ApplyHooks();
+    }
+
+    private void CustomDecal_DrawSprites(On.CustomDecal.orig_DrawSprites orig, CustomDecal self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
+    {
+        orig(self, sLeaser, rCam, timeStacker, camPos);
+
+        try
+        {
+            if (sLeaser?.sprites == null || sLeaser.sprites.Length < 1 || sLeaser.sprites[0] is not TriangleMesh mesh)
+                return;
+            for (int i = 0; i < mesh.vertices.Length; i++)
+                mesh.MoveVertice(i, new(Mathf.Round(mesh.vertices[i].x), Mathf.Round(mesh.vertices[i].y)));
+        } catch (Exception ex) { Error(ex); }
     }
 
     public override void RemoveHooks()

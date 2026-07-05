@@ -466,7 +466,6 @@ struct v2f {
 	float2  nuv : TEXCOORD0;
 	float2  suv : TEXCOORD1;
 	float2  posCamDiff : TEXCOORD2;
-	//float2  grabPosOffset : TEXCOORD3;
 #if LZC_DYNAMICOPTIMIZATION
 	float2  estTests : TEXCOORD3;
 #endif
@@ -493,7 +492,7 @@ v2f vert (appdata_full v)
 	float2 uv = (realUV - float2(0.5f, 0.5f)) * LZC_GeneralScale + centerUV;
 
 	o.nuv = uv * float2(16, 9);
-	o.suv = uv * _screenSize;
+	o.suv = floor(uv * _screenSize);
 
 		//Apply LZC_ConvergenceScale
 	float absBackScale = abs(LZC_ConvergenceScale); //prevents ridiculous results when BackgroundScale is < 0, especially: -1 caused division by 0
@@ -509,10 +508,10 @@ v2f vert (appdata_full v)
 #endif
 
 		//Determine sub-pixel offset
-	float2 lev0SUV = _spriteRect.xy * _screenSize - float2(0.5f, 0.5f); //Futile rounding stuffs I don't understand
+	float2 subpixelOffset = -_spriteRect.xy * _screenSize;// - float2(0.5f, 0.5f); //Futile rounding stuffs I don't understand
 	//float2 levScale = (_spriteRect.zw - _spriteRect.xy) * _screenSize / _LevelTex_TexelSize; //should = 1 normally
 	//lev0SUV *= levScale;
-	o.posCamDiff += (lev0SUV - int2(lev0SUV)) / _screenSize;
+	o.suv = o.suv + 10 * (subpixelOffset - floor(subpixelOffset));
 	//int2 levTexPos = (uv - _spriteRect.xy) / ((_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize);
 
     return o;
