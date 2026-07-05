@@ -503,7 +503,7 @@ v2f vert (appdata_full v)
 	float2 lev0SUV = _spriteRect.xy * _screenSize;
 	//float2 levScale = (_spriteRect.zw - _spriteRect.xy) * _screenSize / _LevelTex_TexelSize; //should = 1 normally
 	//lev0SUV *= levScale;
-	o.grabPosOffset = (int2(lev0SUV) - lev0SUV);// / levScale;
+	o.grabPosOffset = (lev0SUV - int2(lev0SUV));// / levScale;
 	//int2 levTexPos = (uv - _spriteRect.xy) / ((_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize);
 
 #if LZC_DYNAMICOPTIMIZATION

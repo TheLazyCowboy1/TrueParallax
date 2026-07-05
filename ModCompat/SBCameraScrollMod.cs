@@ -131,8 +131,6 @@ public static class SBCameraScrollMod
             }
             else
             {
-                Vector2 maxDelta = customData.lastDelta;
-                maxDelta.Set(Mathf.Abs(maxDelta.x) + Options.CameraMaxAcceleration * cam.sSize.x, Mathf.Abs(maxDelta.y) + Options.CameraMaxAcceleration * cam.sSize.y);
 
                 Vector2 delta = Vector2.zero;
                 customData.xMovement = Mathf.Abs(targetPos.x - cam.lastPos.x) / cam.sSize.x > (customData.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
@@ -143,6 +141,8 @@ public static class SBCameraScrollMod
                 if (customData.yMovement)
                     delta.y = Custom.LerpAndTick(cam.lastPos.y, targetPos.y, moveSpeed, moveSpeed * 0.005f * cam.sSize.y) - cam.lastPos.y;
 
+                Vector2 maxDelta = customData.lastDelta;
+                maxDelta.Set(Mathf.Abs(maxDelta.x) + Options.CameraMaxAcceleration * delta.x, Mathf.Abs(maxDelta.y) + Options.CameraMaxAcceleration * delta.y);
                 delta.Set(Mathf.Clamp(delta.x, -maxDelta.x, maxDelta.x), Mathf.Clamp(delta.y, -maxDelta.y, maxDelta.y));
 
                 cam.pos = cam.lastPos + delta;

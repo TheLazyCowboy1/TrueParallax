@@ -190,8 +190,6 @@ public partial class Plugin
             data.lastCamPos = data.CamPos; //at least stop it from moving, if nothing else
             */
 
-            Vector2 maxDelta = data.CamPos - data.lastCamPos;
-            maxDelta.Set(Mathf.Abs(maxDelta.x) + Options.CameraMaxAcceleration, Mathf.Abs(maxDelta.y) + Options.CameraMaxAcceleration);
 
             Vector2 delta = Vector2.zero;
             data.xMovement = Mathf.Abs(pos.x - data.CamPos.x) > (data.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
@@ -202,6 +200,9 @@ public partial class Plugin
             if (data.yMovement)
                 delta.y = Custom.LerpAndTick(data.CamPos.y, pos.y, moveSpeed, moveSpeed * 0.005f) - data.CamPos.y;
 
+            //Cap acceleration
+            Vector2 maxDelta = data.CamPos - data.lastCamPos;
+            maxDelta.Set(Mathf.Abs(maxDelta.x) + Options.CameraMaxAcceleration * delta.x, Mathf.Abs(maxDelta.y) + Options.CameraMaxAcceleration * delta.y);
             delta.Set(Mathf.Clamp(delta.x, -maxDelta.x, maxDelta.x), Mathf.Clamp(delta.y, -maxDelta.y, maxDelta.y));
 
             data.CamPos = data.CamPos + delta;
