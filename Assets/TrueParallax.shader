@@ -466,15 +466,15 @@ struct v2f {
 	float2  nuv : TEXCOORD0;
 	float2  suv : TEXCOORD1;
 	float2  posCamDiff : TEXCOORD2;
-	float2  grabPosOffset : TEXCOORD3;
+	//float2  grabPosOffset : TEXCOORD3;
 #if LZC_DYNAMICOPTIMIZATION
-	float2  estTests : TEXCOORD4;
+	float2  estTests : TEXCOORD3;
 #endif
 #if levelheat || levelmelt || LZC_WETTERRAIN
 	#if LZC_DYNAMICOPTIMIZATION
-    float2  uv : TEXCOORD5;
-	#else
     float2  uv : TEXCOORD4;
+	#else
+    float2  uv : TEXCOORD3;
 	#endif
 #endif
 };
@@ -499,13 +499,6 @@ v2f vert (appdata_full v)
 	float absBackScale = abs(LZC_ConvergenceScale); //prevents ridiculous results when BackgroundScale is < 0, especially: -1 caused division by 0
 	o.posCamDiff = (lerp(centerUV, uv, LZC_ConvergenceScale) - LZC_CamPos) / (LZC_GeneralScale * (absBackScale + 0.5f * (1 - absBackScale)));
 
-		//Determine sub-pixel offset
-	float2 lev0SUV = _spriteRect.xy * _screenSize;
-	//float2 levScale = (_spriteRect.zw - _spriteRect.xy) * _screenSize / _LevelTex_TexelSize; //should = 1 normally
-	//lev0SUV *= levScale;
-	o.grabPosOffset = (lev0SUV - int2(lev0SUV));// / levScale;
-	//int2 levTexPos = (uv - _spriteRect.xy) / ((_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize);
-
 #if LZC_DYNAMICOPTIMIZATION
 	o.estTests = o.posCamDiff * LZC_MoveStepScale * LZC_TestNum;
 #endif
@@ -514,6 +507,13 @@ v2f vert (appdata_full v)
 	o.uv = (realUV - _spriteRect.xy) / (_spriteRect.zw - _spriteRect.xy); //this is actually the level uv
 	//o.uv = realUV - _spriteRect.xy;
 #endif
+
+		//Determine sub-pixel offset
+	float2 lev0SUV = _spriteRect.xy * _screenSize - float2(0.5f, 0.5f); //Futile rounding stuffs I don't understand
+	//float2 levScale = (_spriteRect.zw - _spriteRect.xy) * _screenSize / _LevelTex_TexelSize; //should = 1 normally
+	//lev0SUV *= levScale;
+	o.posCamDiff += (lev0SUV - int2(lev0SUV)) / _screenSize;
+	//int2 levTexPos = (uv - _spriteRect.xy) / ((_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize);
 
     return o;
 }
@@ -543,7 +543,7 @@ half4 frag (v2f i) : SV_Target
 		noiseOffset = LZC_AntiAliasingFac * (noiseVal - 0.2f);// * saturate((noiseVal - 0.3f) * 2);
 	}
 
-	float2 initGrabPos = i.suv + i.grabPosOffset - moveStep * (totalTests + noiseOffset) * LZC_PivotDepth; //start at the END and then move BACKWARDS
+	float2 initGrabPos = i.suv - moveStep * (totalTests + noiseOffset) * LZC_PivotDepth; //start at the END and then move BACKWARDS
 
 //LEVEL HEAT
 #if levelheat || levelmelt
