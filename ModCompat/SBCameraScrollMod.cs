@@ -75,6 +75,7 @@ public static class SBCameraScrollMod
     {
         public bool xMovement = false, yMovement = false;
         public Vector2 lastPos = new();
+        public Vector2 lastDelta = new();
     }
     private static ResizableArray<CustomCameraData> customDataList = new(2);
 
@@ -123,23 +124,29 @@ public static class SBCameraScrollMod
                 customDataList.Add(cam.cameraNumber, customData = new());
 
             //Actually set position
-            if (cam.lastPos == onScreenPosition && cam.lastPos != customData.lastPos) //camera position was probably just reset
+            if (Options.TransitionsResetCamera && cam.lastPos == onScreenPosition && cam.lastPos != customData.lastPos) //camera position was probably just reset
             {
                 cam.pos = targetPos; //no smoothing
+                customData.lastDelta.Set(0, 0);
             }
             else
             {
+                Vector2 maxDelta = customData.lastDelta;
+                maxDelta.Set(Mathf.Abs(maxDelta.x) + Options.CameraMaxAcceleration * cam.sSize.x, Mathf.Abs(maxDelta.y) + Options.CameraMaxAcceleration * cam.sSize.y);
+
+                Vector2 delta = Vector2.zero;
                 customData.xMovement = Mathf.Abs(targetPos.x - cam.lastPos.x) / cam.sSize.x > (customData.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
                 if (customData.xMovement)
-                    cam.pos.x = Custom.LerpAndTick(cam.lastPos.x, targetPos.x, moveSpeed, moveSpeed * 0.005f * cam.sSize.x);
-                else
-                    cam.pos.x = cam.lastPos.x;
+                    delta.x = Custom.LerpAndTick(cam.lastPos.x, targetPos.x, moveSpeed, moveSpeed * 0.005f * cam.sSize.x) - cam.lastPos.x;
 
                 customData.yMovement = Mathf.Abs(targetPos.y - cam.lastPos.y) / cam.sSize.y > (customData.yMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
                 if (customData.yMovement)
-                    cam.pos.y = Custom.LerpAndTick(cam.lastPos.y, targetPos.y, moveSpeed, moveSpeed * 0.005f * cam.sSize.y);
-                else
-                    cam.pos.y = cam.lastPos.y;
+                    delta.y = Custom.LerpAndTick(cam.lastPos.y, targetPos.y, moveSpeed, moveSpeed * 0.005f * cam.sSize.y) - cam.lastPos.y;
+
+                delta.Set(Mathf.Clamp(delta.x, -maxDelta.x, maxDelta.x), Mathf.Clamp(delta.y, -maxDelta.y, maxDelta.y));
+
+                cam.pos = cam.lastPos + delta;
+                customData.lastDelta = delta;
             }
             customData.lastPos = cam.pos;
         }

@@ -189,19 +189,22 @@ public partial class Plugin
             }
             data.lastCamPos = data.CamPos; //at least stop it from moving, if nothing else
             */
+
+            Vector2 maxDelta = data.CamPos - data.lastCamPos;
+            maxDelta.Set(Mathf.Abs(maxDelta.x) + Options.CameraMaxAcceleration, Mathf.Abs(maxDelta.y) + Options.CameraMaxAcceleration);
+
+            Vector2 delta = Vector2.zero;
             data.xMovement = Mathf.Abs(pos.x - data.CamPos.x) > (data.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
             if (data.xMovement)
-                pos.x = Custom.LerpAndTick(data.CamPos.x, pos.x, moveSpeed, moveSpeed * 0.005f);
-            else
-                pos.x = data.CamPos.x; //don't move
+                delta.x = Custom.LerpAndTick(data.CamPos.x, pos.x, moveSpeed, moveSpeed * 0.005f) - data.CamPos.x;
 
             data.yMovement = Mathf.Abs(pos.y - data.CamPos.y) > (data.yMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
             if (data.yMovement)
-                pos.y = Custom.LerpAndTick(data.CamPos.y, pos.y, moveSpeed, moveSpeed * 0.005f);
-            else
-                pos.y = data.CamPos.y; //don't move
+                delta.y = Custom.LerpAndTick(data.CamPos.y, pos.y, moveSpeed, moveSpeed * 0.005f) - data.CamPos.y;
 
-            data.CamPos = pos;
+            delta.Set(Mathf.Clamp(delta.x, -maxDelta.x, maxDelta.x), Mathf.Clamp(delta.y, -maxDelta.y, maxDelta.y));
+
+            data.CamPos = data.CamPos + delta;
 
         }
         catch (Exception ex) { Error(ex); }

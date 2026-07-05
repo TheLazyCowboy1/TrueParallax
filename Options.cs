@@ -42,6 +42,8 @@ public partial class Options : AutoConfigOptions
 
     [Config(CAMERA, "Camera Move Speed", "How smoothly the camera follows the player. Lower values mean smoother movements, but high values can make it feel too snappy.\nRecommended between 0.05 and 0.15. 0 = no movement; 1 = no smoothing."), LimitRange(0, 1)]
     public static float CameraMoveSpeed = 0.08f;
+    [Config(CAMERA, "Max Acceleration", "WRITE THIS DESCRIPTION LATER PLEASE DON'T FORGET IT", precision = 3, rightSide = true), LimitRange(0, 1)]
+    public static float CameraMaxAcceleration = 0.1f;
     [Config(CAMERA, "Movement Stop Distance", "If the camera's distance from its target position is less than this distance, then it stops moving. Measured as a fraction of the screen size.\nRecommended between 0.005 and 0.02. 0 = camera always tries to inch closer; 1 = camera never moves.", precision = 3), LimitRange(0, 1)]
     public static float CameraStopDistance = 0.005f;
     [Config(CAMERA, "Movement Start Distance", "The camera does not start moving until its distance from its target position is greater than this distance. Measured as a fraction of the screen size.\nShould be GREATER than Camera Stop Distance. Recommended between 0.005 and 0.02. 0 = camera always tries to inch closer; 1 = camera never moves.", precision = 3, rightSide = true), LimitRange(0, 1)]

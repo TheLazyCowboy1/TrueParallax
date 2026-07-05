@@ -400,6 +400,7 @@ RWTexture2D<float> _LZC_LevelTex : register(u1);
 //uniform float2 _LZC_LevelTex_TexelSize; //DOES NOT WORK for RWTexture2D
 uniform float2 _screenSize;
 uniform float4 _spriteRect;
+uniform float2 _LevelTex_TexelSize;
 
 #if LZC_PROCESSLAYER2
 Texture2D<float4> _PreLevelColorGrab;
@@ -465,14 +466,15 @@ struct v2f {
 	float2  nuv : TEXCOORD0;
 	float2  suv : TEXCOORD1;
 	float2  posCamDiff : TEXCOORD2;
+	float2  grabPosOffset : TEXCOORD3;
 #if LZC_DYNAMICOPTIMIZATION
-	float2  estTests : TEXCOORD3;
+	float2  estTests : TEXCOORD4;
 #endif
 #if levelheat || levelmelt || LZC_WETTERRAIN
 	#if LZC_DYNAMICOPTIMIZATION
-    float2  uv : TEXCOORD4;
+    float2  uv : TEXCOORD5;
 	#else
-    float2  uv : TEXCOORD3;
+    float2  uv : TEXCOORD4;
 	#endif
 #endif
 };
@@ -496,6 +498,13 @@ v2f vert (appdata_full v)
 		//Apply LZC_ConvergenceScale
 	float absBackScale = abs(LZC_ConvergenceScale); //prevents ridiculous results when BackgroundScale is < 0, especially: -1 caused division by 0
 	o.posCamDiff = (lerp(centerUV, uv, LZC_ConvergenceScale) - LZC_CamPos) / (LZC_GeneralScale * (absBackScale + 0.5f * (1 - absBackScale)));
+
+		//Determine sub-pixel offset
+	float2 lev0SUV = _spriteRect.xy * _screenSize;
+	//float2 levScale = (_spriteRect.zw - _spriteRect.xy) * _screenSize / _LevelTex_TexelSize; //should = 1 normally
+	//lev0SUV *= levScale;
+	o.grabPosOffset = (int2(lev0SUV) - lev0SUV);// / levScale;
+	//int2 levTexPos = (uv - _spriteRect.xy) / ((_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize);
 
 #if LZC_DYNAMICOPTIMIZATION
 	o.estTests = o.posCamDiff * LZC_MoveStepScale * LZC_TestNum;
@@ -534,7 +543,7 @@ half4 frag (v2f i) : SV_Target
 		noiseOffset = LZC_AntiAliasingFac * (noiseVal - 0.2f);// * saturate((noiseVal - 0.3f) * 2);
 	}
 
-	float2 initGrabPos = i.suv - moveStep * (totalTests + noiseOffset) * LZC_PivotDepth; //start at the END and then move BACKWARDS
+	float2 initGrabPos = i.suv + i.grabPosOffset - moveStep * (totalTests + noiseOffset) * LZC_PivotDepth; //start at the END and then move BACKWARDS
 
 //LEVEL HEAT
 #if levelheat || levelmelt
