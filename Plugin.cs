@@ -8,6 +8,8 @@ using UnityEngine;
 using RWCustom;
 using TrueParallax.ModCompat;
 using System.Collections.Generic;
+using MonoMod.RuntimeDetour;
+using Steamworks;
 
 #pragma warning disable CS0618
 
@@ -134,11 +136,22 @@ public partial class Plugin : SimplerPlugin
 
         On.RoomCamera.ClearAllSprites += RoomCamera_ClearAllSprites;
 
-        On.CustomDecal.DrawSprites += CustomDecal_DrawSprites;
-        On.RoomCamera.DrawUpdate += RoomCamera_DrawUpdate1;
-
         if (SBCameraScrollEnabled)
             SBCameraScrollMod.ApplyHooks();
+
+        //TEMPORARY TEST HOOKS!!!!
+        On.CustomDecal.DrawSprites += CustomDecal_DrawSprites;
+        //On.RoomCamera.DrawUpdate += RoomCamera_DrawUpdate1;
+        if (SBCameraScrollEnabled)
+        {
+            /*
+            new Hook((Delegate)SBCameraScroll.RoomCameraMod.DrawUpdate_UpdateLevelTextureGameObject,
+                (Action<RoomCamera, Vector2> orig, RoomCamera cam, Vector2 pos) =>
+            {
+                Vector2 rounded = new(Mathf.Round(pos.x * 0.1f) * 10, Mathf.Round(pos.y * 0.1f) * 10);
+                cam.levelGraphic.SetPosition(new Vector2(-100, -100) - rounded);
+            });*/
+        }
     }
 
     private void RoomCamera_DrawUpdate1(On.RoomCamera.orig_DrawUpdate orig, RoomCamera self, float timeStacker, float timeSpeed)
@@ -161,17 +174,26 @@ public partial class Plugin : SimplerPlugin
     private HashSet<TriangleMesh> decalsToUpdate = new();
     private void CustomDecal_DrawSprites(On.CustomDecal.orig_DrawSprites orig, CustomDecal self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
     {
+
         orig(self, sLeaser, rCam, timeStacker, camPos);
-        
+
         try
         {
+            //for (int i = 0; i < self.verts.Length; i++)
+            //    self.verts[i].Set(Mathf.Floor(self.verts[i].x * 0.2f) * 5f, Mathf.Floor(self.verts[i].y * 0.2f) * 5f);
             if (sLeaser?.sprites == null || sLeaser.sprites.Length < 1 || sLeaser.sprites[0] is not TriangleMesh mesh)
                 return;
-            //for (int i = 0; i < mesh.vertices.Length; i++)
-            //    mesh.MoveVertice(i, new(Mathf.Floor(mesh.vertices[i].x) + 0.5f, Mathf.Floor(mesh.vertices[i].y) + 0.5f));
-            decalsToUpdate.Add(mesh);
-        } catch (Exception ex) { Error(ex); }
-        
+            bool xEven = (Mathf.FloorToInt(camPos.x) & 1) == 1, yEven = (Mathf.FloorToInt(camPos.y) & 1) == 1;
+            for (int i = 0; i < mesh.vertices.Length; i++)
+            {
+                Vector2 floored = new(Mathf.Floor(mesh.vertices[i].x), Mathf.Floor(mesh.vertices[i].y));
+                if (xEven) floored.x -= 0.5f;
+                if (yEven) floored.y -= 0.5f;
+                mesh.MoveVertice(i, floored);
+            }
+            //decalsToUpdate.Add(mesh);
+        }
+        catch (Exception ex) { Error(ex); }
     }
 
     public override void RemoveHooks()

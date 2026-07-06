@@ -149,6 +149,10 @@ public static class SBCameraScrollMod
                 customData.lastDelta = delta;
             }
             customData.lastPos = cam.pos;
+
+            //TEMPORARY TEST DEBUG LINES THINGS STUFF YEAH REMOVE THIS
+            //cam.pos.Set(Mathf.Round(cam.pos.x * 0.5f) * 2, Mathf.Round(cam.pos.y * 0.5f) * 2);
+            //cam.lastPos = cam.pos;
         }
         catch (Exception ex)
         {
