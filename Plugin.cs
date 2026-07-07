@@ -90,6 +90,12 @@ public partial class Plugin : SimplerPlugin
                 Error("Could not find shader ThicknessMap.shader");
             ThicknessMapMaterial = new(ThicknessMapShader);
 
+            Shader ParallaxDecalShader = assetBundle.LoadAsset<Shader>("ParallaxDecal.shader");
+            if (ParallaxDecalShader == null)
+                Error("Could not find shader ParallaxDecal.shader");
+            else
+                Custom.rainWorld.Shaders["Decal"].shader = ParallaxDecalShader;
+
         }
         catch (Exception ex) { Error(ex); }
     }
@@ -140,7 +146,7 @@ public partial class Plugin : SimplerPlugin
             SBCameraScrollMod.ApplyHooks();
 
         //TEMPORARY TEST HOOKS!!!!
-        On.CustomDecal.DrawSprites += CustomDecal_DrawSprites;
+        //On.CustomDecal.DrawSprites += CustomDecal_DrawSprites;
         //On.RoomCamera.DrawUpdate += RoomCamera_DrawUpdate1;
         if (SBCameraScrollEnabled)
         {
@@ -174,21 +180,22 @@ public partial class Plugin : SimplerPlugin
     private HashSet<TriangleMesh> decalsToUpdate = new();
     private void CustomDecal_DrawSprites(On.CustomDecal.orig_DrawSprites orig, CustomDecal self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
     {
-
-        orig(self, sLeaser, rCam, timeStacker, camPos);
+        bool xEven = (Mathf.FloorToInt(camPos.x) & 1) == 1, yEven = (Mathf.FloorToInt(camPos.y) & 1) == 1;
+        orig(self, sLeaser, rCam, timeStacker, new(Mathf.Round(camPos.x * 0.5f)*2, Mathf.Round(camPos.y * 0.5f)*2));
 
         try
         {
-            //for (int i = 0; i < self.verts.Length; i++)
-            //    self.verts[i].Set(Mathf.Floor(self.verts[i].x * 0.2f) * 5f, Mathf.Floor(self.verts[i].y * 0.2f) * 5f);
             if (sLeaser?.sprites == null || sLeaser.sprites.Length < 1 || sLeaser.sprites[0] is not TriangleMesh mesh)
                 return;
-            bool xEven = (Mathf.FloorToInt(camPos.x) & 1) == 1, yEven = (Mathf.FloorToInt(camPos.y) & 1) == 1;
+            for (int i = 0; i < mesh.verticeColors.Length; i++)
+                mesh.verticeColors[i] = new(mesh.verticeColors[i].r, mesh.verticeColors[i].g, mesh.verticeColors[i].b, xEven ? 1 : 0.8f);
+            return;
             for (int i = 0; i < mesh.vertices.Length; i++)
             {
-                Vector2 floored = new(Mathf.Floor(mesh.vertices[i].x), Mathf.Floor(mesh.vertices[i].y));
-                if (xEven) floored.x -= 0.5f;
-                if (yEven) floored.y -= 0.5f;
+                Vector2 floored = new(Mathf.Floor(mesh.vertices[i].x - (xEven ? 0.5f : 0)), Mathf.Floor(mesh.vertices[i].y - (yEven ? 0.5f : 0)));
+                //Vector2 floored = mesh.vertices[i];
+                //if (xEven) floored.x += 0.1f;
+                //if (yEven) floored.y += 0.1f;
                 mesh.MoveVertice(i, floored);
             }
             //decalsToUpdate.Add(mesh);
