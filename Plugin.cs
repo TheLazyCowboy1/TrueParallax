@@ -10,6 +10,7 @@ using TrueParallax.ModCompat;
 using System.Collections.Generic;
 using MonoMod.RuntimeDetour;
 using Steamworks;
+using MonoMod.Cil;
 
 #pragma warning disable CS0618
 
@@ -90,11 +91,24 @@ public partial class Plugin : SimplerPlugin
                 Error("Could not find shader ThicknessMap.shader");
             ThicknessMapMaterial = new(ThicknessMapShader);
 
+            //return;
             Shader ParallaxDecalShader = assetBundle.LoadAsset<Shader>("ParallaxDecal.shader");
             if (ParallaxDecalShader == null)
                 Error("Could not find shader ParallaxDecal.shader");
             else
-                Custom.rainWorld.Shaders["Decal"].shader = ParallaxDecalShader;
+            {
+                //Custom.rainWorld.Shaders["Decal"].shader = ParallaxDecalShader;
+                FShader fs = FShader._shaders.Find(f => f.name == "Decal" || f.name == "SBCameraScroll/Decal");
+                if (fs == null)
+                    fs = FShader._shaders.Find(f => f.name.Contains("Decal"));
+                if (fs == null)
+                    Error("Could not find Decal FShader!");
+                else
+                {
+                    fs.shader = ParallaxDecalShader;
+                    Log("Replaced Decal shader");
+                }
+            }
 
         }
         catch (Exception ex) { Error(ex); }
@@ -145,9 +159,12 @@ public partial class Plugin : SimplerPlugin
         if (SBCameraScrollEnabled)
             SBCameraScrollMod.ApplyHooks();
 
+        IL.RoomCamera.DrawUpdate += IL_RoomCamera_DrawUpdate;
+
         //TEMPORARY TEST HOOKS!!!!
         //On.CustomDecal.DrawSprites += CustomDecal_DrawSprites;
         //On.RoomCamera.DrawUpdate += RoomCamera_DrawUpdate1;
+        //On.CustomDecal.UpdateVerts += CustomDecal_UpdateVerts;
         if (SBCameraScrollEnabled)
         {
             /*
@@ -158,6 +175,65 @@ public partial class Plugin : SimplerPlugin
                 cam.levelGraphic.SetPosition(new Vector2(-100, -100) - rounded);
             });*/
         }
+    }
+
+    private void IL_RoomCamera_DrawUpdate(ILContext il)
+    {
+        try
+        {
+            ILCursor c = new(il);
+
+            static bool findFunc(Mono.Cecil.Cil.Instruction x) => x.MatchCall(typeof(Mathf).GetMethod(nameof(Mathf.Floor)));
+            if (!c.TryGotoNext(MoveType.Before, findFunc))
+            {
+                Error("Could not find first Floor function in RoomCamera.DrawUpdate!");
+                return;
+            }
+
+            static float emitFunc1(float x, RoomCamera self)
+            {
+                if (self.TryGetData(out CameraData data))
+                    data.UnflooredCameraPos.x = x;
+                return x;
+            }
+            c.Emit(Mono.Cecil.Cil.OpCodes.Ldarg_0);
+            c.EmitDelegate(emitFunc1);
+
+            c.Index += 2; //move after Floor
+
+            if (!c.TryGotoNext(MoveType.Before, findFunc))
+            {
+                Error("Could not find second Floor function in RoomCamera.DrawUpdate!");
+                return;
+            }
+
+            static float emitFunc2(float y, RoomCamera self)
+            {
+                if (self.TryGetData(out CameraData data))
+                    data.UnflooredCameraPos.y = y;
+                return y;
+            }
+            c.Emit(Mono.Cecil.Cil.OpCodes.Ldarg_0);
+            c.EmitDelegate(emitFunc2);
+        }
+        catch (Exception ex) { Error(ex); }
+    }
+
+    private void CustomDecal_UpdateVerts(On.CustomDecal.orig_UpdateVerts orig, CustomDecal self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam)
+    {
+        orig(self, sLeaser, rCam);
+
+        try
+        {
+            if (sLeaser.sprites[0] is not TriangleMesh mesh)
+                return;
+            for (int i = 0; i < mesh.verticeColors.Length; i++)
+            {
+                Color c = mesh.verticeColors[i];
+                c.b = 0;
+                mesh.verticeColors[i] = c;
+            }
+        } catch (Exception ex) { Error(ex); }
     }
 
     private void RoomCamera_DrawUpdate1(On.RoomCamera.orig_DrawUpdate orig, RoomCamera self, float timeStacker, float timeSpeed)
