@@ -8,9 +8,6 @@ using UnityEngine;
 using RWCustom;
 using TrueParallax.ModCompat;
 using System.Collections.Generic;
-using MonoMod.RuntimeDetour;
-using Steamworks;
-using MonoMod.Cil;
 
 #pragma warning disable CS0618
 

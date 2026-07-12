@@ -105,7 +105,19 @@ public partial class Options
 
     #region Files
     public const string PRESET_SUBFOLDER = "ParallaxPresets";
-    private string PresetDirectory = Path.Combine(OptionInterface.ConfigHolder.configDirPath, PRESET_SUBFOLDER);
+
+    private static string _presetDirectory = null;
+    private string PresetDirectory {
+        get {
+            if (_presetDirectory == null)
+            {
+                if (string.IsNullOrEmpty(ConfigHolder.configDirPath))
+                    config.GetConfigPath(); //generates the configDirPath
+                _presetDirectory = Path.Combine(ConfigHolder.configDirPath, PRESET_SUBFOLDER);
+            }
+            return _presetDirectory;
+        }
+    }
 
     public const char PRESET_SEPARATOR = '=';
     private const string PRESET_DESCRIPTION_KEY = "PRESET_DESCRIPTION";
@@ -115,8 +127,10 @@ public partial class Options
         List<ListItem> list = new() { new(DEFAULT_PRESET, DEFAULT_PRESET, 0) { desc = DEFAULT_DESCRIPTION } };
         try
         {
-            var files = AssetManager.ListDirectory(PRESET_SUBFOLDER, false, false, false)
-                .Concat(Directory.GetFiles(PresetDirectory));
+            IEnumerable<string> files = AssetManager.ListDirectory(PRESET_SUBFOLDER, false, false, false);
+            
+            if (Directory.Exists(PresetDirectory))
+                files = files.Concat(Directory.GetFiles(PresetDirectory));
 
             //for (int i = 0; i < files.Length; i++)
             foreach(string file in files)

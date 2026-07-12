@@ -106,46 +106,63 @@ public abstract class AutoConfigOptions : OptionInterface
 
     public AutoConfigOptions(TabInfo[] tabs)
     {
-        TabInfos = tabs;
-
-        List<KeyValuePair<string, ConfigInfo>> configs = new();
-
-        FieldInfo[] fields = GetType().GetFields();
-        foreach (FieldInfo info in fields)
+        try
         {
-            try
+            TabInfos = tabs;
+
+            List<KeyValuePair<string, ConfigInfo>> configs = new();
+
+            FieldInfo[] fields = GetType().GetFields();
+            foreach (FieldInfo info in fields)
             {
-                Config att = info.GetCustomAttribute<Config>();
-                if (att != null)
+                try
                 {
-                    bool isEnum = info.FieldType.IsSubclassOf(typeof(Enum));
-                    Type type = isEnum ? typeof(string) : info.FieldType;
-                    object value = isEnum ? info.GetValue(this).ToString() : info.GetValue(this);
-                    ConfigurableBase configBase = (ConfigurableBase)typeof(ConfigHolder).GetMethods().First(m => m.Name == nameof(ConfigHolder.Bind)).MakeGenericMethod(type)
-                        .Invoke(config, new object[] { info.Name, value, null });
-
-                    configBase.info.acceptable = AcceptableForConfig(info.Name);
-
-                    LimitRange rangeAtt = info.GetCustomAttribute<LimitRange>();
-                    if (rangeAtt != null)
+                    Config att = info.GetCustomAttribute<Config>();
+                    if (att != null)
                     {
-                        if (info.FieldType == typeof(int))
-                            configBase.info.acceptable = (ConfigAcceptableBase)Activator.CreateInstance(typeof(ConfigAcceptableRange<>).MakeGenericType(info.FieldType), (int)rangeAtt.Min, (int)rangeAtt.Max);
-                        else
-                            configBase.info.acceptable = (ConfigAcceptableBase)Activator.CreateInstance(typeof(ConfigAcceptableRange<>).MakeGenericType(info.FieldType), rangeAtt.Min, rangeAtt.Max);
+                        bool isEnum = info.FieldType.IsSubclassOf(typeof(Enum));
+                        Type type = isEnum ? typeof(string) : info.FieldType;
+                        object value = isEnum ? info.GetValue(this).ToString() : info.GetValue(this);
+                        ConfigurableBase configBase = (ConfigurableBase)typeof(ConfigHolder).GetMethods().First(m => m.Name == nameof(ConfigHolder.Bind)).MakeGenericMethod(type)
+                            .Invoke(config, new object[] { info.Name, value, null });
+
+                        configBase.info.acceptable = AcceptableForConfig(info.Name);
+
+                        LimitRange rangeAtt = info.GetCustomAttribute<LimitRange>();
+                        if (rangeAtt != null)
+                        {
+                            if (info.FieldType == typeof(int))
+                                configBase.info.acceptable = (ConfigAcceptableBase)Activator.CreateInstance(typeof(ConfigAcceptableRange<>).MakeGenericType(info.FieldType), (int)rangeAtt.Min, (int)rangeAtt.Max);
+                            else
+                                configBase.info.acceptable = (ConfigAcceptableBase)Activator.CreateInstance(typeof(ConfigAcceptableRange<>).MakeGenericType(info.FieldType), rangeAtt.Min, rangeAtt.Max);
+                        }
+
+                        configs.Add(new(info.Name, new()
+                        {
+                            config = configBase,
+                            tab = att.Tab,
+                            label = att.Label.Length > 0 ? att.Label : FieldNameToLabel(info.Name),
+                            desc = att.Desc,
+                            hide = att.hide,
+                            rightSide = att.rightSide,
+                            width = att.width,
+                            spaceBefore = att.spaceBefore,
+                            spaceAfter = att.spaceAfter,
+                            height = att.height,
+                            extraMargin = att.extraMargin,
+                            precision = att.precision,
+                            dropdownOptions = att.dropdownOptions,
+                            enumType = isEnum ? info.FieldType : null
+                        }));
                     }
-
-                    configs.Add(new(info.Name, new() { config = configBase, tab = att.Tab, label = att.Label.Length > 0 ? att.Label : FieldNameToLabel(info.Name), desc = att.Desc,
-                        hide = att.hide, rightSide = att.rightSide, width = att.width, spaceBefore = att.spaceBefore,
-                        spaceAfter = att.spaceAfter, height = att.height, extraMargin = att.extraMargin,
-                        precision = att.precision, dropdownOptions = att.dropdownOptions, enumType = isEnum ? info.FieldType : null
-                    }));
                 }
-            } catch (Exception ex) { SimplerPlugin.Error(ex); }
-        }
+                catch (Exception ex) { SimplerPlugin.Error(ex); }
+            }
 
-        ConfigInfos = new(configs);
-        SimplerPlugin.Log("Found " + ConfigInfos.Count + " configs");
+            ConfigInfos = new(configs);
+            SimplerPlugin.Log("Found " + ConfigInfos.Count + " configs");
+        }
+        catch (Exception ex) { SimplerPlugin.Error(ex); }
     }
 
     private static string FieldNameToLabel(string n)
