@@ -198,10 +198,25 @@ public partial class Plugin : SimplerPlugin
         try
         {
             Vector4 sr = Shader.GetGlobalVector(RainWorld.ShadPropSpriteRect);
+
+            //round to nearest 0.5?
+            Vector2 sSize = Custom.rainWorld.screenSize;
+            /*
+            float rx(float f) => Mathf.Round(f * 2 * sSize.x) * 0.5f / sSize.x;
+            float ry(float f) => Mathf.Round(f * 2 * sSize.y) * 0.5f / sSize.y;
+            sr.Set(rx(sr.x), ry(sr.y), rx(sr.z), ry(sr.w));
+            */
+            Vector2 srAdd = new Vector2(-0.02f, -0.02f) / sSize;
+            sr.Set(sr.x + srAdd.x, sr.y + srAdd.y, sr.z + srAdd.x, sr.w + srAdd.y);
+            Shader.SetGlobalVector(RainWorld.ShadPropSpriteRect, sr);
+
             if (sr != prevSpriteRect)
             {
                 prevSpriteRect = sr;
-                sr *= Custom.rainWorld.screenSize;
+                sr.x *= sSize.x;
+                sr.y *= sSize.y;
+                sr.z *= sSize.x;
+                sr.w *= sSize.y;
                 Log($"New Sprite Rect: {sr.x},{sr.y},{sr.z},{sr.w}", 3);
             }
             return;
