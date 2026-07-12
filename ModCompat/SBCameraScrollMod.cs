@@ -115,7 +115,9 @@ public static class SBCameraScrollMod
             {
                 fracPos.Set(Plugin.SmoothCurve(Mathf.Clamp01(fracPos.x), Options.CustomCameraCurve), Plugin.SmoothCurve(Mathf.Clamp01(fracPos.y), Options.CustomCameraCurve));
             }
-            targetPos = fracPos * (roomSize - cam.sSize) + corner;
+
+            Vector2 scaledSSize = cam.sSize / cam.SpriteLayers[0].scale;
+            targetPos = fracPos * (roomSize - scaledSSize) + corner;
 
             RoomCameraMod.CheckBorders(cam, ref targetPos); //very important step I forgot, lol
 

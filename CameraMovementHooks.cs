@@ -1,4 +1,5 @@
-﻿using RWCustom;
+﻿using MonoMod.Cil;
+using RWCustom;
 using System;
 using System.Linq;
 using UnityEngine;
@@ -53,6 +54,51 @@ public partial class Plugin
         orig(self);
 
         UpdateCamPos(self);
+    }
+
+    /// <summary>
+    /// Used to get camera pos before it gets floored, for smooth camera movement
+    /// </summary>
+    private void IL_RoomCamera_DrawUpdate(ILContext il)
+    {
+        try
+        {
+            ILCursor c = new(il);
+
+            static bool findFunc(Mono.Cecil.Cil.Instruction x) => x.MatchCall(typeof(Mathf).GetMethod(nameof(Mathf.Floor)));
+            if (!c.TryGotoNext(MoveType.Before, findFunc))
+            {
+                Error("Could not find first Floor function in RoomCamera.DrawUpdate!");
+                return;
+            }
+
+            static float emitFunc1(float x, RoomCamera self)
+            {
+                if (self.TryGetData(out CameraData data))
+                    data.UnflooredCameraPos.x = x;
+                return x;
+            }
+            c.Emit(Mono.Cecil.Cil.OpCodes.Ldarg_0);
+            c.EmitDelegate(emitFunc1);
+
+            c.Index += 2; //move after Floor
+
+            if (!c.TryGotoNext(MoveType.Before, findFunc))
+            {
+                Error("Could not find second Floor function in RoomCamera.DrawUpdate!");
+                return;
+            }
+
+            static float emitFunc2(float y, RoomCamera self)
+            {
+                if (self.TryGetData(out CameraData data))
+                    data.UnflooredCameraPos.y = y;
+                return y;
+            }
+            c.Emit(Mono.Cecil.Cil.OpCodes.Ldarg_0);
+            c.EmitDelegate(emitFunc2);
+        }
+        catch (Exception ex) { Error(ex); }
     }
     #endregion
 

@@ -93,11 +93,10 @@ public partial class Options
 
         try
         {
-            string path = Path.Combine(RWCustom.Custom.RootFolderDirectory(), PRESET_SUBFOLDER);
-            if (!Directory.Exists(path))
-                Directory.CreateDirectory(path); //make sure there's actually a folder to open
+            if (!Directory.Exists(PresetDirectory))
+                Directory.CreateDirectory(PresetDirectory); //make sure there's actually a folder to open
 
-            System.Diagnostics.Process.Start(path);
+            System.Diagnostics.Process.Start(PresetDirectory);
         }
         catch (Exception ex) { Plugin.Error(ex); }
     }
@@ -106,6 +105,8 @@ public partial class Options
 
     #region Files
     public const string PRESET_SUBFOLDER = "ParallaxPresets";
+    private string PresetDirectory = Path.Combine(OptionInterface.ConfigHolder.configDirPath, PRESET_SUBFOLDER);
+
     public const char PRESET_SEPARATOR = '=';
     private const string PRESET_DESCRIPTION_KEY = "PRESET_DESCRIPTION";
 
@@ -114,16 +115,17 @@ public partial class Options
         List<ListItem> list = new() { new(DEFAULT_PRESET, DEFAULT_PRESET, 0) { desc = DEFAULT_DESCRIPTION } };
         try
         {
-            string[] files = AssetManager.ListDirectory(PRESET_SUBFOLDER, false, false, false);
-            //string[] files = Directory.GetFiles(Path.Combine(Plugin.PluginPath, PRESET_SUBFOLDER));
+            var files = AssetManager.ListDirectory(PRESET_SUBFOLDER, false, false, false)
+                .Concat(Directory.GetFiles(PresetDirectory));
 
-            for (int i = 0; i < files.Length; i++)
+            //for (int i = 0; i < files.Length; i++)
+            foreach(string file in files)
             {
-                string dir = Path.GetDirectoryName(files[i]);
+                string dir = Path.GetDirectoryName(file);
 
-                string name = Path.GetFileNameWithoutExtension(files[i]); //remove the full path and extension
+                string name = Path.GetFileNameWithoutExtension(file); //remove the full path and extension
 
-                //search for the files original name
+                //search for the file's original name (AssetManager removes the capitalization :( )
                 foreach (string f in Directory.EnumerateFiles(dir))
                 {
                     string f2 = Path.GetFileNameWithoutExtension(f);
@@ -134,23 +136,19 @@ public partial class Options
                     }
                 }
 
-                ListItem it = new(files[i], name, list.Count);
-                try
+                ListItem it = new(file, name, list.Count);
+                try //find description:
                 {
-                    string line = File.ReadLines(files[i]).First(); //check the first line
+                    string line = File.ReadLines(file).First(); //check the first line
                     string prefix = PRESET_DESCRIPTION_KEY + PRESET_SEPARATOR;
                     if (line.StartsWith(prefix)) //for the PRESET_DESCRIPTION key
                         it.desc = line.Substring(prefix.Length).Replace("<LINE>", "\n"); //and use it as the description
                 } catch { }
+
                 list.Add(it);
             }
-
-            //if (files.Length > 0) //cannot return an empty list
-            //return files;
-            //return files.Prepend(DEFAULT_PRESET).ToArray();
         }
         catch (Exception ex) { Plugin.Error(ex); }
-        //return new string[1] {DEFAULT_PRESET};
         return list;
     }
 
@@ -168,8 +166,10 @@ public partial class Options
                 s += info.config.key + PRESET_SEPARATOR + info.config.BoxedValue + '\n';
             }
 
-            //File.WriteAllText(Path.Combine(Plugin.PluginPath, PRESET_SUBFOLDER, name) + ".txt", s);
             string path = AssetManager.ResolveFilePath(Path.Combine(PRESET_SUBFOLDER, name) + ".txt");
+            if (!File.Exists(path)) //if creating a new file, do it in the config folder
+                path = Path.Combine(PresetDirectory, name + ".txt");
+
             string fileName = Path.GetFileName(path);
             path = path.Substring(0, path.Length - fileName.Length) + name + ".txt"; //replace name so that it's not all lowercase
             File.WriteAllText(path, s); //this will usually save in the StreamingAssets folder
@@ -179,7 +179,6 @@ public partial class Options
         catch (Exception ex) { Plugin.Error(ex); }
     }
 
-    //public void LoadPreset(string name)
     public void LoadPreset(string path)
     {
         try
@@ -195,8 +194,6 @@ public partial class Options
             }
             else //load the config info from the file
             {
-                //string path = AssetManager.ResolveFilePath(Path.Combine(PRESET_SUBFOLDER, name) + ".txt");
-                //string path = Path.Combine(Plugin.PluginPath, PRESET_SUBFOLDER, name) + ".txt";
                 if (!File.Exists(path))
                 {
                     Plugin.Error("Could not find preset file: " + path);

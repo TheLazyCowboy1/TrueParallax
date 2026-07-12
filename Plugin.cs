@@ -91,7 +91,7 @@ public partial class Plugin : SimplerPlugin
                 Error("Could not find shader ThicknessMap.shader");
             ThicknessMapMaterial = new(ThicknessMapShader);
 
-            //return;
+            return;
             Shader ParallaxDecalShader = assetBundle.LoadAsset<Shader>("ParallaxDecal.shader");
             if (ParallaxDecalShader == null)
                 Error("Could not find shader ParallaxDecal.shader");
@@ -141,6 +141,7 @@ public partial class Plugin : SimplerPlugin
         //CameraMovementHooks.cs
         On.RoomCamera.DrawUpdate += RoomCamera_DrawUpdate;
         On.RoomCamera.Update += RoomCamera_Update;
+        IL.RoomCamera.DrawUpdate += IL_RoomCamera_DrawUpdate;
 
         //RoomEffectHooks.cs
         On.RoomCamera.MoveCamera_Room_int += RoomCamera_MoveCamera_Room_int;
@@ -159,11 +160,9 @@ public partial class Plugin : SimplerPlugin
         if (SBCameraScrollEnabled)
             SBCameraScrollMod.ApplyHooks();
 
-        IL.RoomCamera.DrawUpdate += IL_RoomCamera_DrawUpdate;
-
         //TEMPORARY TEST HOOKS!!!!
         //On.CustomDecal.DrawSprites += CustomDecal_DrawSprites;
-        //On.RoomCamera.DrawUpdate += RoomCamera_DrawUpdate1;
+        On.RoomCamera.DrawUpdate += RoomCamera_DrawUpdate1;
         //On.CustomDecal.UpdateVerts += CustomDecal_UpdateVerts;
         if (SBCameraScrollEnabled)
         {
@@ -175,48 +174,6 @@ public partial class Plugin : SimplerPlugin
                 cam.levelGraphic.SetPosition(new Vector2(-100, -100) - rounded);
             });*/
         }
-    }
-
-    private void IL_RoomCamera_DrawUpdate(ILContext il)
-    {
-        try
-        {
-            ILCursor c = new(il);
-
-            static bool findFunc(Mono.Cecil.Cil.Instruction x) => x.MatchCall(typeof(Mathf).GetMethod(nameof(Mathf.Floor)));
-            if (!c.TryGotoNext(MoveType.Before, findFunc))
-            {
-                Error("Could not find first Floor function in RoomCamera.DrawUpdate!");
-                return;
-            }
-
-            static float emitFunc1(float x, RoomCamera self)
-            {
-                if (self.TryGetData(out CameraData data))
-                    data.UnflooredCameraPos.x = x;
-                return x;
-            }
-            c.Emit(Mono.Cecil.Cil.OpCodes.Ldarg_0);
-            c.EmitDelegate(emitFunc1);
-
-            c.Index += 2; //move after Floor
-
-            if (!c.TryGotoNext(MoveType.Before, findFunc))
-            {
-                Error("Could not find second Floor function in RoomCamera.DrawUpdate!");
-                return;
-            }
-
-            static float emitFunc2(float y, RoomCamera self)
-            {
-                if (self.TryGetData(out CameraData data))
-                    data.UnflooredCameraPos.y = y;
-                return y;
-            }
-            c.Emit(Mono.Cecil.Cil.OpCodes.Ldarg_0);
-            c.EmitDelegate(emitFunc2);
-        }
-        catch (Exception ex) { Error(ex); }
     }
 
     private void CustomDecal_UpdateVerts(On.CustomDecal.orig_UpdateVerts orig, CustomDecal self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam)
@@ -236,12 +193,21 @@ public partial class Plugin : SimplerPlugin
         } catch (Exception ex) { Error(ex); }
     }
 
+    private Vector4 prevSpriteRect;
     private void RoomCamera_DrawUpdate1(On.RoomCamera.orig_DrawUpdate orig, RoomCamera self, float timeStacker, float timeSpeed)
     {
         orig(self, timeStacker, timeSpeed);
 
         try
         {
+            Vector4 sr = Shader.GetGlobalVector(RainWorld.ShadPropSpriteRect);
+            if (sr != prevSpriteRect)
+            {
+                prevSpriteRect = sr;
+                sr *= Custom.rainWorld.screenSize;
+                Log($"New Sprite Rect: {sr.x},{sr.y},{sr.z},{sr.w}", 3);
+            }
+            return;
             Vector2 levPos = self.levelGraphic.GetPosition();
             foreach (TriangleMesh mesh in decalsToUpdate)
             {
@@ -282,8 +248,10 @@ public partial class Plugin : SimplerPlugin
     public override void RemoveHooks()
     {
         On.RoomCamera.ctor -= RoomCamera_ctor;
+
         On.RoomCamera.DrawUpdate -= RoomCamera_DrawUpdate;
         On.RoomCamera.Update -= RoomCamera_Update;
+        IL.RoomCamera.DrawUpdate -= IL_RoomCamera_DrawUpdate;
 
         On.RoomCamera.MoveCamera_Room_int -= RoomCamera_MoveCamera_Room_int;
         On.RoomCamera.WarpMoveCameraActual -= RoomCamera_WarpMoveCameraActual;
