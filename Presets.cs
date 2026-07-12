@@ -130,7 +130,7 @@ public partial class Options
             IEnumerable<string> files = AssetManager.ListDirectory(PRESET_SUBFOLDER, false, false, false);
             
             if (Directory.Exists(PresetDirectory))
-                files = files.Concat(Directory.GetFiles(PresetDirectory));
+                files = files.Concat(Directory.EnumerateFiles(PresetDirectory));
 
             //for (int i = 0; i < files.Length; i++)
             foreach(string file in files)
@@ -185,6 +185,12 @@ public partial class Options
                 path = Path.Combine(PresetDirectory, name + ".txt");
 
             string fileName = Path.GetFileName(path);
+
+            //create directory
+            DirectoryInfo dir = new FileInfo(path).Directory;
+            if (!dir.Exists)
+                dir.Create();
+
             path = path.Substring(0, path.Length - fileName.Length) + name + ".txt"; //replace name so that it's not all lowercase
             File.WriteAllText(path, s); //this will usually save in the StreamingAssets folder
 
