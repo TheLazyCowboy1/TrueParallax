@@ -228,23 +228,14 @@ public partial class Plugin
                 }
             }
 
-            /*if ((data.CamPos - pos).sqrMagnitude > Options.CameraStopDistance * Options.CameraStopDistance) //don't move when very close
-            {
-                data.CamPos = LerpAndTick(data.CamPos, pos, moveSpeed, moveSpeed * 0.005f);
-                return;
-            }
-            data.lastCamPos = data.CamPos; //at least stop it from moving, if nothing else
-            */
-
-
             Vector2 delta = Vector2.zero;
             data.xMovement = Mathf.Abs(pos.x - data.CamPos.x) > (data.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
             if (data.xMovement)
-                delta.x = Custom.LerpAndTick(data.CamPos.x, pos.x, moveSpeed, moveSpeed * 0.005f) - data.CamPos.x;
+                delta.x = LerpAndTickWithStop(data.CamPos.x, pos.x, moveSpeed, moveSpeed * 0.005f, Options.CameraStopDistance) - data.CamPos.x;
 
             data.yMovement = Mathf.Abs(pos.y - data.CamPos.y) > (data.yMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
             if (data.yMovement)
-                delta.y = Custom.LerpAndTick(data.CamPos.y, pos.y, moveSpeed, moveSpeed * 0.005f) - data.CamPos.y;
+                delta.y = LerpAndTickWithStop(data.CamPos.y, pos.y, moveSpeed, moveSpeed * 0.005f, Options.CameraStopDistance) - data.CamPos.y;
 
             //Cap acceleration
             Vector2 maxDelta = data.CamPos - data.lastCamPos;
@@ -255,6 +246,14 @@ public partial class Plugin
 
         }
         catch (Exception ex) { Error(ex); }
+    }
+    public static float LerpAndTickWithStop(float a, float b, float lerp, float tick, float stop)
+    {
+        float dif = b - a;
+        if (Mathf.Abs(dif) <= stop)
+            return a;
+        b -= stop * Mathf.Sign(dif);
+        return Custom.LerpAndTick(a, b, lerp, tick);
     }
     public static Vector2 LerpAndTick(Vector2 a, Vector2 b, float lerp, float tick)
     {

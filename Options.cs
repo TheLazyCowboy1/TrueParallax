@@ -165,6 +165,8 @@ public partial class Options : AutoConfigOptions
 
     [Config(ADVANCED, "Enable Parallax for Splitscreen", "Enables the parallax effect for all cameras when the SplitScreen Co-op mod is active. However, only the first camera properly tracks creatures, and having multiple parallax effects active is laggy.\nNOT recommended. It is unlikely that I will ever rewrite the game's shaders just to fix SplitScreen Co-op.")]
     public static bool SplitscreenParallax = false;
+    [Config(ADVANCED, "Motion Blur?", "Trying motion blur I guess? Idk", rightSide = true), LimitRange(0, 1)]
+    public static float MotionBlur = 0;
 
     [Config(ADVANCED, "Log Level", "When this number is higher, less important logs are logged to the LogOutput.log file.", spaceBefore = 10), LimitRange(0, 3)]
     public static int LogLevel = 1;

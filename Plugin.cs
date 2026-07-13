@@ -7,7 +7,6 @@ using EasyModSetup;
 using UnityEngine;
 using RWCustom;
 using TrueParallax.ModCompat;
-using System.Collections.Generic;
 
 #pragma warning disable CS0618
 
@@ -70,6 +69,7 @@ public partial class Plugin : SimplerPlugin
 
     public static FShader TrueParallaxFShader;
     public static Material ThicknessMapMaterial;
+    public static Shader CustomBlendShader;
 
     public static void LoadAssets()
     {
@@ -88,27 +88,48 @@ public partial class Plugin : SimplerPlugin
                 Error("Could not find shader ThicknessMap.shader");
             ThicknessMapMaterial = new(ThicknessMapShader);
 
-            return;
-            Shader ParallaxDecalShader = assetBundle.LoadAsset<Shader>("ParallaxDecal.shader");
-            if (ParallaxDecalShader == null)
-                Error("Could not find shader ParallaxDecal.shader");
+            //motion blur stuff?
+            CustomBlendShader = assetBundle.LoadAsset<Shader>("CustomBlend.shader");
+            if (CustomBlendShader == null)
+                Error("Could not find shader CustomBlend.shader");
             else
             {
-                //Custom.rainWorld.Shaders["Decal"].shader = ParallaxDecalShader;
-                FShader fs = FShader._shaders.Find(f => f.name == "Decal" || f.name == "SBCameraScroll/Decal");
-                if (fs == null)
-                    fs = FShader._shaders.Find(f => f.name.Contains("Decal"));
-                if (fs == null)
-                    Error("Could not find Decal FShader!");
-                else
-                {
-                    fs.shader = ParallaxDecalShader;
-                    Log("Replaced Decal shader");
-                }
+                Futile.instance.camera.gameObject.AddComponent<MotionBlur>();
+                Log("Attached MotionBlur MonoBehaviour to camera");
             }
+
+            return;
 
         }
         catch (Exception ex) { Error(ex); }
+    }
+
+    public class MotionBlur : MonoBehaviour
+    {
+        RenderTexture lastImg;
+        Material mat = new(CustomBlendShader);
+        public void OnRenderImage(RenderTexture source, RenderTexture destination)
+        {
+            if (Options.MotionBlur <= 0)
+            {
+                lastImg?.Release();
+                lastImg = null;
+                return;
+            }
+            if (lastImg != null && lastImg.width == source.width && lastImg.height == source.height)
+            {
+                mat.SetTexture("LZC_BlendWith", lastImg);
+                mat.SetFloat("LZC_CustomBlend", Options.MotionBlur);
+                Graphics.Blit(source, destination);
+            }
+            else
+            {
+                lastImg = new(source);
+                Graphics.CopyTexture(source, destination);
+            }
+
+            Graphics.CopyTexture(source, lastImg);
+        }
     }
 
     /// <summary>
