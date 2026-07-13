@@ -122,7 +122,7 @@ public partial class Plugin : SimplerPlugin
             {
                 mat.SetTexture("LZC_BlendWith", lastImg);
                 mat.SetFloat("LZC_CustomBlend", Options.MotionBlur);
-                Graphics.Blit(source, destination);
+                Graphics.Blit(source, destination, mat);
             }
             else
             {
@@ -132,7 +132,7 @@ public partial class Plugin : SimplerPlugin
             }
 
             //Graphics.CopyTexture(source, lastImg);
-            Graphics.Blit(destination, lastImg); //temporary test!
+            Graphics.CopyTexture(destination, lastImg);
         }
     }
 
