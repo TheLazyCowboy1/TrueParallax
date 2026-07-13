@@ -114,8 +114,10 @@ public partial class Plugin : SimplerPlugin
             {
                 lastImg?.Release();
                 lastImg = null;
+                Graphics.CopyTexture(source, destination);
                 return;
             }
+
             if (lastImg != null && lastImg.width == source.width && lastImg.height == source.height)
             {
                 mat.SetTexture("LZC_BlendWith", lastImg);
@@ -125,10 +127,12 @@ public partial class Plugin : SimplerPlugin
             else
             {
                 lastImg = new(source);
+                Plugin.Log($"lastImg RenderTexture size = {lastImg.width}x{lastImg.height}");
                 Graphics.CopyTexture(source, destination);
             }
 
-            Graphics.CopyTexture(source, lastImg);
+            //Graphics.CopyTexture(source, lastImg);
+            Graphics.Blit(destination, lastImg); //temporary test!
         }
     }
 
