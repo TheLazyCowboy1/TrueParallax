@@ -150,6 +150,7 @@ public partial class Plugin : SimplerPlugin
 
         On.RoomCamera.ClearAllSprites += RoomCamera_ClearAllSprites;
 
+        On.CustomDecal.GetIdealGridDiv += CustomDecal_GetIdealGridDiv;
         On.CustomDecal.UpdateVerts += CustomDecal_UpdateVerts;
 
         if (SBCameraScrollEnabled)
@@ -176,6 +177,7 @@ public partial class Plugin : SimplerPlugin
 
         On.RoomCamera.ClearAllSprites -= RoomCamera_ClearAllSprites;
 
+        On.CustomDecal.GetIdealGridDiv -= CustomDecal_GetIdealGridDiv;
         On.CustomDecal.UpdateVerts -= CustomDecal_UpdateVerts;
 
         if (SBCameraScrollEnabled)
@@ -245,6 +247,26 @@ public partial class Plugin : SimplerPlugin
     }
 
     //Optionally disables decals flickering
+    private int CustomDecal_GetIdealGridDiv(On.CustomDecal.orig_GetIdealGridDiv orig, CustomDecal self)
+    {
+        try
+        {
+            if (Options.FixDecalFlickering)
+            {
+                for (int i = 0; i < self.quad.Length; i++)
+                    self.quad[i] *= 2; //scale up so that we get a bigger gridDiv
+
+                int val = orig(self);
+
+                for (int i = 0; i < self.quad.Length; i++)
+                    self.quad[i] *= 0.5f; //scale back down
+
+                return val;
+            }
+        } catch (Exception ex) { Error(ex); }
+
+        return orig(self);
+    }
     private void CustomDecal_UpdateVerts(On.CustomDecal.orig_UpdateVerts orig, CustomDecal self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam)
     {
         orig(self, sLeaser, rCam);
@@ -260,7 +282,7 @@ public partial class Plugin : SimplerPlugin
                 Color c = mesh.verticeColors[i];
 
                 //offset vertices
-                self.verts[i].y += 150.0f * c.b * noise.snoise(self.verts[i] / 300.0f);
+                self.verts[i].y -= 75.0f * c.b * (noise.snoise(self.verts[i] * 0.004f) + 1);
 
                 c.b = 0; //disable blue channel == disable erosion
                 mesh.verticeColors[i] = c;
