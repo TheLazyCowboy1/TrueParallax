@@ -139,6 +139,33 @@ public partial class Plugin
 
         return critPos;
     }
+    private static Rect GetRoomCameraArea(RoomCamera self)
+    {
+        Room room = self.room;
+        if (room == null)
+            return new(-100000, -100000, 200000, 200000);
+
+        Rect rect = new(0, 0, 0, 0);
+        foreach (Vector2 pos in room.cameraPositions)
+        {
+            rect.xMin = Mathf.Min(rect.xMin, pos.x);
+            rect.yMin = Mathf.Min(rect.yMin, pos.y);
+            rect.xMax = Mathf.Max(rect.xMax, pos.x);
+            rect.yMax = Mathf.Max(rect.yMax, pos.y);
+        }
+        rect.size += self.sSize - self.sSize / self.SpriteLayers[0].scale; //camera zoom stuff; don't worry about ittttt
+
+        //inflate the size to sSize at minimum so that we don't get excessively fast camera movement
+        Vector2 inflate = (self.sSize - rect.size) * 0.5f;
+        inflate.x = Mathf.Max(0, inflate.x);
+        inflate.y = Mathf.Max(0, inflate.y);
+        rect.xMin -= inflate.x;
+        rect.xMax += inflate.x;
+        rect.yMin -= inflate.y;
+        rect.yMax += inflate.y;
+
+        return rect;
+    }
     //Determines what the CamPos should be
     public static void UpdateCamPos(RoomCamera self, float moveMod = 1)
     {
@@ -164,7 +191,9 @@ public partial class Plugin
                 Vector2 camPos = self.pos;
                 if (Options.CameraBasedPosition)
                 {
-                    pos = (camPos + data.critFollowOffset + 0.5f * self.sSize) / new Vector2(self.room.PixelWidth, self.room.PixelHeight);
+                    Rect camArea = GetRoomCameraArea(self);
+                    pos = (camPos + data.critFollowOffset - camArea.position) / camArea.size;
+                    //pos = (camPos + data.critFollowOffset + 0.5f * self.sSize) / new Vector2(self.room.PixelWidth, self.room.PixelHeight);
                 }
                 else if (critPos != null)
                 {

@@ -7,6 +7,7 @@ using EasyModSetup;
 using UnityEngine;
 using RWCustom;
 using TrueParallax.ModCompat;
+using Unity.Mathematics;
 
 #pragma warning disable CS0618
 
@@ -35,6 +36,7 @@ public partial class Plugin : SimplerPlugin
 
     public static bool SBCameraScrollEnabled = false;
     public static bool SplitScreenEnabled = false;
+    public static bool SharpenerEnabled = false;
 
     /// <summary>
     /// Index of a shader variable (e.g: LZC_CamPos), used for presumably more efficient access to it
@@ -51,6 +53,7 @@ public partial class Plugin : SimplerPlugin
 
         SBCameraScrollEnabled = ModManager.ActiveMods.Any(m => m.id == "SBCameraScroll");
         SplitScreenEnabled = ModManager.ActiveMods.Any(m => m.id == "henpemaz_splitscreencoop");
+        SharpenerEnabled = ModManager.ActiveMods.Any(m => m.id == "pjb3005.sharpener");
 
         LoadAssets();
 
@@ -104,38 +107,6 @@ public partial class Plugin : SimplerPlugin
         catch (Exception ex) { Error(ex); }
     }
 
-    public class MotionBlur : MonoBehaviour
-    {
-        RenderTexture lastImg;
-        Material mat = new(CustomBlendShader);
-        public void OnRenderImage(RenderTexture source, RenderTexture destination)
-        {
-            if (Options.MotionBlur <= 0)
-            {
-                lastImg?.Release();
-                lastImg = null;
-                Graphics.CopyTexture(source, destination);
-                return;
-            }
-
-            if (lastImg != null && lastImg.width == source.width && lastImg.height == source.height)
-            {
-                mat.SetTexture("LZC_BlendWith", lastImg);
-                mat.SetFloat("LZC_CustomBlend", Options.MotionBlur);
-                Graphics.Blit(source, destination, mat);
-            }
-            else
-            {
-                lastImg = new(source);
-                Plugin.Log($"lastImg RenderTexture size = {lastImg.width}x{lastImg.height}");
-                Graphics.CopyTexture(source, destination);
-            }
-
-            //Graphics.CopyTexture(source, lastImg);
-            Graphics.CopyTexture(destination, lastImg);
-        }
-    }
-
     /// <summary>
     /// The LevelHeat and LevelMelt shaders are especially problematic, because they warp the level itself
     /// which causes visual artefacts due _LevelTex not matching up with the drawn room.
@@ -179,6 +150,8 @@ public partial class Plugin : SimplerPlugin
 
         On.RoomCamera.ClearAllSprites += RoomCamera_ClearAllSprites;
 
+        On.CustomDecal.UpdateVerts += CustomDecal_UpdateVerts;
+
         if (SBCameraScrollEnabled)
             SBCameraScrollMod.ApplyHooks();
 
@@ -202,6 +175,8 @@ public partial class Plugin : SimplerPlugin
         On.RoomCamera.ApplyPositionChange -= RoomCamera_ApplyPositionChange;
 
         On.RoomCamera.ClearAllSprites -= RoomCamera_ClearAllSprites;
+
+        On.CustomDecal.UpdateVerts -= CustomDecal_UpdateVerts;
 
         if (SBCameraScrollEnabled)
             SBCameraScrollMod.RemoveHooks();
@@ -264,6 +239,31 @@ public partial class Plugin : SimplerPlugin
             {
                 data.Clear();
                 Log("Cleared data for camera#" + self.cameraNumber);
+            }
+        }
+        catch (Exception ex) { Error(ex); }
+    }
+
+    //Optionally disables decals flickering
+    private void CustomDecal_UpdateVerts(On.CustomDecal.orig_UpdateVerts orig, CustomDecal self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam)
+    {
+        orig(self, sLeaser, rCam);
+
+        try
+        {
+            if (!Options.FixDecalFlickering)
+                return;
+            if (sLeaser.sprites[0] is not TriangleMesh mesh)
+                return;
+            for (int i = 0; i < mesh.verticeColors.Length; i++)
+            {
+                Color c = mesh.verticeColors[i];
+
+                //offset vertices
+                self.verts[i].y += 150.0f * c.b * noise.snoise(self.verts[i] / 300.0f);
+
+                c.b = 0; //disable blue channel == disable erosion
+                mesh.verticeColors[i] = c;
             }
         }
         catch (Exception ex) { Error(ex); }

@@ -42,8 +42,8 @@ public partial class Options : AutoConfigOptions
 
     [Config(CAMERA, "Camera Move Speed", "How smoothly the camera follows the player. Lower values mean smoother movements, but high values can make it feel too snappy.\nRecommended between 0.05 and 0.15. 0 = no movement; 1 = no smoothing."), LimitRange(0, 1)]
     public static float CameraMoveSpeed = 0.08f;
-    [Config(CAMERA, "Max Acceleration", "WRITE THIS DESCRIPTION LATER PLEASE DON'T FORGET IT", precision = 3, rightSide = true), LimitRange(0, 1)]
-    public static float CameraMaxAcceleration = 0.1f;
+    //NOT USED: DOESN'T DO MUCH; JUST OVERCOMPLICATES THINGS [Config(CAMERA, "Max Acceleration", "WRITE THIS DESCRIPTION LATER PLEASE DON'T FORGET IT", precision = 3, rightSide = true), LimitRange(0, 1)]
+    public static float CameraMaxAcceleration = 1;
     [Config(CAMERA, "Movement Stop Distance", "If the camera's distance from its target position is less than this distance, then it stops moving. Measured as a fraction of the screen size.\nRecommended between 0.005 and 0.02. 0 = camera always tries to inch closer; 1 = camera never moves.", precision = 3), LimitRange(0, 1)]
     public static float CameraStopDistance = 0.005f;
     [Config(CAMERA, "Movement Start Distance", "The camera does not start moving until its distance from its target position is greater than this distance. Measured as a fraction of the screen size.\nShould be GREATER than Camera Stop Distance. Recommended between 0.005 and 0.02. 0 = camera always tries to inch closer; 1 = camera never moves.", precision = 3, rightSide = true), LimitRange(0, 1)]
@@ -54,8 +54,8 @@ public partial class Options : AutoConfigOptions
     [Config(CAMERA, "Transitions Reset Camera", "Instantly snaps the camera into place whenever going through screen transitions. If disabled, the camera will often pan across the entire screen upon screen transitions.\nHIGHLY recommended, especially if you are prone to motion-sickness. But personally, I think it looks cool when this option is disabled.")]
     public static bool TransitionsResetCamera = true;
 
-    [Config(CAMERA, "Input Offset", "How much the camera position moves according to the player's inputs.\nGenerally recommended, unless you have a high Camera Move Speed.", precision = 1, spaceBefore = 15), LimitRange(-500, 500)]
-    public static float CameraInputOffset = 50;
+    [Config(CAMERA, "Input Offset", "How much the camera position moves ahead according to the player's inputs.\nGenerally recommended between 0 and 100, unless you have a high Camera Move Speed.", precision = 1, spaceBefore = 15), LimitRange(-500, 500)]
+    public static float CameraInputOffset = 0;
     [Config(CAMERA, "Mouse Sensitivity", "How much the camera moves when the mouse is moved. If 0, mouse movement does not affect the camera."), LimitRange(-5, 5)]
     public static float MouseSensitivity = 0;
 
@@ -128,8 +128,11 @@ public partial class Options : AutoConfigOptions
 
     [Config(ADVANCED, "Background Noise", "Applies noise to areas that look stretched. There is a performance benefit if this is 0.\nRecommended between 0.2 and 0.8."), LimitRange(0, 4)]
     public static float BackgroundNoise = 0.5f;
+
     [Config(ADVANCED, "Anti-Aliasing", "Attempts to break up straight lines that are noticable when moving the camera slowly. (Not really anti-aliasing). Has a minimal effect when the Effect Strength is high.\nRecommended below 1. May be useful when Dynamic Optimization is enabled."), LimitRange(0, 10)]
-    public static float AntiAliasing = 0.1f;
+    public static float AntiAliasing = 0;
+    [Config(ADVANCED, "Fix Decal Flickering", "Fixes decals flickering when the camera moves by disabling their \"erosion\" attribute. This unfortunately makes decals look too smooth.", rightSide = true)]
+    public static bool FixDecalFlickering = false;
 
     [Config(ADVANCED, "Level Heat/Melt", "Attempts to re-implement the distortion added by the LevelHeat and VoidMelt Room Effects. Unfortunately, these effects also distort creatures as well as the room.")]
     public static bool LevelHeat = true;
@@ -277,6 +280,13 @@ public partial class Options : AutoConfigOptions
             UIConfigs[nameof(LevelHeatFac)].greyedOut = !LevelHeat;
             UIConfigs[nameof(LevelHeatDecrease)].greyedOut = !LevelHeat;
             UIConfigs[nameof(SuperAccurateThickness)].greyedOut = DepthCurve == DepthCurveOptions.LINEAR || !(Options.LimitProjection || Options.TwoLayers);
+
+            UIconfig motionBlur = UIConfigs[nameof(MotionBlur)];
+            if (motionBlur.greyedOut != Plugin.SharpenerEnabled)
+            {
+                motionBlur.greyedOut = Plugin.SharpenerEnabled;
+                motionBlur.description = Plugin.SharpenerEnabled ? "This feature is currently incompatible with Sharpener." : ConfigInfos[nameof(MotionBlur)].desc;
+            }
 
             PresetsUpdate();
         }
