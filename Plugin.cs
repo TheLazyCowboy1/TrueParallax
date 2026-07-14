@@ -282,7 +282,7 @@ public partial class Plugin : SimplerPlugin
                 Color c = mesh.verticeColors[i];
 
                 //offset vertices
-                self.verts[i].y -= 75.0f * c.b * (noise.snoise(self.verts[i] * 0.004f) + 1);
+                self.verts[i].y -= 40.0f * c.b * (noise.snoise(new float2(self.verts[i].x, self.verts[i].y*0.1f) * 0.015f) + 0.75f);
 
                 c.b = 0; //disable blue channel == disable erosion
                 mesh.verticeColors[i] = c;
