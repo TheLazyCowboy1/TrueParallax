@@ -18,6 +18,7 @@ namespace TrueParallax;
 
 [BepInDependency("SBCameraScroll", BepInDependency.DependencyFlags.SoftDependency)]
 [BepInDependency("com.henpemaz.splitscreencoop", BepInDependency.DependencyFlags.SoftDependency)]
+[BepInDependency("pjb3005.sharpener", BepInDependency.DependencyFlags.SoftDependency)]
 
 [BepInPlugin("LazyCowboy.TrueParallax", "True Parallax", "0.0.1")]
 public partial class Plugin : SimplerPlugin

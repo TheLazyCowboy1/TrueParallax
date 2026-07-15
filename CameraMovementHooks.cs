@@ -76,7 +76,9 @@ public partial class Plugin
             {
                 if (self.TryGetData(out CameraData data))
                     data.UnflooredCameraPos.x = x;
-                return x;
+                if (!Options.EveryOtherPixel)
+                    return x;
+                return Mathf.Floor(x * 0.5f) * 2;
             }
             c.Emit(Mono.Cecil.Cil.OpCodes.Ldarg_0);
             c.EmitDelegate(emitFunc1);
@@ -93,7 +95,9 @@ public partial class Plugin
             {
                 if (self.TryGetData(out CameraData data))
                     data.UnflooredCameraPos.y = y;
-                return y;
+                if (!Options.EveryOtherPixel)
+                    return y;
+                return Mathf.Floor(y * 0.5f) * 2;
             }
             c.Emit(Mono.Cecil.Cil.OpCodes.Ldarg_0);
             c.EmitDelegate(emitFunc2);
@@ -331,9 +335,11 @@ public partial class Plugin
             {
                 mat.SetVector(ShadPropCamPos, data.CamPos);
 
-                Vector2 camDrawPos = data.UnflooredCameraPos;//Vector2.Lerp(self.lastPos, self.pos, timeStacker);
-                Vector2 flooredPos = new(Mathf.Floor(camDrawPos.x), Mathf.Floor(camDrawPos.y));
-                mat.SetVector(ShadPropUVOffset, camDrawPos - flooredPos);
+                Vector2 properDrawPos = data.UnflooredCameraPos;
+                float stepSize = Options.EveryOtherPixel ? 2 : 1;
+                Vector2 currentPos = new Vector2(Mathf.Floor(properDrawPos.x / stepSize) * stepSize, Mathf.Floor(properDrawPos.y / stepSize) * stepSize)
+                    + self.offset + self.hardLevelGfxOffset; //hopefully these are 0 anyway
+                mat.SetVector(ShadPropUVOffset, properDrawPos - currentPos);
 
                 if (Options.IsActiveDynamicZoom)
                 {

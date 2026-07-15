@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 namespace TrueParallax;
 
@@ -6,30 +7,50 @@ public class MotionBlur : MonoBehaviour
 {
     RenderTexture lastImg;
     Material mat = new(Plugin.CustomBlendShader);
-    public void OnRenderImage(RenderTexture source, RenderTexture destination)
+    //public void OnRenderImage(RenderTexture source, RenderTexture destination)
+    public void OnPostRender()
     {
-        if (Options.MotionBlur <= 0 || Plugin.SharpenerEnabled)
+        try
         {
-            lastImg?.Release();
-            lastImg = null;
-            Graphics.CopyTexture(source, destination);
-            return;
-        }
+            if (Options.MotionBlur <= 0)
+            {
+                lastImg?.Release();
+                lastImg = null;
+                return;
+            }
 
-        if (lastImg != null && lastImg.width == source.width && lastImg.height == source.height)
-        {
-            mat.SetTexture("LZC_BlendWith", lastImg);
-            mat.SetFloat("LZC_CustomBlend", Options.MotionBlur);
-            Graphics.Blit(source, destination, mat);
-        }
-        else
-        {
-            lastImg = new(source);
-            Plugin.Log($"lastImg RenderTexture size = {lastImg.width}x{lastImg.height}");
-            Graphics.CopyTexture(source, destination);
-        }
+            Texture camImage = Futile.instance._cameraImage.texture;
+            if (camImage is null)
+            {
+                return; //Futile isn't set up yet ?
+            }
 
-        //Graphics.CopyTexture(source, lastImg);
-        Graphics.CopyTexture(destination, lastImg);
+            if (camImage is not RenderTexture destination)
+            {
+                Plugin.Log("NOT A RENDER TEXTURE!!!");
+                Options.MotionBlur = 0;
+                return;
+            }
+
+            if (lastImg != null && lastImg.width == destination.width && lastImg.height == destination.height)
+            {
+                mat.SetTexture("LZC_BlendWith", lastImg);
+                mat.SetFloat("LZC_CustomBlend", Options.MotionBlur);
+
+                RenderTexture source = RenderTexture.GetTemporary(destination.descriptor);
+                Graphics.Blit(destination, source);
+                Graphics.Blit(source, destination, mat);
+                RenderTexture.ReleaseTemporary(source);
+            }
+            else //lastImg is not accurate; create a new one
+            {
+                lastImg?.Release();
+                lastImg = new(destination);
+                Plugin.Log($"lastImg RenderTexture size = {lastImg.width}x{lastImg.height}");
+            }
+            
+            Graphics.Blit(destination, lastImg);
+        }
+        catch (Exception ex) { Plugin.Error(ex); }
     }
 }

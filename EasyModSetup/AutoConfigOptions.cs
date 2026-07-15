@@ -328,7 +328,7 @@ public abstract class AutoConfigOptions : OptionInterface
         {
             SetValue(info, type);
         }
-        SimplerPlugin.Log("Set option values for " + mod?.id);
+        SimplerPlugin.Log("Set option values for " + mod?.id, 2);
     }
 
 
@@ -346,7 +346,7 @@ public abstract class AutoConfigOptions : OptionInterface
         {
             SetConfig(info, type);
         }
-        SimplerPlugin.Log("Set configs for " + mod?.id);
+        SimplerPlugin.Log("Set configs for " + mod?.id, 2);
     }
 
 }

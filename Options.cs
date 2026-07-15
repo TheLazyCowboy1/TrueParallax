@@ -82,6 +82,8 @@ public partial class Options : AutoConfigOptions
     public static float CustomCameraCurve = 1;
     [Config(CAMERA, "Custom Camera Border Pixels", "TEST OPTION: Makes the camera stop moving when it gets really close to the edge of the screen.\nThis helps keep the camera more centered and prevents it from never showing the edges of the room, but the sudden stop can be jarring.", precision = 0), LimitRange(0, 800)]
     public static float CustomCameraBorderPixels = 80;
+    [Config(CAMERA, "Every Other Pixel", "TEST OPTION: Makes camera only move every-other pixel to avoid flickering altogether", rightSide = true)]
+    public static bool EveryOtherPixel = false;
 
     //LAYER2
 
@@ -185,7 +187,8 @@ public partial class Options : AutoConfigOptions
                 backgroundNoise = Options.BackgroundNoise > 0,
                 buildCreatureBackgrounds = Options.TwoLayers && Options.BuildCreatureBackground,
                 realisticDepthCurve = Options.DepthCurve == DepthCurveOptions.REALISTIC,
-                superAccurateThickness = Options.IsActiveSuperAccurateThickness;
+                superAccurateThickness = Options.IsActiveSuperAccurateThickness,
+                motionBlur = Options.MotionBlur > 0;
             public MyBools() { }
         }
         private MyBools myBools = new();
@@ -209,6 +212,7 @@ public partial class Options : AutoConfigOptions
                 + (myBools.buildCreatureBackgrounds ? "\n* Disabling Build Creature Backgrounds or reducing Creature Background Samples will help. 1 CreatureBackgroundSample is worth about 3 EffectStrength" : "")
                 + (myBools.realisticDepthCurve ? "\n* Use a Depth Curve other than REALISTIC. It involves repeated divisions, which is highly expensive." : "")
                 + (myBools.superAccurateThickness ? "\n* Disabling Super Accurate Thickness should improve performance some. I have not determined the exact improvement." : "")
+                + (myBools.motionBlur ? "\n* Disabling Motion Blur should both improve performance and reduce VRAM needed." : "")
                 ;
         }
 
@@ -280,13 +284,6 @@ public partial class Options : AutoConfigOptions
             UIConfigs[nameof(LevelHeatFac)].greyedOut = !LevelHeat;
             UIConfigs[nameof(LevelHeatDecrease)].greyedOut = !LevelHeat;
             UIConfigs[nameof(SuperAccurateThickness)].greyedOut = DepthCurve == DepthCurveOptions.LINEAR || !(Options.LimitProjection || Options.TwoLayers);
-
-            UIconfig motionBlur = UIConfigs[nameof(MotionBlur)];
-            if (motionBlur.greyedOut != Plugin.SharpenerEnabled)
-            {
-                motionBlur.greyedOut = Plugin.SharpenerEnabled;
-                motionBlur.description = Plugin.SharpenerEnabled ? "This feature is currently incompatible with Sharpener." : ConfigInfos[nameof(MotionBlur)].desc;
-            }
 
             PresetsUpdate();
         }
