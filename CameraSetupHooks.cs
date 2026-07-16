@@ -153,6 +153,8 @@ public partial class Plugin
         mat.SetFloat("LZC_BackgroundNoise", Options.BackgroundNoise);
         //mat.SetFloat("LZC_MaxProjection", data.CurrentMaxProjection); //moved to WarpConstants, because it can change at very low warps
 
+        mat.SetVector(ShadPropUVOffset, Vector2.zero);
+
         mat.SetInt("LZC_CreatureBackgroundTests", Options.CreatureBackgroundTests);
         mat.SetInt("LZC_DefaultLevelThickness", Options.DefaultLevelThickness);
         mat.SetFloat("LZC_ProjectionMod", Options.ThicknessMod);

@@ -18,7 +18,7 @@ public partial class Options : AutoConfigOptions
     {
         new(PRESETS),
         new(BASICS) { spacing = 40, startHeight = 500 },
-        new(CAMERA),
+        new(CAMERA) { inScrollBox = true },
         new(LAYER2) { startHeight = 500 },
         new(OPTIMIZATION),
         new(ADVANCED) { leftMargin = 20, spacing = 20 }
@@ -35,7 +35,7 @@ public partial class Options : AutoConfigOptions
     [Config(BASICS, "Max Projection", "How thick poles and creatures appear. Setting this too low will make geometry look disconnected, but setting it too high makes creatures and poles still look stretched.\nRecommended between 0.04 and 0.10. 0 = everything is paper-thin; 1 = everything is fully stretched.", spaceAfter = 20), LimitRange(0, 1)]
     public static float MaxProjection = 0.1f;
 
-    [Config(BASICS, "Second Layer", "Makes the shader much better at determining how thick to make objects like poles and creatures, at the cost of performance.\nSee the "+LAYER2+" tab for more advanced control of this feature.")]
+    [Config(BASICS, "Second Layer", "Makes the shader much better at determining how thick to make objects like poles and creatures, at the cost of performance.\nSee the " + LAYER2 + " tab for more advanced control of this feature.")]
     public static bool TwoLayers = false;
 
     //CAMERA
@@ -84,6 +84,26 @@ public partial class Options : AutoConfigOptions
     public static float CustomCameraBorderPixels = 80;
     [Config(CAMERA, "Every Other Pixel", "TEST OPTION: Makes camera only move every-other pixel to avoid flickering altogether", rightSide = true)]
     public static bool EveryOtherPixel = false;
+
+    public enum ScreenCameraType
+    {
+        Default = 0,
+        FixedInCenter = 1,
+        CamPosInRoom = 2,
+        SBCameraScroll = 3
+    }
+    [Config(CAMERA, "Screen Camera Type", "The method used to calculate where the parallax camera is on the screen. Default = follows player position precisely;\nFixedInCenter = always centered - does not move; CamPosInRoom = fixed in a position depending on where the camera is (use with SBCameraScroll); SBCameraScroll = uses SBCameraScroll's calculations to follow player more loosely")]
+    public static ScreenCameraType ScreenCamera = ScreenCameraType.Default;
+    [Config(CAMERA, "Fallback Screen Camera", "The calculation used if the previous selection is not available.", rightSide = true, spaceAfter = 50, dropdownOptions = new string[] {nameof(ScreenCameraType.Default), nameof(ScreenCameraType.FixedInCenter), nameof(ScreenCameraType.CamPosInRoom)})]
+    public static ScreenCameraType FallbackScreenCamera = ScreenCameraType.Default;
+    private static bool ScreenCameraAvailable(ScreenCameraType type) => Plugin.SBCameraScrollEnabled || type != ScreenCameraType.SBCameraScroll;
+    public static ScreenCameraType CurrentScreenCamera => ScreenCameraAvailable(ScreenCamera) ? ScreenCamera : FallbackScreenCamera;
+
+    public enum SBCameraType
+    {
+        Default = 0,
+        Custom = 1
+    }
 
     //LAYER2
 

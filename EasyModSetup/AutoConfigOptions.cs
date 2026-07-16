@@ -98,6 +98,7 @@ public abstract class AutoConfigOptions : OptionInterface
         public float startHeight = 550f, spacing = 40f, leftMargin = 50f,
             textOffset = 90f, updownWidth = 80f, checkboxOffset = 50f,
             rightMargin = 300f, defaultHeight = 25f, minSpacing = 10f;
+        public bool inScrollBox = false;
         public TabInfo(string name)
         {
             this.name = name;
@@ -209,6 +210,11 @@ public abstract class AutoConfigOptions : OptionInterface
             string name = tInfo.name;
             Tabs[i] = new(this, name);
 
+            //setup scrollbox
+            OpScrollBox scrollBox = tInfo.inScrollBox ? new OpScrollBox(Tabs[i], 500) : null;
+            if (scrollBox != null)
+                Tabs[i].AddItems(scrollBox);
+
             float y = tInfo.startHeight;
             bool lastWasRightSide = false;
             int counterSinceSpace = 0;
@@ -218,6 +224,9 @@ public abstract class AutoConfigOptions : OptionInterface
             {
                 try
                 {
+                    if (cInfo.hide) //don't add this to the menu
+                        continue;
+
                     if (cInfo.tab == name)
                     {
                         float x = (cInfo.rightSide ? tInfo.rightMargin : tInfo.leftMargin) + cInfo.extraMargin;
@@ -268,9 +277,16 @@ public abstract class AutoConfigOptions : OptionInterface
                                 SetValue(cInfo);
                             } catch (Exception ex) { SimplerPlugin.Error(ex); }
                         };
+                        if (el is OpComboBox comboBox)
+                        {
+                            comboBox.OnListOpen += trigger => comboBox.MoveToFront();
+                        }
 
                         UIConfigs.Add(cInfo.config.key, el);
-                        Tabs[i].AddItems(new OpLabel(x + t, y, cInfo.label), el);
+                        if (scrollBox != null)
+                            scrollBox.AddItems(new OpLabel(x + t, y, cInfo.label), el);
+                        else
+                            Tabs[i].AddItems(new OpLabel(x + t, y, cInfo.label), el);
 
                         nextSpace = Mathf.Max(nextSpace, Mathf.Max(tInfo.spacing, el.size.y + tInfo.minSpacing) + cInfo.spaceAfter);
                     }
@@ -279,11 +295,12 @@ public abstract class AutoConfigOptions : OptionInterface
             }
 
             //move comboBoxes to the front
+            /*HashSet<UIelement> items = (scrollBox == null) ? scrollBox.items : Tabs[i].items;
             foreach (UIelement el in Tabs[i].items)
             {
                 if (el is OpComboBox comboBox)
                     comboBox.myContainer.MoveToFront();
-            }
+            }*/
         }
 
         MenuInitialized();

@@ -78,7 +78,7 @@ public partial class Plugin
                     data.UnflooredCameraPos.x = x;
                 if (!Options.EveryOtherPixel)
                     return x;
-                return Mathf.Floor(x * 0.5f) * 2;
+                return Mathf.Floor(x * 0.5f + 0.5f) * 2;
             }
             c.Emit(Mono.Cecil.Cil.OpCodes.Ldarg_0);
             c.EmitDelegate(emitFunc1);
@@ -97,7 +97,7 @@ public partial class Plugin
                     data.UnflooredCameraPos.y = y;
                 if (!Options.EveryOtherPixel)
                     return y;
-                return Mathf.Floor(y * 0.5f) * 2;
+                return Mathf.Floor(y * 0.5f + 0.5f) * 2;
             }
             c.Emit(Mono.Cecil.Cil.OpCodes.Ldarg_0);
             c.EmitDelegate(emitFunc2);
@@ -337,7 +337,8 @@ public partial class Plugin
 
                 Vector2 properDrawPos = data.UnflooredCameraPos;
                 float stepSize = Options.EveryOtherPixel ? 2 : 1;
-                Vector2 currentPos = new Vector2(Mathf.Floor(properDrawPos.x / stepSize) * stepSize, Mathf.Floor(properDrawPos.y / stepSize) * stepSize)
+                float offset = Options.EveryOtherPixel ? 0.5f : 0;
+                Vector2 currentPos = new Vector2(Mathf.Floor(properDrawPos.x / stepSize + offset) * stepSize, Mathf.Floor(properDrawPos.y / stepSize + offset) * stepSize)
                     + self.offset + self.hardLevelGfxOffset; //hopefully these are 0 anyway
                 mat.SetVector(ShadPropUVOffset, properDrawPos - currentPos);
 
