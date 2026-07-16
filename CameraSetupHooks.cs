@@ -66,7 +66,7 @@ public partial class Plugin
                 width = self.sSize.x, height = self.sSize.y,
                 anchorX = 0, anchorY = 0, //so that it's centered, basically
             //OFFSET BY 0.5 to fix weird rounding artefacts
-                x = self.sSize.x * Options.SpriteOffset + 0.5f, y = 0.5f
+                x = self.sSize.x * Options.SpriteOffset + 0.5f, y = -0.5f
             };
             self.ReturnFContainer(PARALLAXCONTAINER).AddChild(data.sprite);
 
