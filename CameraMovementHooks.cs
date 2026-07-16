@@ -335,12 +335,14 @@ public partial class Plugin
             {
                 mat.SetVector(ShadPropCamPos, data.CamPos);
 
-                Vector2 properDrawPos = data.UnflooredCameraPos;
-                float stepSize = Options.EveryOtherPixel ? 2 : 1;
-                float offset = Options.EveryOtherPixel ? 0.5f : 0;
-                Vector2 currentPos = new Vector2(Mathf.Floor(properDrawPos.x / stepSize + offset) * stepSize, Mathf.Floor(properDrawPos.y / stepSize + offset) * stepSize)
-                    + self.offset + self.hardLevelGfxOffset; //hopefully these are 0 anyway
-                mat.SetVector(ShadPropUVOffset, properDrawPos - currentPos);
+                if (Options.FractionalCameraMovement)
+                {
+                    Vector2 properDrawPos = data.UnflooredCameraPos;
+                    float stepSize = Options.EveryOtherPixel ? 2 : 1;
+                    float offset = Options.EveryOtherPixel ? 0.5f : 0;
+                    Vector2 currentPos = new(Mathf.Floor(properDrawPos.x / stepSize + offset) * stepSize, Mathf.Floor(properDrawPos.y / stepSize + offset) * stepSize);
+                    mat.SetVector(ShadPropUVOffset, properDrawPos - currentPos);
+                }
 
                 if (Options.IsActiveDynamicZoom)
                 {

@@ -210,10 +210,7 @@ public abstract class AutoConfigOptions : OptionInterface
             string name = tInfo.name;
             Tabs[i] = new(this, name);
 
-            //setup scrollbox
-            OpScrollBox scrollBox = tInfo.inScrollBox ? new OpScrollBox(Tabs[i], 500) : null;
-            if (scrollBox != null)
-                Tabs[i].AddItems(scrollBox);
+            List<UIelement> items = new();
 
             float y = tInfo.startHeight;
             bool lastWasRightSide = false;
@@ -283,15 +280,31 @@ public abstract class AutoConfigOptions : OptionInterface
                         }
 
                         UIConfigs.Add(cInfo.config.key, el);
-                        if (scrollBox != null)
-                            scrollBox.AddItems(new OpLabel(x + t, y, cInfo.label), el);
-                        else
-                            Tabs[i].AddItems(new OpLabel(x + t, y, cInfo.label), el);
+
+                        OpLabel label = new(x + t, y, cInfo.label);
+                        items.Add(label);
+                        items.Add(el);
 
                         nextSpace = Mathf.Max(nextSpace, Mathf.Max(tInfo.spacing, el.size.y + tInfo.minSpacing) + cInfo.spaceAfter);
                     }
                 }
                 catch (Exception ex) { SimplerPlugin.Error("Error with " + cInfo.label); SimplerPlugin.Error(ex); }
+            }
+
+            if (tInfo.inScrollBox && y < tInfo.spacing)
+            {
+                OpScrollBox scrollBox = new(Tabs[i], 0);
+                OpImage img = new(new(-1000, -2000), Futile.whiteElement.name) { scale = new(3000, 3000), color = Menu.MenuColorEffect.rgbDarkGrey, alpha = 0.8f };
+                scrollBox.AddItems(img);
+                img.MoveToBack();
+
+                scrollBox.AddItems(items.ToArray());
+                scrollBox.SetContentSize(tInfo.startHeight - y, true);
+                scrollBox.ScrollToTop();
+            }
+            else
+            {
+                Tabs[i].AddItems(items.ToArray());
             }
 
             //move comboBoxes to the front

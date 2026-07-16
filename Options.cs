@@ -19,7 +19,7 @@ public partial class Options : AutoConfigOptions
         new(PRESETS),
         new(BASICS) { spacing = 40, startHeight = 500 },
         new(CAMERA) { inScrollBox = true },
-        new(LAYER2) { startHeight = 500 },
+        new(LAYER2) { startHeight = 500, inScrollBox = true },
         new(OPTIMIZATION),
         new(ADVANCED) { leftMargin = 20, spacing = 20 }
     })
@@ -84,6 +84,8 @@ public partial class Options : AutoConfigOptions
     public static float CustomCameraBorderPixels = 80;
     [Config(CAMERA, "Every Other Pixel", "TEST OPTION: Makes camera only move every-other pixel to avoid flickering altogether", rightSide = true)]
     public static bool EveryOtherPixel = false;
+    [Config(CAMERA, "Fractional Camera Movement", "WRITE DESCRIPTION")]
+    public static bool FractionalCameraMovement = true;
 
     public enum ScreenCameraType
     {
@@ -92,9 +94,9 @@ public partial class Options : AutoConfigOptions
         CamPosInRoom = 2,
         SBCameraScroll = 3
     }
-    [Config(CAMERA, "Screen Camera Type", "The method used to calculate where the parallax camera is on the screen. Default = follows player position precisely;\nFixedInCenter = always centered - does not move; CamPosInRoom = fixed in a position depending on where the camera is (use with SBCameraScroll); SBCameraScroll = uses SBCameraScroll's calculations to follow player more loosely")]
+    [Config(CAMERA, "Screen Camera Type", "The method used to calculate where the parallax camera is on the screen. Default = follows player position precisely;\nFixedInCenter = always centered - does not move; CamPosInRoom = fixed in a position depending on where the camera is (use with SBCameraScroll); SBCameraScroll = uses SBCameraScroll's calculations to follow player more loosely", width = 120)]
     public static ScreenCameraType ScreenCamera = ScreenCameraType.Default;
-    [Config(CAMERA, "Fallback Screen Camera", "The calculation used if the previous selection is not available.", rightSide = true, spaceAfter = 50, dropdownOptions = new string[] {nameof(ScreenCameraType.Default), nameof(ScreenCameraType.FixedInCenter), nameof(ScreenCameraType.CamPosInRoom)})]
+    [Config(CAMERA, "Fallback Screen Camera", "The calculation used if the previous selection is not available.", rightSide = true, width = 120, spaceAfter = 50, dropdownOptions = new string[] {nameof(ScreenCameraType.Default), nameof(ScreenCameraType.FixedInCenter), nameof(ScreenCameraType.CamPosInRoom)})]
     public static ScreenCameraType FallbackScreenCamera = ScreenCameraType.Default;
     private static bool ScreenCameraAvailable(ScreenCameraType type) => Plugin.SBCameraScrollEnabled || type != ScreenCameraType.SBCameraScroll;
     public static ScreenCameraType CurrentScreenCamera => ScreenCameraAvailable(ScreenCamera) ? ScreenCamera : FallbackScreenCamera;
@@ -104,6 +106,8 @@ public partial class Options : AutoConfigOptions
         Default = 0,
         Custom = 1
     }
+    [Config(CAMERA, "SBCamera Type", "Custom overrides SBCameraScroll's position camera with one using my own calculations.", width = 120, spaceAfter = 50)]
+    public static SBCameraType SBCamera = SBCameraType.Default;
 
     //LAYER2
 
