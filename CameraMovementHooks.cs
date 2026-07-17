@@ -98,6 +98,14 @@ public partial class Plugin
             {
                 if (self.TryGetData(out CameraData data))
                     data.UnflooredCameraPos.y = y;
+
+                //calc CurrentUVOffset
+                Vector2 properDrawPos = data.UnflooredCameraPos;
+                float stepSize = Options.EveryOtherPixel ? 2 : 1;
+                float offset = Options.EveryOtherPixel ? 0.5f : 0;
+                Vector2 currentPos = new(Mathf.Floor(properDrawPos.x / stepSize + offset) * stepSize, Mathf.Floor(properDrawPos.y / stepSize + offset) * stepSize);
+                data.CurrentUVOffset = properDrawPos - currentPos;
+
                 if (!Options.EveryOtherPixel)
                     return y;
                 return Mathf.Floor(y * 0.5f + 0.5f) * 2;
@@ -341,12 +349,6 @@ public partial class Plugin
 
                 if (Options.FractionalCameraMovement)
                 {
-                    Vector2 properDrawPos = data.UnflooredCameraPos;
-                    float stepSize = Options.EveryOtherPixel ? 2 : 1;
-                    float offset = Options.EveryOtherPixel ? 0.5f : 0;
-                    Vector2 currentPos = new(Mathf.Floor(properDrawPos.x / stepSize + offset) * stepSize, Mathf.Floor(properDrawPos.y / stepSize + offset) * stepSize);
-
-                    data.CurrentUVOffset = properDrawPos - currentPos;
                     mat.SetVector(ShadPropUVOffset, data.CurrentUVOffset);
                 }
 
