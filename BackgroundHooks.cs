@@ -71,6 +71,7 @@ public partial class Plugin
     {
         orig(self, sLeaser, rCam, timeStacker, camPos);
 
+        OffsetBackgroundSprite(rCam, sLeaser.sprites[0], true, true);
         OffsetBackgroundSprite(rCam, sLeaser.sprites[1], true, false);
     }
 
@@ -78,6 +79,7 @@ public partial class Plugin
     {
         orig(self, sLeaser, rCam, timeStacker, camPos);
 
+        OffsetBackgroundSprite(rCam, sLeaser.sprites[0], true, true);
         OffsetBackgroundSprite(rCam, sLeaser.sprites[1], true, false);
     }
 
@@ -86,6 +88,13 @@ public partial class Plugin
         orig(self, sLeaser, rCam, timeStacker, camPos);
 
         OffsetBackgroundSprite(rCam, sLeaser.sprites[0], true, false);
+    }
+
+    private void Simple2DBackgroundIllustration_DrawSprites(On.BackgroundScene.Simple2DBackgroundIllustration.orig_DrawSprites orig, BackgroundScene.Simple2DBackgroundIllustration self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
+    {
+        orig(self, sLeaser, rCam, timeStacker, camPos);
+
+        OffsetBackgroundSprite(rCam, sLeaser.sprites[0], true, true);
     }
 
     #endregion
