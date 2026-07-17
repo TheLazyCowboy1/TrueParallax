@@ -71,6 +71,7 @@ public partial class Plugin
     {
         orig(self, sLeaser, rCam, timeStacker, camPos);
 
+        sLeaser.sprites[0].SetPosition(683, 0);
         OffsetBackgroundSprite(rCam, sLeaser.sprites[0], true, true);
         OffsetBackgroundSprite(rCam, sLeaser.sprites[1], true, false);
     }
@@ -79,6 +80,7 @@ public partial class Plugin
     {
         orig(self, sLeaser, rCam, timeStacker, camPos);
 
+        sLeaser.sprites[0].SetPosition(683, 0);
         OffsetBackgroundSprite(rCam, sLeaser.sprites[0], true, true);
         OffsetBackgroundSprite(rCam, sLeaser.sprites[1], true, false);
     }
@@ -94,6 +96,7 @@ public partial class Plugin
     {
         orig(self, sLeaser, rCam, timeStacker, camPos);
 
+        sLeaser.sprites[0].SetPosition(self.pos);
         OffsetBackgroundSprite(rCam, sLeaser.sprites[0], true, true);
     }
 
