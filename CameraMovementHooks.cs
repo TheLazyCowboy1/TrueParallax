@@ -100,11 +100,16 @@ public partial class Plugin
                     data.UnflooredCameraPos.y = y;
 
                 //calc CurrentUVOffset
-                Vector2 properDrawPos = data.UnflooredCameraPos;
-                float stepSize = Options.EveryOtherPixel ? 2 : 1;
-                float offset = Options.EveryOtherPixel ? 0.5f : 0;
-                Vector2 currentPos = new(Mathf.Floor(properDrawPos.x / stepSize + offset) * stepSize, Mathf.Floor(properDrawPos.y / stepSize + offset) * stepSize);
-                data.CurrentUVOffset = properDrawPos - currentPos;
+                if (Options.FractionalCameraMovement)
+                {
+                    Vector2 properDrawPos = data.UnflooredCameraPos;
+                    float stepSize = Options.EveryOtherPixel ? 2 : 1;
+                    float offset = Options.EveryOtherPixel ? 0.5f : 0;
+                    Vector2 currentPos = new(Mathf.Floor(properDrawPos.x / stepSize + offset) * stepSize, Mathf.Floor(properDrawPos.y / stepSize + offset) * stepSize);
+                    data.CurrentUVOffset = properDrawPos - currentPos;
+                    if (Options.FixBackgroundJitter)
+                        data.BackgroundFixOffset.Set(Mathf.Floor(data.CurrentUVOffset.x + 0.5f), Mathf.Floor(data.CurrentUVOffset.y + 0.5f));
+                }
 
                 if (!Options.EveryOtherPixel)
                     return y;

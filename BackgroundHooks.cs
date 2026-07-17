@@ -26,7 +26,7 @@ public partial class Plugin
         try
         {
             if (Options.FixBackgroundJitter && CurrentlyRenderingCamera != null && CurrentlyRenderingCamera.TryGetData(out CameraData data2))
-                result += new Vector2(Mathf.Floor(data2.CurrentUVOffset.x + 0.5f), Mathf.Floor(data2.CurrentUVOffset.y + 0.5f));
+                result += data2.BackgroundFixOffset;
         }
         catch (Exception ex) { Error(ex); }
 
@@ -47,11 +47,46 @@ public partial class Plugin
         try
         {
             if (Options.FixBackgroundJitter && camera.TryGetData(out CameraData data2))
-                result += new Vector2(Mathf.Floor(data2.CurrentUVOffset.x + 0.5f), Mathf.Floor(data2.CurrentUVOffset.y + 0.5f));
+                result += data2.BackgroundFixOffset;
         }
         catch (Exception ex) { Error(ex); }
 
         return result;
     }
+
+    private void OffsetBackgroundSprite(RoomCamera cam, FSprite sprite, bool offsetX, bool offsetY)
+    {
+        try
+        {
+            if (Options.FixBackgroundJitter && cam.TryGetData(out CameraData data))
+            {
+                if (offsetX) sprite.x += data.BackgroundFixOffset.x;
+                if (offsetY) sprite.y += data.BackgroundFixOffset.y;
+            }
+        }
+        catch (Exception ex) { Error(ex); }
+    }
+
+    private void CloseCloud_DrawSprites(On.AboveCloudsView.CloseCloud.orig_DrawSprites orig, AboveCloudsView.CloseCloud self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
+    {
+        orig(self, sLeaser, rCam, timeStacker, camPos);
+
+        OffsetBackgroundSprite(rCam, sLeaser.sprites[1], true, false);
+    }
+
+    private void DistantCloud_DrawSprites(On.AboveCloudsView.DistantCloud.orig_DrawSprites orig, AboveCloudsView.DistantCloud self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
+    {
+        orig(self, sLeaser, rCam, timeStacker, camPos);
+
+        OffsetBackgroundSprite(rCam, sLeaser.sprites[1], true, false);
+    }
+
+    private void FlyingCloud_DrawSprites(On.AboveCloudsView.FlyingCloud.orig_DrawSprites orig, AboveCloudsView.FlyingCloud self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
+    {
+        orig(self, sLeaser, rCam, timeStacker, camPos);
+
+        OffsetBackgroundSprite(rCam, sLeaser.sprites[0], true, false);
+    }
+
     #endregion
 }

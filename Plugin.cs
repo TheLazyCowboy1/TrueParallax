@@ -146,6 +146,10 @@ public partial class Plugin : SimplerPlugin
         On.BackgroundScene.DrawPos += BackgroundScene_DrawPos;
         On.Watcher.OuterRimView.DrawPos += OuterRimView_DrawPos;
 
+        On.AboveCloudsView.CloseCloud.DrawSprites += CloseCloud_DrawSprites;
+        On.AboveCloudsView.DistantCloud.DrawSprites += DistantCloud_DrawSprites;
+        On.AboveCloudsView.FlyingCloud.DrawSprites += FlyingCloud_DrawSprites;
+
         //Miscellaneous
         On.RoomCamera.ApplyPositionChange += RoomCamera_ApplyPositionChange;
 
@@ -173,6 +177,10 @@ public partial class Plugin : SimplerPlugin
 
         On.BackgroundScene.DrawPos -= BackgroundScene_DrawPos;
         On.Watcher.OuterRimView.DrawPos -= OuterRimView_DrawPos;
+
+        On.AboveCloudsView.CloseCloud.DrawSprites -= CloseCloud_DrawSprites;
+        On.AboveCloudsView.DistantCloud.DrawSprites -= DistantCloud_DrawSprites;
+        On.AboveCloudsView.FlyingCloud.DrawSprites -= FlyingCloud_DrawSprites;
 
         On.RoomCamera.ApplyPositionChange -= RoomCamera_ApplyPositionChange;
 
