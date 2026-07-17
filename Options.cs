@@ -86,6 +86,8 @@ public partial class Options : AutoConfigOptions
     public static bool EveryOtherPixel = false;
     [Config(CAMERA, "Fractional Camera Movement", "WRITE DESCRIPTION")]
     public static bool FractionalCameraMovement = true;
+    [Config(CAMERA)]
+    public static bool FixBackgroundJitter = true;
 
     public enum ScreenCameraType
     {

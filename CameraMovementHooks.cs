@@ -111,7 +111,8 @@ public partial class Plugin
 
     #region Calculations
 
-    public static bool ParallaxShouldBeInactive(CameraData data) => data.camera.voidSeaMode || data.camera.freeMoveRect != null || (!Options.SplitscreenParallax && data.camera.cameraNumber > 0);
+    public static bool ParallaxShouldBeInactive(CameraData data)
+        => data.camera.voidSeaMode || data.camera.freeMoveRect != null || (!Options.SplitscreenParallax && data.camera.cameraNumber > 0);
 
     public static Vector2? GetCritPos(RoomCamera self, CameraData data, bool updateOffset = false, float moveSpeed = 0)
     {

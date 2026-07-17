@@ -10,18 +10,14 @@ public partial class Plugin
     {
         try
         {
-            if (Options.BackgroundShift != 0)
+            if (CurrentlyRenderingCamera != null && CurrentlyRenderingCamera.TryGetData(out CameraData data))
             {
-                //find the closest camera and use it
-                /*var cameras = self.room.game.cameras;
-                float lowestCamDist = float.PositiveInfinity;
-                RoomCamera lowestCam = null;
-                foreach (var cam in cameras)
+                if (Options.FixBackgroundJitter && Options.EveryOtherPixel)
                 {
-                    float dist = (cam.pos - camPos).sqrMagnitude;
-                    if (cam.room == self.room && dist < lowestCamDist) { lowestCamDist = dist; lowestCam = cam; }
-                }*/
-                if (CurrentlyRenderingCamera != null && CurrentlyRenderingCamera.TryGetData(out CameraData data))
+                    camPos += new Vector2(Mathf.Floor(data.CurrentUVOffset.x), Mathf.Floor(data.CurrentUVOffset.y));
+                }
+
+                if (Options.BackgroundShift != 0)
                 {
                     if (self is RoofTopView)
                         camPos.x += data.BackgroundShift.x; //only shift x; otherwise it looks really bad
@@ -37,10 +33,8 @@ public partial class Plugin
         Vector2 result = orig(self, pos, depth, camPos, hDisplace);
         try
         {
-            if (CurrentlyRenderingCamera != null && CurrentlyRenderingCamera.TryGetData(out CameraData data2))
-            {
-                result -= data2.CurrentUVOffset;
-            }
+            if (Options.FixBackgroundJitter && CurrentlyRenderingCamera != null && CurrentlyRenderingCamera.TryGetData(out CameraData data2))
+                result += data2.CurrentUVOffset;
         }
         catch (Exception ex) { Error(ex); }
 
@@ -51,8 +45,16 @@ public partial class Plugin
     {
         try
         {
-            if (Options.BackgroundShift != 0 && camera.TryGetData(out CameraData data))
-                camPos += data.BackgroundShift;
+            if (camera.TryGetData(out CameraData data))
+            {
+                if (Options.FixBackgroundJitter && Options.EveryOtherPixel)
+                {
+                    camPos += new Vector2(Mathf.Floor(data.CurrentUVOffset.x), Mathf.Floor(data.CurrentUVOffset.y));
+                }
+
+                if (Options.BackgroundShift != 0)
+                    camPos += data.BackgroundShift;
+            }
         }
         catch (Exception ex) { Error(ex); }
 
@@ -60,10 +62,8 @@ public partial class Plugin
         Vector2 result = orig(self, element, camPos, camera);
         try
         {
-            if (camera.TryGetData(out CameraData data2))
-            {
-                result -= data2.CurrentUVOffset;
-            }
+            if (Options.FixBackgroundJitter && camera.TryGetData(out CameraData data2))
+                result += data2.CurrentUVOffset;
         }
         catch (Exception ex) { Error(ex); }
 
