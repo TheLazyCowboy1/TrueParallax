@@ -6,6 +6,8 @@ namespace TrueParallax;
 public partial class Plugin
 {
     #region Hooks
+    private bool DontBackgroundFix = false;
+
     private Vector2 BackgroundScene_DrawPos(On.BackgroundScene.orig_DrawPos orig, BackgroundScene self, Vector2 pos, float depth, Vector2 camPos, float hDisplace)
     {
         try
@@ -25,7 +27,9 @@ public partial class Plugin
         Vector2 result = orig(self, pos, depth, camPos, hDisplace);
         try
         {
-            if (Options.FixBackgroundJitter && CurrentlyRenderingCamera != null && CurrentlyRenderingCamera.TryGetData(out CameraData data2))
+            if (DontBackgroundFix)
+                DontBackgroundFix = false;
+            else if (Options.FixBackgroundJitter && CurrentlyRenderingCamera != null && CurrentlyRenderingCamera.TryGetData(out CameraData data2))
                 result += data2.BackgroundFixOffset;
         }
         catch (Exception ex) { Error(ex); }
@@ -46,7 +50,9 @@ public partial class Plugin
         Vector2 result = orig(self, element, camPos, camera);
         try
         {
-            if (Options.FixBackgroundJitter && camera.TryGetData(out CameraData data2))
+            if (DontBackgroundFix)
+                DontBackgroundFix = false;
+            else if (Options.FixBackgroundJitter && camera.TryGetData(out CameraData data2))
                 result += data2.BackgroundFixOffset;
         }
         catch (Exception ex) { Error(ex); }
@@ -69,27 +75,30 @@ public partial class Plugin
 
     private void CloseCloud_DrawSprites(On.AboveCloudsView.CloseCloud.orig_DrawSprites orig, AboveCloudsView.CloseCloud self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
     {
+        DontBackgroundFix = true;
         orig(self, sLeaser, rCam, timeStacker, camPos);
 
         sLeaser.sprites[0].SetPosition(683, 0);
         OffsetBackgroundSprite(rCam, sLeaser.sprites[0], true, true);
-        OffsetBackgroundSprite(rCam, sLeaser.sprites[1], true, false);
+        OffsetBackgroundSprite(rCam, sLeaser.sprites[1], true, true);
     }
 
     private void DistantCloud_DrawSprites(On.AboveCloudsView.DistantCloud.orig_DrawSprites orig, AboveCloudsView.DistantCloud self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
     {
+        DontBackgroundFix = true;
         orig(self, sLeaser, rCam, timeStacker, camPos);
 
         sLeaser.sprites[0].SetPosition(683, 0);
         OffsetBackgroundSprite(rCam, sLeaser.sprites[0], true, true);
-        OffsetBackgroundSprite(rCam, sLeaser.sprites[1], true, false);
+        OffsetBackgroundSprite(rCam, sLeaser.sprites[1], true, true);
     }
 
     private void FlyingCloud_DrawSprites(On.AboveCloudsView.FlyingCloud.orig_DrawSprites orig, AboveCloudsView.FlyingCloud self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
     {
+        DontBackgroundFix = true;
         orig(self, sLeaser, rCam, timeStacker, camPos);
 
-        OffsetBackgroundSprite(rCam, sLeaser.sprites[0], true, false);
+        OffsetBackgroundSprite(rCam, sLeaser.sprites[0], true, true);
     }
 
     private void Simple2DBackgroundIllustration_DrawSprites(On.BackgroundScene.Simple2DBackgroundIllustration.orig_DrawSprites orig, BackgroundScene.Simple2DBackgroundIllustration self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
