@@ -8,11 +8,14 @@ namespace TrueParallax;
 
 public partial class Plugin
 {
+    public static RoomCamera CurrentlyRenderingCamera;
     #region Hooks
     private void RoomCamera_DrawUpdate(On.RoomCamera.orig_DrawUpdate orig, RoomCamera self, float timeStacker, float timeSpeed)
     {
         try
         {
+            CurrentlyRenderingCamera = self;
+
             SetupScreenLevelTex(); //just in case something happened to it
 
             if (self.TryGetData(out CameraData data))
@@ -341,7 +344,9 @@ public partial class Plugin
                     float stepSize = Options.EveryOtherPixel ? 2 : 1;
                     float offset = Options.EveryOtherPixel ? 0.5f : 0;
                     Vector2 currentPos = new(Mathf.Floor(properDrawPos.x / stepSize + offset) * stepSize, Mathf.Floor(properDrawPos.y / stepSize + offset) * stepSize);
-                    mat.SetVector(ShadPropUVOffset, properDrawPos - currentPos);
+
+                    data.CurrentUVOffset = properDrawPos - currentPos;
+                    mat.SetVector(ShadPropUVOffset, data.CurrentUVOffset);
                 }
 
                 if (Options.IsActiveDynamicZoom)

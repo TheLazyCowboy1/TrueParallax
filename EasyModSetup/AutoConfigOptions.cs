@@ -294,7 +294,7 @@ public abstract class AutoConfigOptions : OptionInterface
             if (tInfo.inScrollBox && y < tInfo.spacing)
             {
                 OpScrollBox scrollBox = new(Tabs[i], 0);
-                OpImage img = new(new(-1000, -2000), Futile.whiteElement.name) { scale = new(3000, 3000), color = Menu.MenuColorEffect.rgbDarkGrey, alpha = 0.8f };
+                OpImage img = new(new(-1000, -2000), Futile.whiteElement.name) { scale = new(3000, 3000), color = Menu.MenuColorEffect.rgbVeryDarkGrey, alpha = 0.8f };
                 scrollBox.AddItems(img);
                 img.MoveToBack();
 

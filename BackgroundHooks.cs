@@ -13,15 +13,15 @@ public partial class Plugin
             if (Options.BackgroundShift != 0)
             {
                 //find the closest camera and use it
-                var cameras = self.room.game.cameras;
+                /*var cameras = self.room.game.cameras;
                 float lowestCamDist = float.PositiveInfinity;
                 RoomCamera lowestCam = null;
                 foreach (var cam in cameras)
                 {
                     float dist = (cam.pos - camPos).sqrMagnitude;
                     if (cam.room == self.room && dist < lowestCamDist) { lowestCamDist = dist; lowestCam = cam; }
-                }
-                if (lowestCam != null && lowestCam.TryGetData(out CameraData data))
+                }*/
+                if (CurrentlyRenderingCamera != null && CurrentlyRenderingCamera.TryGetData(out CameraData data))
                 {
                     if (self is RoofTopView)
                         camPos.x += data.BackgroundShift.x; //only shift x; otherwise it looks really bad
@@ -34,7 +34,17 @@ public partial class Plugin
         }
         catch (Exception ex) { Error(ex); }
 
-        return orig(self, pos, depth, camPos, hDisplace);
+        Vector2 result = orig(self, pos, depth, camPos, hDisplace);
+        try
+        {
+            if (CurrentlyRenderingCamera != null && CurrentlyRenderingCamera.TryGetData(out CameraData data2))
+            {
+                result -= data2.CurrentUVOffset;
+            }
+        }
+        catch (Exception ex) { Error(ex); }
+
+        return result;
     }
 
     private Vector2 OuterRimView_DrawPos(On.Watcher.OuterRimView.orig_DrawPos orig, Watcher.OuterRimView self, BackgroundScene.BackgroundSceneElement element, Vector2 camPos, RoomCamera camera)
@@ -46,7 +56,18 @@ public partial class Plugin
         }
         catch (Exception ex) { Error(ex); }
 
-        return orig(self, element, camPos, camera);
+        //return orig(self, element, camPos, camera);
+        Vector2 result = orig(self, element, camPos, camera);
+        try
+        {
+            if (camera.TryGetData(out CameraData data2))
+            {
+                result -= data2.CurrentUVOffset;
+            }
+        }
+        catch (Exception ex) { Error(ex); }
+
+        return result;
     }
     #endregion
 }
