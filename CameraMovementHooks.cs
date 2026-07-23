@@ -97,23 +97,16 @@ public partial class Plugin
             static float emitFunc2(float y, RoomCamera self)
             {
                 if (self.TryGetData(out CameraData data))
-                    data.UnflooredCameraPos.y = y;
-
-                //calc CurrentUVOffset
-                if (Options.FractionalCameraMovement)
                 {
-                    Vector2 properDrawPos = data.UnflooredCameraPos;
-                    float stepSize = Options.EveryOtherPixel ? 2 : 1;
-                    float offset = Options.EveryOtherPixel ? 0.5f : 0;
-                    Vector2 currentPos = new(Mathf.Floor(properDrawPos.x / stepSize + offset) * stepSize, Mathf.Floor(properDrawPos.y / stepSize + offset) * stepSize);
-                    data.CurrentUVOffset = properDrawPos - currentPos;
-                    if (Options.FixBackgroundJitter)
-                        data.BackgroundFixOffset.Set(Mathf.Floor(data.CurrentUVOffset.x + 0.5f), Mathf.Floor(data.CurrentUVOffset.y + 0.5f));
+                    data.UnflooredCameraPos.y = y;
+                    CalcCurrentUVOffset(data);
                 }
 
-                if (!Options.EveryOtherPixel)
-                    return y;
-                return Mathf.Floor(y * 0.5f + 0.5f) * 2;
+                if (Options.EveryOtherPixel)
+                {
+                    return Mathf.Floor(y * 0.5f + 0.5f) * 2;
+                }
+                return y;
             }
             c.Emit(Mono.Cecil.Cil.OpCodes.Ldarg_0);
             c.EmitDelegate(emitFunc2);
@@ -123,6 +116,22 @@ public partial class Plugin
     #endregion
 
     #region Calculations
+
+    private static void CalcCurrentUVOffset(CameraData data)
+    {
+        if (Options.FractionalCameraMovement)
+        {
+            if (data == null)
+                return;
+            Vector2 properDrawPos = data.UnflooredCameraPos;
+            float stepSize = Options.EveryOtherPixel ? 2 : 1;
+            float offset = Options.EveryOtherPixel ? 0.5f : 0;
+            Vector2 currentPos = new(Mathf.Floor(properDrawPos.x / stepSize + offset) * stepSize, Mathf.Floor(properDrawPos.y / stepSize + offset) * stepSize);
+            data.CurrentUVOffset = properDrawPos - currentPos;
+            if (Options.FixBackgroundJitter)
+                data.BackgroundFixOffset.Set(Mathf.Floor(data.CurrentUVOffset.x + 0.5f), Mathf.Floor(data.CurrentUVOffset.y + 0.5f));
+        }
+    }
 
     public static bool ParallaxShouldBeInactive(CameraData data)
         => data.camera.voidSeaMode || data.camera.freeMoveRect != null || (!Options.SplitscreenParallax && data.camera.cameraNumber > 0);

@@ -119,6 +119,17 @@ public partial class Plugin
         orig(self, sLeaser, rCam, timeStacker, camPos);
 
         OffsetBackgroundSprite(rCam, sLeaser.sprites[0], true, false);
+
+        //fix shader variable it uses
+        try
+        {
+            if (Options.FixBackgroundJitter && rCam.TryGetData(out CameraData data))
+            {
+                Vector4 old = Shader.GetGlobalVector(RainWorld.ShadPropWorldCamPos);
+                Shader.SetGlobalVector(RainWorld.ShadPropWorldCamPos, new Vector2(old.x, old.y) + data.BackgroundFixOffset);
+            }
+        }
+        catch (Exception ex) { Error(ex); }
     }
 
     private void Simple2DBackgroundIllustration_DrawSprites(On.BackgroundScene.Simple2DBackgroundIllustration.orig_DrawSprites orig, BackgroundScene.Simple2DBackgroundIllustration self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
