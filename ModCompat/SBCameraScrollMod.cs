@@ -83,7 +83,7 @@ public static class SBCameraScrollMod
     {
         try
         {
-            if (!Options.CustomSBCamera || !self._room_camera.TryGetData(out CameraData data))
+            if (Options.SBCamera != Options.SBCameraType.Custom || !self._room_camera.TryGetData(out CameraData data))
             {
                 orig(self);
                 return;
@@ -94,7 +94,7 @@ public static class SBCameraScrollMod
             RoomCameraMod.UpdateOnScreenPosition(cam); //done just in case
 
             float moveSpeed = Options.CameraMoveSpeed;
-            Vector2? critPos = Plugin.GetCritPos(cam, data, Options.AlwaysCentered || Options.UseSBPlayerPos, moveSpeed);
+            Vector2? critPos = Plugin.GetCritPos(cam, data, Options.AlwaysCentered || Options.CurrentScreenCamera == Options.ScreenCameraType.SBCamera, moveSpeed);
             if (critPos == null)
             {
                 cam.pos = cam.lastPos; //don't move
@@ -180,9 +180,7 @@ public static class SBCameraScrollMod
         return (pos - half) * cam.sSize + cam.pos;
     }
 
-    //private readonly static BindingFlags BindingFlags = BindingFlags.Instance | BindingFlags.NonPublic;
-    //private readonly static MethodInfo MoveCameraTowardsTarget = typeof(PositionTypeCamera).GetMethod("Move_Camera_Towards_Target", BindingFlags);
-    //private readonly static FieldInfo SwitchCamPositionCam = typeof(SwitchTypeCamera).GetField("_position_type_camera", BindingFlags);
+
     public static bool UpdateSBCameraPos(RoomCamera cam, out Vector2 pos, Vector2 lastPos)
     {
         pos = new();

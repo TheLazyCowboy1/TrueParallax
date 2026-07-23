@@ -49,8 +49,9 @@ public partial class Options : AutoConfigOptions
     [Config(CAMERA, "Movement Start Distance", "The camera does not start moving until its distance from its target position is greater than this distance. Measured as a fraction of the screen size.\nShould be GREATER than Camera Stop Distance. Recommended between 0.005 and 0.02. 0 = camera always tries to inch closer; 1 = camera never moves.", precision = 3, rightSide = true), LimitRange(0, 1)]
     public static float CameraStartDistance = 0.008f;
 
-    [Config(CAMERA, "Always Centered", "Locks the camera in the middle of the screen, not following the player at all.\nRecommended if you are using SBCameraScroll and experience motion-sickness. Otherwise, keep this setting OFF!")]
-    public static bool AlwaysCentered = false;
+    //[Config(CAMERA, "Always Centered", "Locks the camera in the middle of the screen, not following the player at all.\nRecommended if you are using SBCameraScroll and experience motion-sickness. Otherwise, keep this setting OFF!")]
+    //public static bool AlwaysCentered = false;
+    public static bool AlwaysCentered => CurrentScreenCamera == ScreenCameraType.Fixed;
     [Config(CAMERA, "Transitions Reset Camera", "Instantly snaps the camera into place whenever going through screen transitions. If disabled, the camera will often pan across the entire screen upon screen transitions.\nHIGHLY recommended, especially if you are prone to motion-sickness. But personally, I think it looks cool when this option is disabled.")]
     public static bool TransitionsResetCamera = true;
 
@@ -70,14 +71,14 @@ public partial class Options : AutoConfigOptions
     public static float DynamicZoom = 0;
     public static bool IsActiveDynamicZoom => !AlwaysCentered && DynamicZoom > 0;
 
-    [Config(CAMERA, "Camera-Based Camera Position", "TEST OPTION: Changes the camera position to be the CAMERA's position within the room; only useful with SBCameraScroll.")]
-    public static bool CameraBasedPosition = false;
+    //[Config(CAMERA, "Camera-Based Camera Position", "TEST OPTION: Changes the camera position to be the CAMERA's position within the room; only useful with SBCameraScroll.")]
+    //public static bool CameraBasedPosition = false;
     [Config(CAMERA, "Adjust SBCamera Position", "TEST OPTION: Adjusts SBCameraScroll's camera position to, uh, make it better?.", rightSide = true), LimitRange(-5, 5)]
     public static float AdjustSBCameraFac = 0;
-    [Config(CAMERA, "Use SB Player Position", "TEST OPTION: Uses SBCameraScroll's calculated player on-screen position, for consistency.")]
-    public static bool UseSBPlayerPos = false;
-    [Config(CAMERA, "Use Custom SB Camera", "TEST OPTION: Replaced SBCameraScroll's Position camera with my own version of it, for consistency.")]
-    public static bool CustomSBCamera = false;
+    //[Config(CAMERA, "Use SB Player Position", "TEST OPTION: Uses SBCameraScroll's calculated player on-screen position, for consistency.")]
+    //public static bool UseSBPlayerPos = false;
+    //[Config(CAMERA, "Use Custom SB Camera", "TEST OPTION: Replaced SBCameraScroll's Position camera with my own version of it, for consistency.")]
+    //public static bool CustomSBCamera = false;
     [Config(CAMERA, "Custom Camera Motion Curve", "TEST OPTION: Adjusts SBCameraScroll's camera position to, uh, make it better?.", rightSide = true), LimitRange(-5, 1)]
     public static float CustomCameraCurve = 1;
     [Config(CAMERA, "Custom Camera Border Pixels", "TEST OPTION: Makes the camera stop moving when it gets really close to the edge of the screen.\nThis helps keep the camera more centered and prevents it from never showing the edges of the room, but the sudden stop can be jarring.", precision = 0), LimitRange(0, 800)]
@@ -92,15 +93,15 @@ public partial class Options : AutoConfigOptions
     public enum ScreenCameraType
     {
         Default = 0,
-        FixedInCenter = 1,
-        CamPosInRoom = 2,
-        SBCameraScroll = 3
+        Fixed = 1,
+        RoomCamPos = 2,
+        SBCamera = 3
     }
-    [Config(CAMERA, "Screen Camera Type", "The method used to calculate where the parallax camera is on the screen. Default = follows player position precisely;\nFixedInCenter = always centered - does not move; CamPosInRoom = fixed in a position depending on where the camera is (use with SBCameraScroll); SBCameraScroll = uses SBCameraScroll's calculations to follow player more loosely", width = 120)]
+    [Config(CAMERA, "Screen Camera Type", "The method used to calculate where the parallax camera is on the screen. Default = follows player position precisely;\nFixed = always centered - does not move; RoomCamPos = fixed in a position depending on where the camera is (use with SBCameraScroll); SBCamera = uses SBCameraScroll's calculations to follow player more loosely", width = 120)]
     public static ScreenCameraType ScreenCamera = ScreenCameraType.Default;
-    [Config(CAMERA, "Fallback Screen Camera", "The calculation used if the previous selection is not available.", rightSide = true, width = 120, spaceAfter = 50, dropdownOptions = new string[] {nameof(ScreenCameraType.Default), nameof(ScreenCameraType.FixedInCenter), nameof(ScreenCameraType.CamPosInRoom)})]
+    [Config(CAMERA, "Fallback Screen Camera", "The calculation used if the previous selection is not available.", rightSide = true, width = 120, spaceAfter = 50, dropdownOptions = new string[] {nameof(ScreenCameraType.Default), nameof(ScreenCameraType.Fixed), nameof(ScreenCameraType.RoomCamPos)})]
     public static ScreenCameraType FallbackScreenCamera = ScreenCameraType.Default;
-    private static bool ScreenCameraAvailable(ScreenCameraType type) => Plugin.SBCameraScrollEnabled || type != ScreenCameraType.SBCameraScroll;
+    private static bool ScreenCameraAvailable(ScreenCameraType type) => Plugin.SBCameraScrollEnabled || type != ScreenCameraType.SBCamera;
     public static ScreenCameraType CurrentScreenCamera => ScreenCameraAvailable(ScreenCamera) ? ScreenCamera : FallbackScreenCamera;
 
     public enum SBCameraType

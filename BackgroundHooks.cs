@@ -6,20 +6,26 @@ namespace TrueParallax;
 public partial class Plugin
 {
     #region Hooks
-    private bool DontBackgroundFix = false;
+    private int DontBackgroundFix = 0;
 
     private Vector2 BackgroundScene_DrawPos(On.BackgroundScene.orig_DrawPos orig, BackgroundScene self, Vector2 pos, float depth, Vector2 camPos, float hDisplace)
     {
         try
         {
-            if (Options.BackgroundShift != 0 && CurrentlyRenderingCamera != null && CurrentlyRenderingCamera.TryGetData(out CameraData data))
+            if (CurrentlyRenderingCamera != null && CurrentlyRenderingCamera.TryGetData(out CameraData data))
             {
-                if (self is RoofTopView)
-                    camPos.x += data.BackgroundShift.x; //only shift x; otherwise it looks really bad
-                //else if (self is AboveCloudsView)
-                //    camPos.y += data.BackgroundShift.y; //only shift y; because the clouds can't be shifted horizontally
-                else
-                    camPos += data.BackgroundShift;
+                if (Options.FixBackgroundJitter && Options.EveryOtherPixel)
+                    camPos += new Vector2(Mathf.Floor(data.CurrentUVOffset.x), Mathf.Floor(data.CurrentUVOffset.y));
+
+                if (Options.BackgroundShift != 0)
+                {
+                    if (self is RoofTopView)
+                        camPos.x += data.BackgroundShift.x; //only shift x; otherwise it looks really bad
+                    //else if (self is AboveCloudsView)
+                    //    camPos.y += data.BackgroundShift.y; //only shift y; because the clouds can't be shifted horizontally
+                    else
+                        camPos += data.BackgroundShift;
+                }
             }
         }
         catch (Exception ex) { Error(ex); }
@@ -27,8 +33,8 @@ public partial class Plugin
         Vector2 result = orig(self, pos, depth, camPos, hDisplace);
         try
         {
-            if (DontBackgroundFix)
-                DontBackgroundFix = false;
+            if (DontBackgroundFix > 0)
+                DontBackgroundFix--;
             else if (Options.FixBackgroundJitter && CurrentlyRenderingCamera != null && CurrentlyRenderingCamera.TryGetData(out CameraData data2))
                 result += data2.BackgroundFixOffset;
         }
@@ -41,8 +47,14 @@ public partial class Plugin
     {
         try
         {
-            if (Options.BackgroundShift != 0 && camera.TryGetData(out CameraData data))
-                camPos += data.BackgroundShift;
+            if (camera.TryGetData(out CameraData data))
+            {
+                if (Options.FixBackgroundJitter && Options.EveryOtherPixel)
+                    camPos += new Vector2(Mathf.Floor(data.CurrentUVOffset.x), Mathf.Floor(data.CurrentUVOffset.y));
+
+                if (Options.BackgroundShift != 0)
+                    camPos += data.BackgroundShift;
+            }
         }
         catch (Exception ex) { Error(ex); }
 
@@ -50,8 +62,8 @@ public partial class Plugin
         Vector2 result = orig(self, element, camPos, camera);
         try
         {
-            if (DontBackgroundFix)
-                DontBackgroundFix = false;
+            if (DontBackgroundFix > 0)
+                DontBackgroundFix--;
             else if (Options.FixBackgroundJitter && camera.TryGetData(out CameraData data2))
                 result += data2.BackgroundFixOffset;
         }
@@ -75,7 +87,7 @@ public partial class Plugin
 
     private void CloseCloud_DrawSprites(On.AboveCloudsView.CloseCloud.orig_DrawSprites orig, AboveCloudsView.CloseCloud self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
     {
-        DontBackgroundFix = true;
+        DontBackgroundFix = 1;
         orig(self, sLeaser, rCam, timeStacker, camPos);
 
         sLeaser.sprites[0].SetPosition(683, 0);
@@ -85,7 +97,7 @@ public partial class Plugin
 
     private void DistantCloud_DrawSprites(On.AboveCloudsView.DistantCloud.orig_DrawSprites orig, AboveCloudsView.DistantCloud self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
     {
-        DontBackgroundFix = true;
+        DontBackgroundFix = 1;
         orig(self, sLeaser, rCam, timeStacker, camPos);
 
         sLeaser.sprites[0].SetPosition(683, 0);
@@ -95,7 +107,7 @@ public partial class Plugin
 
     private void FlyingCloud_DrawSprites(On.AboveCloudsView.FlyingCloud.orig_DrawSprites orig, AboveCloudsView.FlyingCloud self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
     {
-        DontBackgroundFix = true;
+        DontBackgroundFix = 1;
         orig(self, sLeaser, rCam, timeStacker, camPos);
 
         OffsetBackgroundSprite(rCam, sLeaser.sprites[0], true, true);

@@ -199,7 +199,7 @@ public partial class Plugin
 
             Vector2 pos = new(0.5f, 0.5f);
 
-            bool sbCameraMode = Options.UseSBPlayerPos && Plugin.SBCameraScrollEnabled;
+            bool sbCameraMode = Options.CurrentScreenCamera == Options.ScreenCameraType.SBCamera && Plugin.SBCameraScrollEnabled;
             if (sbCameraMode)
             {
                 pos = ModCompat.SBCameraScrollMod.GetSBPlayerPos(self);
@@ -210,7 +210,7 @@ public partial class Plugin
 
                 //Vector2 camPos = (Plugin.SBCameraScrollEnabled && Options.CustomSBCamera) ? self.lastPos : self.pos;
                 Vector2 camPos = self.pos;
-                if (Options.CameraBasedPosition)
+                if (Options.CurrentScreenCamera == Options.ScreenCameraType.RoomCamPos)
                 {
                     Rect camArea = GetRoomCameraArea(self);
                     pos = (camPos + data.critFollowOffset - camArea.position) / camArea.size;
