@@ -241,7 +241,8 @@ public partial class Plugin
                 try
                 {
                     //inch offset toward 0
-                    data.mouseOffset = LerpAndTick(data.mouseOffset, Vector2.zero, moveSpeed * 1.5f, moveSpeed * 0.01f);
+                    if (!Options.PermanentMouseOffset)
+                        data.mouseOffset = LerpAndTick(data.mouseOffset, Vector2.zero, moveSpeed * 1.5f, moveSpeed * 0.01f);
 
                     float mouseX = Options.MouseSensitivity * Input.GetAxis("Mouse X");
                     if (mouseX != 0f)
@@ -381,12 +382,26 @@ public partial class Plugin
                 }
                 else if (Options.IsActiveCenterOptimization) //test a significant optimization (up to half) without using DynamicOptimization
                 {
+                    if (Options.ContinuouslyChangeWarp > 0) //silly showcase option that exists for no good reason
+                    {
+                        if (data.currentWarp <= 0)
+                            WarpChangeGoingUp = true;
+                        else if (data.currentWarp >= data.totalWarp)
+                            WarpChangeGoingUp = false;
+
+                        if (WarpChangeGoingUp)
+                            data.currentWarp += Options.ContinuouslyChangeWarp;
+                        else
+                            data.currentWarp -= Options.ContinuouslyChangeWarp;
+                    }
+
                     SetWarpConstants(data);
                 }
             }
         }
         catch (Exception ex) { Error(ex); }
     }
+    protected static bool WarpChangeGoingUp = false;
     #endregion
 
 }

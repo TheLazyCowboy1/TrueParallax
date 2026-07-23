@@ -118,7 +118,7 @@ public partial class Plugin
         //DontBackgroundFix = 1;
         orig(self, sLeaser, rCam, timeStacker, camPos);
 
-        OffsetBackgroundSprite(rCam, sLeaser.sprites[0], true, false);
+        //OffsetBackgroundSprite(rCam, sLeaser.sprites[0], true, false);
 
         //fix shader variable it uses
         try
@@ -126,7 +126,7 @@ public partial class Plugin
             if (Options.FixBackgroundJitter && rCam.TryGetData(out CameraData data))
             {
                 Vector4 old = Shader.GetGlobalVector(RainWorld.ShadPropWorldCamPos);
-                Shader.SetGlobalVector(RainWorld.ShadPropWorldCamPos, new Vector2(old.x, old.y) + data.BackgroundFixOffset);
+                Shader.SetGlobalVector(RainWorld.ShadPropWorldCamPos, new Vector2(old.x, old.y) - data.BackgroundFixOffset);
             }
         }
         catch (Exception ex) { Error(ex); }

@@ -19,9 +19,9 @@ public partial class Options : AutoConfigOptions
         new(PRESETS),
         new(BASICS) { spacing = 40, startHeight = 500 },
         new(CAMERA) { inScrollBox = true },
-        new(LAYER2) { startHeight = 500, inScrollBox = true },
+        new(LAYER2) { startHeight = 500 },
         new(OPTIMIZATION),
-        new(ADVANCED) { leftMargin = 20, spacing = 20 }
+        new(ADVANCED) { leftMargin = 20, spacing = 20, inScrollBox = true }
     })
     {
     }
@@ -194,11 +194,16 @@ public partial class Options : AutoConfigOptions
 
     [Config(ADVANCED, "No-Parallax Area", "What percentage of the screen has the parallax effect disabled on it. Setting this above 0 will cause the screen to be vertically divided.\nKEEP THIS AT 0. This setting was only implemented as a debugging and showcasing feature."), LimitRange(0, 1)]
     public static float SpriteOffset = 0;
+    [Config(ADVANCED, "Continuously Change Warp", "Another weird showcase option. Please keep this at 0 to disable it.\nRequires Center Optimization. Incompatible with Dynamic Zoom.", rightSide = true), LimitRange(0, 100)]
+    public static float ContinuouslyChangeWarp = 0;
 
     [Config(ADVANCED, "Enable Parallax for Splitscreen", "Enables the parallax effect for all cameras when the SplitScreen Co-op mod is active. However, only the first camera properly tracks creatures, and having multiple parallax effects active is laggy.\nNOT recommended. It is unlikely that I will ever rewrite the game's shaders just to fix SplitScreen Co-op.")]
     public static bool SplitscreenParallax = false;
     [Config(ADVANCED, "Motion Blur?", "Trying motion blur I guess? Idk", rightSide = true), LimitRange(0, 0.9f)]
     public static float MotionBlur = 0;
+
+    [Config(ADVANCED, "Permanent Mouse Offset", "Prevents the mouse offset from resetting back to the center. I have no clue why you'd use this except for weird showcases, but one person requested it, so here.")]
+    public static bool PermanentMouseOffset = false;
 
     [Config(ADVANCED, "Log Level", "When this number is higher, less important logs are logged to the LogOutput.log file.", spaceBefore = 10), LimitRange(0, 3)]
     public static int LogLevel = 1;
