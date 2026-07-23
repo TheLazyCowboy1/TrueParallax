@@ -291,7 +291,7 @@ public abstract class AutoConfigOptions : OptionInterface
                 catch (Exception ex) { SimplerPlugin.Error("Error with " + cInfo.label); SimplerPlugin.Error(ex); }
             }
 
-            if (tInfo.inScrollBox && y < tInfo.spacing)
+            if (tInfo.inScrollBox && y < nextSpace)
             {
                 OpScrollBox scrollBox = new(Tabs[i], 0);
                 OpImage img = new(new(-1000, -2000), Futile.whiteElement.name) { scale = new(3000, 3000), color = Menu.MenuColorEffect.rgbVeryDarkGrey, alpha = 0.8f };
@@ -300,7 +300,7 @@ public abstract class AutoConfigOptions : OptionInterface
 
                 scrollBox.AddItems(items.ToArray());
                 //scrollBox.SetContentSize(tInfo.startHeight - y, true);
-                scrollBox.SetContentSize(Tabs[i].CanvasSize.y - y, true);
+                scrollBox.SetContentSize(Tabs[i].CanvasSize.y - y + nextSpace, true);
                 scrollBox.ScrollToTop();
             }
             else

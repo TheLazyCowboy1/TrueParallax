@@ -149,6 +149,7 @@ public partial class Plugin : SimplerPlugin
         On.AboveCloudsView.CloseCloud.DrawSprites += CloseCloud_DrawSprites;
         On.AboveCloudsView.DistantCloud.DrawSprites += DistantCloud_DrawSprites;
         On.AboveCloudsView.FlyingCloud.DrawSprites += FlyingCloud_DrawSprites;
+        On.RoofTopView.Floor.DrawSprites += Floor_DrawSprites;
         On.BackgroundScene.Simple2DBackgroundIllustration.DrawSprites += Simple2DBackgroundIllustration_DrawSprites;
 
         //Miscellaneous
@@ -182,6 +183,7 @@ public partial class Plugin : SimplerPlugin
         On.AboveCloudsView.CloseCloud.DrawSprites -= CloseCloud_DrawSprites;
         On.AboveCloudsView.DistantCloud.DrawSprites -= DistantCloud_DrawSprites;
         On.AboveCloudsView.FlyingCloud.DrawSprites -= FlyingCloud_DrawSprites;
+        On.RoofTopView.Floor.DrawSprites -= Floor_DrawSprites;
         On.BackgroundScene.Simple2DBackgroundIllustration.DrawSprites -= Simple2DBackgroundIllustration_DrawSprites;
 
         On.RoomCamera.ApplyPositionChange -= RoomCamera_ApplyPositionChange;

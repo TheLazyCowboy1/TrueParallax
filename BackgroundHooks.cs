@@ -113,6 +113,14 @@ public partial class Plugin
         OffsetBackgroundSprite(rCam, sLeaser.sprites[0], true, true);
     }
 
+    private void Floor_DrawSprites(On.RoofTopView.Floor.orig_DrawSprites orig, RoofTopView.Floor self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
+    {
+        //DontBackgroundFix = 1;
+        orig(self, sLeaser, rCam, timeStacker, camPos);
+
+        OffsetBackgroundSprite(rCam, sLeaser.sprites[0], true, false);
+    }
+
     private void Simple2DBackgroundIllustration_DrawSprites(On.BackgroundScene.Simple2DBackgroundIllustration.orig_DrawSprites orig, BackgroundScene.Simple2DBackgroundIllustration self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
     {
         orig(self, sLeaser, rCam, timeStacker, camPos);
