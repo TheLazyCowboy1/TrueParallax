@@ -115,21 +115,28 @@ public partial class Plugin
 
     private void Floor_DrawSprites(On.RoofTopView.Floor.orig_DrawSprites orig, RoofTopView.Floor self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
     {
-        //DontBackgroundFix = 1;
-        orig(self, sLeaser, rCam, timeStacker, camPos);
-
-        //OffsetBackgroundSprite(rCam, sLeaser.sprites[0], true, false);
-
-        //fix shader variable it uses
         try
         {
-            if (Options.FixBackgroundJitter && rCam.TryGetData(out CameraData data))
+            if (rCam.TryGetData(out CameraData data))
             {
-                Vector4 old = Shader.GetGlobalVector(RainWorld.ShadPropWorldCamPos);
-                Shader.SetGlobalVector(RainWorld.ShadPropWorldCamPos, new Vector2(old.x, old.y) - data.BackgroundFixOffset);
+                if (Options.FixBackgroundJitter && Options.EveryOtherPixel)
+                    camPos += new Vector2(Mathf.Floor(data.CurrentUVOffset.x), Mathf.Floor(data.CurrentUVOffset.y));
+
+                orig(self, sLeaser, rCam, timeStacker, camPos);
+
+                //OffsetBackgroundSprite(rCam, sLeaser.sprites[0], true, false);
+
+                if (Options.FixBackgroundJitter)
+                {
+                    Vector4 old = Shader.GetGlobalVector(RainWorld.ShadPropWorldCamPos);
+                    Shader.SetGlobalVector(RainWorld.ShadPropWorldCamPos, new Vector2(old.x, old.y) - data.BackgroundFixOffset);
+                }
+                return;
             }
-        }
-        catch (Exception ex) { Error(ex); }
+        } catch (Exception ex) { Error(ex); }
+
+        //default
+        orig(self, sLeaser, rCam, timeStacker, camPos);
     }
 
     private void Simple2DBackgroundIllustration_DrawSprites(On.BackgroundScene.Simple2DBackgroundIllustration.orig_DrawSprites orig, BackgroundScene.Simple2DBackgroundIllustration self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)

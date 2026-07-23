@@ -384,7 +384,7 @@ public partial class Plugin
                 {
                     if (Options.ContinuouslyChangeWarp > 0) //silly showcase option that exists for no good reason
                     {
-                        if (data.currentWarp <= 0)
+                        if (data.currentWarp <= 5)
                             WarpChangeGoingUp = true;
                         else if (data.currentWarp >= data.totalWarp)
                             WarpChangeGoingUp = false;
