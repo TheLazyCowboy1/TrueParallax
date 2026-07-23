@@ -97,7 +97,7 @@ public partial class Options : AutoConfigOptions
         RoomCamPos = 2,
         SBCamera = 3
     }
-    [Config(CAMERA, "Screen Camera Type", "The method used to calculate where the parallax camera is on the screen. Default = follows player position precisely;\nFixed = always centered - does not move; RoomCamPos = fixed in a position depending on where the camera is (use with SBCameraScroll); SBCamera = uses SBCameraScroll's calculations to follow player more loosely", width = 120)]
+    [Config(CAMERA, "Screen Camera Type", "The method used to calculate where the parallax camera is on the screen. Default = follows player position precisely;\nFixed = always centered - does not move; RoomCamPos = fixed in a position relative to where the room camera is (use with SBCameraScroll); SBCamera = uses SBCameraScroll's calculations to follow player more loosely", width = 120)]
     public static ScreenCameraType ScreenCamera = ScreenCameraType.Default;
     [Config(CAMERA, "Fallback Screen Camera", "The calculation used if the previous selection is not available.", rightSide = true, width = 120, spaceAfter = 50, dropdownOptions = new string[] {nameof(ScreenCameraType.Default), nameof(ScreenCameraType.Fixed), nameof(ScreenCameraType.RoomCamPos)})]
     public static ScreenCameraType FallbackScreenCamera = ScreenCameraType.Default;

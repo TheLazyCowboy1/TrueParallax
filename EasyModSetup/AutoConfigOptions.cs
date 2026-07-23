@@ -299,7 +299,8 @@ public abstract class AutoConfigOptions : OptionInterface
                 img.MoveToBack();
 
                 scrollBox.AddItems(items.ToArray());
-                scrollBox.SetContentSize(tInfo.startHeight - y, true);
+                //scrollBox.SetContentSize(tInfo.startHeight - y, true);
+                scrollBox.SetContentSize(Tabs[i].CanvasSize.y - y, true);
                 scrollBox.ScrollToTop();
             }
             else
