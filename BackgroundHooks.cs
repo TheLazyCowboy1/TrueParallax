@@ -72,6 +72,10 @@ public partial class Plugin
         return result;
     }
 
+    #endregion
+
+    #region ManualSpriteFixing
+
     private void OffsetBackgroundSprite(RoomCamera cam, FSprite sprite, bool offsetX, bool offsetY)
     {
         try
@@ -126,12 +130,19 @@ public partial class Plugin
         
         OffsetBackgroundSprite(rCam, sLeaser.sprites[0], true, false);
     }
-
+    [Obsolete]
     private void DustWave_DrawSprites(On.RoofTopView.DustWave.orig_DrawSprites orig, RoofTopView.DustWave self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
     {
         orig(self, sLeaser, rCam, timeStacker, camPos);
 
         OffsetBackgroundSprite(rCam, sLeaser.sprites[0], true, true);
+    }
+
+    private void Rubble_DrawSprites(On.RoofTopView.Rubble.orig_DrawSprites orig, RoofTopView.Rubble self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
+    {
+        orig(self, sLeaser, rCam, timeStacker, camPos);
+
+        OffsetBackgroundSprite(rCam, sLeaser.sprites[0], true, false);
     }
 
     private void Simple2DBackgroundIllustration_DrawSprites(On.BackgroundScene.Simple2DBackgroundIllustration.orig_DrawSprites orig, BackgroundScene.Simple2DBackgroundIllustration self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
