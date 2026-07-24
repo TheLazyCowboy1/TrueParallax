@@ -117,26 +117,21 @@ public partial class Plugin
     {
         try
         {
-            if (rCam.TryGetData(out CameraData data))
-            {
-                if (Options.FixBackgroundJitter && Options.EveryOtherPixel)
-                    camPos += new Vector2(Mathf.Floor(data.CurrentUVOffset.x), Mathf.Floor(data.CurrentUVOffset.y));
-
-                orig(self, sLeaser, rCam, timeStacker, camPos);
-
-                //OffsetBackgroundSprite(rCam, sLeaser.sprites[0], true, false);
-
-                if (Options.FixBackgroundJitter)
-                {
-                    Vector4 old = Shader.GetGlobalVector(RainWorld.ShadPropWorldCamPos);
-                    Shader.SetGlobalVector(RainWorld.ShadPropWorldCamPos, new Vector2(old.x, old.y) - data.BackgroundFixOffset);
-                }
-                return;
-            }
+            if (Options.FixBackgroundJitter && Options.EveryOtherPixel && rCam.TryGetData(out CameraData data))
+                camPos.x += Mathf.Floor(data.CurrentUVOffset.x); //only change x
         } catch (Exception ex) { Error(ex); }
 
         //default
         orig(self, sLeaser, rCam, timeStacker, camPos);
+        
+        OffsetBackgroundSprite(rCam, sLeaser.sprites[0], true, false);
+    }
+
+    private void DustWave_DrawSprites(On.RoofTopView.DustWave.orig_DrawSprites orig, RoofTopView.DustWave self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
+    {
+        orig(self, sLeaser, rCam, timeStacker, camPos);
+
+        OffsetBackgroundSprite(rCam, sLeaser.sprites[0], true, true);
     }
 
     private void Simple2DBackgroundIllustration_DrawSprites(On.BackgroundScene.Simple2DBackgroundIllustration.orig_DrawSprites orig, BackgroundScene.Simple2DBackgroundIllustration self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
