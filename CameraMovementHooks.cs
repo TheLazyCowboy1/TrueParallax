@@ -175,26 +175,40 @@ public partial class Plugin
         if (room == null)
             return new(-100000, -100000, 200000, 200000);
 
-        Rect rect = new(0, 0, 0, 0);
+        //Rect rect = new(0, 0, 1, 1);
+        Vector2 min = new(), max = new();
         foreach (Vector2 pos in room.cameraPositions)
         {
-            rect.xMin = Mathf.Min(rect.xMin, pos.x);
-            rect.yMin = Mathf.Min(rect.yMin, pos.y);
-            rect.xMax = Mathf.Max(rect.xMax, pos.x);
-            rect.yMax = Mathf.Max(rect.yMax, pos.y);
+            if (pos.x > 20000 || pos.y > 20000) continue; //phony cam position
+            min.x = Mathf.Min(min.x, pos.x);
+            min.y = Mathf.Min(min.y, pos.y);
+            max.x = Mathf.Max(max.x, pos.x);
+            max.y = Mathf.Max(max.y, pos.y);
         }
-        rect.size += self.sSize - self.sSize / self.SpriteLayers[0].scale; //camera zoom stuff; don't worry about ittttt
+        max += new Vector2(1400, 800) - self.sSize / self.SpriteLayers[0].scale; //camera zoom stuff; don't worry about ittttt
+
+        //max.x = Mathf.Max(max.x, min.x + 1);
+        //max.y = Mathf.Max(max.y, min.x + 1);
+        return Rect.MinMaxRect(min.x, min.y, max.x, max.y);
 
         //inflate the size to sSize at minimum so that we don't get excessively fast camera movement
+        /*
         Vector2 inflate = (self.sSize - rect.size) * 0.5f;
         inflate.x = Mathf.Max(0, inflate.x);
         inflate.y = Mathf.Max(0, inflate.y);
+        */
+
+        //inflate rect to sSize?
+        /*
+        float scale = Mathf.Max(1, self.sSize.x / rect.size.x, self.sSize.y / rect.size.y);
+        Vector2 inflate = rect.size * (scale - 1) * 0.5f;
         rect.xMin -= inflate.x;
         rect.xMax += inflate.x;
         rect.yMin -= inflate.y;
         rect.yMax += inflate.y;
+        */
 
-        return rect;
+        //return rect;
     }
     //Determines what the CamPos should be
     public static void UpdateCamPos(RoomCamera self, float moveMod = 1)
@@ -208,26 +222,45 @@ public partial class Plugin
 
             Vector2 pos = new(0.5f, 0.5f);
 
-            bool sbCameraMode = Options.CurrentScreenCamera == Options.ScreenCameraType.SBCamera && Plugin.SBCameraScrollEnabled;
+            bool sbCameraMode = Options.CurrentScreenCamera == Options.ScreenCameraType.SBCamera;// && Plugin.SBCameraScrollEnabled;
             if (sbCameraMode)
             {
                 pos = ModCompat.SBCameraScrollMod.GetSBPlayerPos(self);
             }
-            else if (!Options.AlwaysCentered) //calculate player on-screen position
+            else if (Options.CurrentScreenCamera == Options.ScreenCameraType.RoomCamPos)
+            {
+                Rect camArea;
+                if (Plugin.SBCameraScrollEnabled)
+                {
+                    camArea = ModCompat.SBCameraScrollMod.GetRoomRect(self.room.abstractRoom);
+                    camArea.size -= self.sSize / self.SpriteLayers[0].scale;
+                }
+                else
+                    camArea = GetRoomCameraArea(self);
+
+                if (camArea.width < 10 || camArea.height < 10) //not a suitable area
+                    pos = new(0.5f, 0.5f);
+                else
+                {
+                    pos = (self.pos - camArea.min) / (camArea.size);
+
+                    if (camArea.width > camArea.height * Options.MaxXYSpeedDifference) //correct for excessive y speed
+                    {
+                        pos.y = (pos.y - 0.5f) * camArea.height * Options.MaxXYSpeedDifference / camArea.width + 0.5f;
+                    }
+                    else if (camArea.height > camArea.width * Options.MaxXYSpeedDifference) //correct for excessive x speed
+                    {
+                        pos.x = (pos.x - 0.5f) * camArea.width * Options.MaxXYSpeedDifference / camArea.height + 0.5f;
+                    }
+                }
+                //pos = (camPos + data.critFollowOffset + 0.5f * self.sSize) / new Vector2(self.room.PixelWidth, self.room.PixelHeight);
+            }
+            else if (Options.CurrentScreenCamera == Options.ScreenCameraType.Default) //calculate player on-screen position
             {
                 Vector2? critPos = GetCritPos(self, data, true, moveSpeed);
-
-                //Vector2 camPos = (Plugin.SBCameraScrollEnabled && Options.CustomSBCamera) ? self.lastPos : self.pos;
-                Vector2 camPos = self.pos;
-                if (Options.CurrentScreenCamera == Options.ScreenCameraType.RoomCamPos)
+                if (critPos != null)
                 {
-                    Rect camArea = GetRoomCameraArea(self);
-                    pos = (camPos + data.critFollowOffset - camArea.position) / camArea.size;
-                    //pos = (camPos + data.critFollowOffset + 0.5f * self.sSize) / new Vector2(self.room.PixelWidth, self.room.PixelHeight);
-                }
-                else if (critPos != null)
-                {
-                    pos = (critPos.Value - camPos + data.critFollowOffset) / self.sSize;
+                    pos = (critPos.Value - self.pos + data.critFollowOffset) / self.sSize;
                 }
             }
 

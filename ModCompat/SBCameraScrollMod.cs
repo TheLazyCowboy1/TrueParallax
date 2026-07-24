@@ -1,8 +1,6 @@
 ﻿using MonoMod.RuntimeDetour;
-using RWCustom;
 using SBCameraScroll;
 using System;
-using System.Runtime.CompilerServices;
 using System.Security;
 using System.Security.Permissions;
 using TrueParallax.Tools;
@@ -94,7 +92,7 @@ public static class SBCameraScrollMod
             RoomCameraMod.UpdateOnScreenPosition(cam); //done just in case
 
             float moveSpeed = Options.CameraMoveSpeed;
-            Vector2? critPos = Plugin.GetCritPos(cam, data, Options.AlwaysCentered || Options.CurrentScreenCamera == Options.ScreenCameraType.SBCamera, moveSpeed);
+            Vector2? critPos = Plugin.GetCritPos(cam, data, Options.CurrentScreenCamera != Options.ScreenCameraType.Default, moveSpeed);
             if (critPos == null)
             {
                 cam.pos = cam.lastPos; //don't move
@@ -216,6 +214,12 @@ public static class SBCameraScrollMod
         //lastPos = PlayerPosToScreenPos(cam, cam.lastPos);
 
         return true;
+    }
+
+    public static Rect GetRoomRect(AbstractRoom room)
+    {
+        var fields = room.GetFields();
+        return new Rect(fields.min_camera_position.x, fields.min_camera_position.y, fields.total_width, fields.total_height);
     }
 
 }
