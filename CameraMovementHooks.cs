@@ -247,8 +247,8 @@ public partial class Plugin
                     //more accurate movement speed adjustments
                     if (Options.SBCamera == Options.SBCameraType.Custom)
                     {
-                        camArea.width += Options.CustomCameraXBorder * 2;
-                        camArea.height += Options.CustomCameraYBorder * 2;
+                        camArea.width += self.sSize.x - Options.CustomCameraXBorder * 2;
+                        camArea.height += self.sSize.y - Options.CustomCameraYBorder * 2;
                     }
                     else
                     {

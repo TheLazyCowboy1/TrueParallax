@@ -117,7 +117,13 @@ public static class SBCameraScrollMod
             Vector2 scaledSSize = cam.sSize / cam.SpriteLayers[0].scale;
             targetPos = fracPos * (roomSize - scaledSSize) + corner;
 
+            //CheckBorders has an extra 18 pixel y border. This effectively removes that
+            float scaleDown = (fields.total_height - 18) / fields.total_height;
+            targetPos.y = (targetPos.y - fields.min_camera_position.y) * scaleDown + fields.min_camera_position.y;
+
             RoomCameraMod.CheckBorders(cam, ref targetPos); //very important step I forgot, lol
+
+            targetPos.y = (targetPos.y - fields.min_camera_position.y) / scaleDown + fields.min_camera_position.y; //scale back up
 
 
             if (!customDataList.TryGetValue(cam.cameraNumber, out CustomCameraData customData))

@@ -83,7 +83,7 @@ public partial class Options : AutoConfigOptions
     public static float CustomCameraCurve = 1;
     [Config(CAMERA, "Custom Camera X Border", "TEST OPTION: Makes the camera stop moving when it gets really close to the edge of the screen.\nThis helps keep the camera more centered and prevents it from never showing the edges of the room, but the sudden stop can be jarring.", precision = 0), LimitRange(0, 800)]
     public static float CustomCameraXBorder = 80;
-    [Config(CAMERA, "Custom Camera Y Border", "TEST OPTION: Makes the camera stop moving when it gets really close to the edge of the screen.\nThis helps keep the camera more centered and prevents it from never showing the edges of the room, but the sudden stop can be jarring.", precision = 0), LimitRange(0, 800)]
+    [Config(CAMERA, "Custom Camera Y Border", "TEST OPTION: Makes the camera stop moving when it gets really close to the edge of the screen.\nThis helps keep the camera more centered and prevents it from never showing the edges of the room, but the sudden stop can be jarring.", precision = 0, rightSide = true), LimitRange(0, 800)]
     public static float CustomCameraYBorder = 40;
     [Config(CAMERA)]
     public static bool FractionalCameraMovement = true;
