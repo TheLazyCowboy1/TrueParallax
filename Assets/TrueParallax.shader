@@ -137,13 +137,13 @@ inline uint terrainDep(int2 pos) {
 #if LZC_PROCESSLAYER2 || LZC_BUILDCREATUREBACKGROUND
 static float2 levelSizeMod = (_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize * _screenSize;
 static float2 invLevelSizeMod = 1 / levelSizeMod;
-static int2 intLevelOffset = int2(-_spriteRect.xy * _screenSize);
+static int2 intLevelOffset = int2(floor(-_spriteRect.xy * _screenSize));
 
 int2 offsetPos(int2 sPos, int2 offset)
 {
-	int2 lPos = (sPos / _screenSize - _spriteRect.xy) / ((_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize);
-	lPos += offset;
-	return int2(lPos * invLevelSizeMod) + intLevelOffset;
+	//int2 lPos = (sPos / _screenSize - _spriteRect.xy) / ((_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize);
+	int2 lPos = sPos * invLevelSizeMod - intLevelOffset;
+	return (lPos + offset) * levelSizeMod + intLevelOffset;
 }
 #endif
 
@@ -154,7 +154,7 @@ inline int depthOfTexel(int2 pos) {
 		return 5;
 	}
 
-	int2 textCoord = int2(pos * invLevelSizeMod) + intLevelOffset;
+	int2 textCoord = pos * invLevelSizeMod - intLevelOffset;
 	return depthOfPixel(_LevelTex.Load(int3(textCoord, 0)).r);
 }
 
@@ -175,10 +175,10 @@ uniform int LZC_CreatureBackgroundTests;
 #endif
 
 //returns g and b channels
-inline float2 packBits(uint4 backColInts) {
+inline float2 packBits(uint4 backColInts, int critBkg = 0) {
 	return float2(
 		(backColInts.y | ((backColInts.x & 7) << 5)), //bottom 3 bits +5
-		(backColInts.z | ((backColInts.x & 24) << 2)) //top 2 bits +2 //24 = 0b11000
+		(backColInts.z | ((backColInts.x & 24) << 2) | (critBkg << 7)) //top 2 bits +2 //24 = 0b11000
 		) / 255.0f;
 }
 
@@ -244,7 +244,7 @@ void frag (v2f i)
 	#if LZC_BUILDCREATUREBACKGROUND
 		uint4 backColInts = GenerateBackground(checkPos, LZC_CreatureBackgroundTests, LZC_StepSize * 30, 0, 10);
 			//pack in bytes, same as below
-		_LZC_LevelTex[checkPos] = float4(r, packBits(backColInts), backColInts.w / 255.0f);
+		_LZC_LevelTex[checkPos] = float4(r, packBits(backColInts, 1), backColInts.w / 255.0f);
 	#else
 		_LZC_LevelTex[checkPos] = float4(r,
 			max(1, LZC_StepSize * 30) / 255.0f, //thickness = 1
@@ -451,13 +451,13 @@ uniform float _waterLevel;
 uniform float2 _LevelTex_TexelSize;
 static float2 levelSizeMod = (_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize * _screenSize;
 static float2 invLevelSizeMod = 1 / levelSizeMod;
-static int2 intLevelOffset = int2(-_spriteRect.xy * _screenSize);
+static int2 intLevelOffset = int2(floor(-_spriteRect.xy * _screenSize));
 
 int2 offsetPos(int2 sPos, int2 offset)
 {
-	int2 lPos = (sPos / _screenSize - _spriteRect.xy) / ((_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize);
-	lPos += offset;
-	return int2(lPos * invLevelSizeMod) + intLevelOffset;
+	//int2 lPos = (sPos / _screenSize - _spriteRect.xy) / ((_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize);
+	int2 lPos = sPos * invLevelSizeMod - intLevelOffset;
+	return (lPos + offset) * levelSizeMod + intLevelOffset;
 }
 #endif
 
@@ -834,8 +834,12 @@ half4 frag (v2f i) : SV_Target
 
 		fullDirDef //see DirectionDefinitions.cginc
 
-		int2 lPos = offsetPos(bestGrabPos, (dir[d] * lDist)/2);
-		int2 rPos = offsetPos(bestGrabPos, -(dir[d] * rDist)/2);
+		int2 lOff = (dir[d] * lDist)/2;
+		int2 rOff = -(dir[d] * rDist)/2;
+		bool critBkg = (lev.z >> 7) > 0;
+		int2 lPos = critBkg ? (bestGrabPos + lOff) : offsetPos(bestGrabPos, lOff);
+		int2 rPos = critBkg ? (bestGrabPos + rOff) : offsetPos(bestGrabPos, rOff);
+
 		if (lDist > 0 && rDist > 0) { //both are usable, so lerp between the two colors
 			float4 lCol = _GrabTexture.Load(int3(lPos, 0));
 			float4 rCol = _GrabTexture.Load(int3(rPos, 0));
