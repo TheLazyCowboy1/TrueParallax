@@ -4,6 +4,8 @@ Shader "TheLazyCowboy1/CustomBlend"
 Properties 
 	{
 		_MainTex ("Base (RGB) Trans (A)", 2D) = "white" {}
+		LZC_BlendWith ("Blend With", 2D) = "white" {}
+		LZC_CustomBlend ("Blend Amount", Float) = 0.5
 	}
 	
 	Category 

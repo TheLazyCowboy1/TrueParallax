@@ -134,8 +134,12 @@ inline uint terrainDep(int2 pos) {
 	return round(30 * (2 - 3 * _SlopedTerrainMask.Load(int3(pos, 0)).r));
 }
 
-#if LZC_BUILDCREATUREBACKGROUND
+#if LZC_PROCESSLAYER2 || LZC_BUILDCREATUREBACKGROUND
+static float2 levelSizeMod = (_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize * _screenSize;
+#endif
 
+#if LZC_BUILDCREATUREBACKGROUND
+static float2 invLevelSizeMod = 1 / levelSizeMod;
 static int2 intLevelOffset = int2(-_spriteRect.xy * _screenSize);
 inline int depthOfTexel(int2 pos) {
 	float4 c = _PreLevelColorGrab.Load(int3(pos, 0));
@@ -143,7 +147,7 @@ inline int depthOfTexel(int2 pos) {
 		return 5;
 	}
 
-	int2 textCoord = pos + intLevelOffset;
+	int2 textCoord = int2(pos * invLevelSizeMod) + intLevelOffset;
 	return depthOfPixel(_LevelTex.Load(int3(textCoord, 0)).r);
 }
 
@@ -285,6 +289,7 @@ void frag (v2f i)
 	if (lDist > 0) { //determine if left side is obscured
 		int2 lOffset = (dir[dirIdx] * lDist)/2;
 
+		lOffset *= levelSizeMod;
 		int2 lPos = checkPos + lOffset;
 		bool lCrit = lPos.x < 0 || lPos.y < 0 || lPos.x >= int(_screenSize.x) || lPos.y >= int(_screenSize.y); //check if out of bounds
 		if (!lCrit) { //check for creatures
@@ -308,6 +313,7 @@ void frag (v2f i)
 		int2 lOffset = -(dir[dirIdx] * rDist)/2; //"right" side is negative direction, thus the negative sign
 
 		//copy left-side code for simplicity
+		lOffset *= levelSizeMod;
 		int2 lPos = checkPos + lOffset;
 		bool lCrit = lPos.x < 0 || lPos.y < 0 || lPos.x >= int(_screenSize.x) || lPos.y >= int(_screenSize.y); //check if out of bounds
 		if (!lCrit) { //check for creatures
@@ -434,6 +440,11 @@ uniform float _RAIN;
 #endif
 #if LZC_WETTERRAIN
 uniform float _waterLevel;
+#endif
+
+#if LZC_PROCESSLAYER2
+uniform float2 _LevelTex_TexelSize;
+static float2 levelSizeMod = (_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize * _screenSize;
 #endif
 
 #if LZC_REALISTICDEPTH
@@ -809,8 +820,8 @@ half4 frag (v2f i) : SV_Target
 
 		fullDirDef //see DirectionDefinitions.cginc
 
-		int2 lPos = bestGrabPos + (dir[d] * lDist)/2;
-		int2 rPos = bestGrabPos - (dir[d] * rDist)/2;
+		int2 lPos = bestGrabPos + int2((dir[d] * lDist)/2 * levelSizeMod);
+		int2 rPos = bestGrabPos + int2((-dir[d] * rDist)/2 * levelSizeMod);
 		if (lDist > 0 && rDist > 0) { //both are usable, so lerp between the two colors
 			float4 lCol = _GrabTexture.Load(int3(lPos, 0));
 			float4 rCol = _GrabTexture.Load(int3(rPos, 0));
