@@ -76,7 +76,6 @@ public static class SBCameraScrollMod
 
     private class CustomCameraData
     {
-        public bool xMovement = false, yMovement = false;
         public Vector2 lastPos = new();
         public Vector2 lastDelta = new();
     }
@@ -138,15 +137,15 @@ public static class SBCameraScrollMod
             {
 
                 Vector2 delta = Vector2.zero;
-                //customData.xMovement = Mathf.Abs(targetPos.x - cam.lastPos.x) / cam.sSize.x > (customData.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
-                data.xMovement = Mathf.Abs(targetPos.x - cam.lastPos.x) / cam.sSize.x > (data.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
-                if (data.xMovement)
-                    delta.x = Plugin.LerpAndTickWithStop(cam.lastPos.x, targetPos.x, moveSpeed, moveSpeed * 0.005f * cam.sSize.x, Options.CameraStopDistance * cam.sSize.x) - cam.lastPos.x;
+                Vector2 moveScaleSize = roomSize - scaledSSize;
 
-                //customData.yMovement = Mathf.Abs(targetPos.y - cam.lastPos.y) / cam.sSize.y > (customData.yMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
-                data.yMovement = Mathf.Abs(targetPos.y - cam.lastPos.y) / cam.sSize.y > (data.yMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
+                data.xMovement = Mathf.Abs(targetPos.x - cam.lastPos.x) / moveScaleSize.x > (data.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
+                if (data.xMovement)
+                    delta.x = Plugin.LerpAndTickWithStop(cam.lastPos.x, targetPos.x, moveSpeed, moveSpeed * 0.005f * moveScaleSize.x, Options.CameraStopDistance * moveScaleSize.x) - cam.lastPos.x;
+
+                data.yMovement = Mathf.Abs(targetPos.y - cam.lastPos.y) / moveScaleSize.y > (data.yMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
                 if (data.yMovement)
-                    delta.y = Plugin.LerpAndTickWithStop(cam.lastPos.y, targetPos.y, moveSpeed, moveSpeed * 0.005f * cam.sSize.y, Options.CameraStopDistance * cam.sSize.y) - cam.lastPos.y;
+                    delta.y = Plugin.LerpAndTickWithStop(cam.lastPos.y, targetPos.y, moveSpeed, moveSpeed * 0.005f * moveScaleSize.y, Options.CameraStopDistance * moveScaleSize.y) - cam.lastPos.y;
 
                 Vector2 maxDelta = customData.lastDelta;
                 maxDelta.Set(Mathf.Abs(maxDelta.x) + Mathf.Abs(Options.CameraMaxAcceleration * delta.x), Mathf.Abs(maxDelta.y) + Mathf.Abs(Options.CameraMaxAcceleration * delta.y));
