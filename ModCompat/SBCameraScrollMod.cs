@@ -1,4 +1,6 @@
-﻿using MonoMod.RuntimeDetour;
+﻿using Mono.Cecil.Cil;
+using MonoMod.Cil;
+using MonoMod.RuntimeDetour;
 using SBCameraScroll;
 using System;
 using System.Security;
@@ -15,13 +17,16 @@ namespace TrueParallax.ModCompat;
 
 public static class SBCameraScrollMod
 {
+    #region Hooks
     private static Hook PositionHook = null;
     private static Hook PositionCamUpdateHook = null;
+    private static ILHook CheckBordersHook = null;
 
     public static void ApplyHooks()
     {
         PositionHook = new((Delegate)RoomCameraMod.UpdateOnScreenPosition, Hook_UpdateOnScreenPosition);
         PositionCamUpdateHook = new(typeof(PositionTypeCamera).GetMethod(nameof(PositionTypeCamera.Update)), Hook_PositionCameraUpdate);
+        CheckBordersHook = new(typeof(RoomCameraMod).GetMethod(nameof(RoomCameraMod.CheckBorders)), IL_CheckBorders);
     }
     public static void RemoveHooks()
     {
@@ -117,13 +122,7 @@ public static class SBCameraScrollMod
             Vector2 scaledSSize = cam.sSize / cam.SpriteLayers[0].scale;
             targetPos = fracPos * (roomSize - scaledSSize) + corner;
 
-            //CheckBorders has an extra 18 pixel y border. This effectively removes that
-            float scaleDown = (fields.total_height - 18) / fields.total_height;
-            targetPos.y = (targetPos.y - fields.min_camera_position.y) * scaleDown + fields.min_camera_position.y;
-
             RoomCameraMod.CheckBorders(cam, ref targetPos); //very important step I forgot, lol
-
-            targetPos.y = (targetPos.y - fields.min_camera_position.y) / scaleDown + fields.min_camera_position.y; //scale back up
 
 
             if (!customDataList.TryGetValue(cam.cameraNumber, out CustomCameraData customData))
@@ -166,7 +165,21 @@ public static class SBCameraScrollMod
         }
     }
 
+    private static void IL_CheckBorders(ILContext il)
+    {
+        ILCursor c = new(il);
+        if (c.TryGotoNext(MoveType.After, x => x.MatchLdcR4(18)))
+        {
+            //c.Next.Operand = 0f;
+            //c.Emit(OpCodes.Pop);
+            c.EmitDelegate((float f) => Options.SBCamera == Options.SBCameraType.Default ? f : 2);
+            Plugin.Log("Successful SBCameraScroll CheckBorders IL hook");
+        }
+    }
 
+    #endregion
+
+    #region Helpers
     public static Vector2 GetSBPlayerPos(RoomCamera cam)
     {
         var fields = cam.GetFields();
@@ -227,5 +240,7 @@ public static class SBCameraScrollMod
         var fields = room.GetFields();
         return new Rect(fields.min_camera_position.x, fields.min_camera_position.y, fields.total_width, fields.total_height);
     }
+
+    #endregion
 
 }
