@@ -122,7 +122,7 @@ public static class SBCameraScrollMod
             //targetPos = fracPos * (roomSize - scaledSSize) + corner;
             float halfInvZoom = 0.5f * (1.0f / cam.SpriteLayers[0].scale - 1); //crazy SBCameraScroll zoom calculation
             Vector2 sSizeIncrease = cam.sSize * halfInvZoom;
-            targetPos = fracPos * (roomSize - cam.sSize + sSizeIncrease * 2) + corner - sSizeIncrease;
+            targetPos = fracPos * (roomSize - cam.sSize - sSizeIncrease * 2) + corner + sSizeIncrease;
 
             RoomCameraMod.CheckBorders(cam, ref targetPos); //very important step I forgot, lol
 
@@ -140,7 +140,7 @@ public static class SBCameraScrollMod
             {
 
                 Vector2 delta = Vector2.zero;
-                Vector2 moveScaleSize = roomSize - cam.sSize + sSizeIncrease * 2;
+                Vector2 moveScaleSize = roomSize - cam.sSize - sSizeIncrease * 2;
 
                 data.xMovement = Mathf.Abs(targetPos.x - cam.lastPos.x) / moveScaleSize.x > (data.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
                 if (data.xMovement)

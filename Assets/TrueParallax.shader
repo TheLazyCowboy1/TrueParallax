@@ -289,7 +289,7 @@ void frag (v2f i)
 	if (lDist > 0) { //determine if left side is obscured
 		int2 lOffset = (dir[dirIdx] * lDist)/2;
 
-		lOffset *= levelSizeMod;
+		lOffset = floor(lOffset * levelSizeMod);
 		int2 lPos = checkPos + lOffset;
 		bool lCrit = lPos.x < 0 || lPos.y < 0 || lPos.x >= int(_screenSize.x) || lPos.y >= int(_screenSize.y); //check if out of bounds
 		if (!lCrit) { //check for creatures
@@ -313,7 +313,7 @@ void frag (v2f i)
 		int2 lOffset = -(dir[dirIdx] * rDist)/2; //"right" side is negative direction, thus the negative sign
 
 		//copy left-side code for simplicity
-		lOffset *= levelSizeMod;
+		lOffset = floor(lOffset * levelSizeMod);
 		int2 lPos = checkPos + lOffset;
 		bool lCrit = lPos.x < 0 || lPos.y < 0 || lPos.x >= int(_screenSize.x) || lPos.y >= int(_screenSize.y); //check if out of bounds
 		if (!lCrit) { //check for creatures
@@ -820,8 +820,8 @@ half4 frag (v2f i) : SV_Target
 
 		fullDirDef //see DirectionDefinitions.cginc
 
-		int2 lPos = bestGrabPos + int2((dir[d] * lDist)/2 * levelSizeMod);
-		int2 rPos = bestGrabPos + int2((-dir[d] * rDist)/2 * levelSizeMod);
+		int2 lPos = bestGrabPos + int2(floor((dir[d] * lDist)/2 * levelSizeMod));
+		int2 rPos = bestGrabPos + int2(floor((-dir[d] * rDist)/2 * levelSizeMod));
 		if (lDist > 0 && rDist > 0) { //both are usable, so lerp between the two colors
 			float4 lCol = _GrabTexture.Load(int3(lPos, 0));
 			float4 rCol = _GrabTexture.Load(int3(rPos, 0));
