@@ -244,6 +244,19 @@ public partial class Plugin
                 {
                     pos = (self.pos - camArea.min) / (camArea.size);
 
+                    //more accurate movement speed adjustments
+                    if (Options.SBCamera == Options.SBCameraType.Custom)
+                    {
+                        camArea.width += Options.CustomCameraXBorder * 2;
+                        camArea.height += Options.CustomCameraYBorder * 2;
+                    }
+                    else
+                    {
+                        float expand = Options.AdjustSBCameraFac * 2 * data.totalWarp * data.DepthCurve(5f / 30f);
+                        camArea.width += expand;
+                        camArea.height += expand * self.sSize.y / self.sSize.x;
+                    }
+
                     if (camArea.width > camArea.height * Options.MaxXYSpeedDifference) //correct for excessive y speed
                     {
                         pos.y = (pos.y - 0.5f) * camArea.height * Options.MaxXYSpeedDifference / camArea.width + 0.5f;
