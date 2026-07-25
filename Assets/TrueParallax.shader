@@ -137,13 +137,12 @@ inline uint terrainDep(int2 pos) {
 #if LZC_PROCESSLAYER2 || LZC_BUILDCREATUREBACKGROUND
 static float2 levelSizeMod = (_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize * _screenSize;
 static float2 invLevelSizeMod = 1 / levelSizeMod;
-static int2 intLevelOffset = int2(floor(-_spriteRect.xy * _screenSize));
+static float2 levelOffset = floor(_spriteRect.xy * _screenSize);
 
 int2 offsetPos(int2 sPos, int2 offset)
 {
-	//int2 lPos = (sPos / _screenSize - _spriteRect.xy) / ((_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize);
-	int2 lPos = sPos * invLevelSizeMod - intLevelOffset;
-	return (lPos + offset) * levelSizeMod + intLevelOffset;
+	int2 lPos = floor(sPos * invLevelSizeMod - levelOffset + 0.001f); //.001 to account for rounding errors
+	return floor((lPos + offset + levelOffset) * levelSizeMod + 0.001f);
 }
 #endif
 
@@ -154,7 +153,7 @@ inline int depthOfTexel(int2 pos) {
 		return 5;
 	}
 
-	int2 textCoord = pos * invLevelSizeMod - intLevelOffset;
+	int2 textCoord = (pos - levelOffset) * invLevelSizeMod;
 	return depthOfPixel(_LevelTex.Load(int3(textCoord, 0)).r);
 }
 
@@ -451,13 +450,12 @@ uniform float _waterLevel;
 uniform float2 _LevelTex_TexelSize;
 static float2 levelSizeMod = (_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize * _screenSize;
 static float2 invLevelSizeMod = 1 / levelSizeMod;
-static int2 intLevelOffset = int2(floor(-_spriteRect.xy * _screenSize));
+static float2 levelOffset = floor(_spriteRect.xy * _screenSize);
 
 int2 offsetPos(int2 sPos, int2 offset)
 {
-	//int2 lPos = (sPos / _screenSize - _spriteRect.xy) / ((_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize);
-	int2 lPos = sPos * invLevelSizeMod - intLevelOffset;
-	return (lPos + offset) * levelSizeMod + intLevelOffset;
+	int2 lPos = floor(sPos * invLevelSizeMod - levelOffset + 0.001f); //.001 to account for rounding errors
+	return floor((lPos + offset + levelOffset) * levelSizeMod + 0.001f);
 }
 #endif
 
