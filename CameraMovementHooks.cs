@@ -211,7 +211,11 @@ public partial class Plugin
                 if (Plugin.SBCameraScrollEnabled)
                 {
                     camArea = ModCompat.SBCameraScrollMod.GetRoomRect(self.room.abstractRoom);
-                    camArea.size -= self.sSize / self.SpriteLayers[0].scale;
+                    camArea.size -= self.sSize;// / self.SpriteLayers[0].scale;
+                    float halfInvZoom = 0.5f * (1.0f / self.SpriteLayers[0].scale - 1); //crazy SBCameraScroll zoom calculation
+                    Vector2 sSizeIncrease = self.sSize * halfInvZoom;
+                    camArea.min += sSizeIncrease;
+                    camArea.max -= sSizeIncrease;
                     camArea.height -= ModCompat.SBCameraScrollMod.YBorderSize();
                 }
                 else

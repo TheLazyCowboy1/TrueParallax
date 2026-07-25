@@ -136,11 +136,18 @@ inline uint terrainDep(int2 pos) {
 
 #if LZC_PROCESSLAYER2 || LZC_BUILDCREATUREBACKGROUND
 static float2 levelSizeMod = (_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize * _screenSize;
+static float2 invLevelSizeMod = 1 / levelSizeMod;
+static int2 intLevelOffset = int2(-_spriteRect.xy * _screenSize);
+
+int2 offsetPos(int2 sPos, int2 offset)
+{
+	int2 lPos = (sPos / _screenSize - _spriteRect.xy) / ((_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize);
+	lPos += offset;
+	return int2(lPos * invLevelSizeMod) + intLevelOffset;
+}
 #endif
 
 #if LZC_BUILDCREATUREBACKGROUND
-static float2 invLevelSizeMod = 1 / levelSizeMod;
-static int2 intLevelOffset = int2(-_spriteRect.xy * _screenSize);
 inline int depthOfTexel(int2 pos) {
 	float4 c = _PreLevelColorGrab.Load(int3(pos, 0));
 	if (c.r > 1.0f / 255.0f || c.g > 0 || c.b > 0) {
@@ -289,8 +296,7 @@ void frag (v2f i)
 	if (lDist > 0) { //determine if left side is obscured
 		int2 lOffset = (dir[dirIdx] * lDist)/2;
 
-		lOffset = floor(lOffset * levelSizeMod);
-		int2 lPos = checkPos + lOffset;
+		int2 lPos = offsetPos(checkPos, lOffset);
 		bool lCrit = lPos.x < 0 || lPos.y < 0 || lPos.x >= int(_screenSize.x) || lPos.y >= int(_screenSize.y); //check if out of bounds
 		if (!lCrit) { //check for creatures
 			float4 lCritCol = _PreLevelColorGrab.Load(int3(lPos, 0));
@@ -313,8 +319,7 @@ void frag (v2f i)
 		int2 lOffset = -(dir[dirIdx] * rDist)/2; //"right" side is negative direction, thus the negative sign
 
 		//copy left-side code for simplicity
-		lOffset = floor(lOffset * levelSizeMod);
-		int2 lPos = checkPos + lOffset;
+		int2 lPos = offsetPos(checkPos, lOffset);
 		bool lCrit = lPos.x < 0 || lPos.y < 0 || lPos.x >= int(_screenSize.x) || lPos.y >= int(_screenSize.y); //check if out of bounds
 		if (!lCrit) { //check for creatures
 			float4 lCritCol = _PreLevelColorGrab.Load(int3(lPos, 0));
@@ -445,6 +450,15 @@ uniform float _waterLevel;
 #if LZC_PROCESSLAYER2
 uniform float2 _LevelTex_TexelSize;
 static float2 levelSizeMod = (_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize * _screenSize;
+static float2 invLevelSizeMod = 1 / levelSizeMod;
+static int2 intLevelOffset = int2(-_spriteRect.xy * _screenSize);
+
+int2 offsetPos(int2 sPos, int2 offset)
+{
+	int2 lPos = (sPos / _screenSize - _spriteRect.xy) / ((_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize);
+	lPos += offset;
+	return int2(lPos * invLevelSizeMod) + intLevelOffset;
+}
 #endif
 
 #if LZC_REALISTICDEPTH
@@ -820,8 +834,8 @@ half4 frag (v2f i) : SV_Target
 
 		fullDirDef //see DirectionDefinitions.cginc
 
-		int2 lPos = bestGrabPos + int2(floor((dir[d] * lDist)/2 * levelSizeMod));
-		int2 rPos = bestGrabPos + int2(floor((-dir[d] * rDist)/2 * levelSizeMod));
+		int2 lPos = offsetPos(bestGrabPos, (dir[d] * lDist)/2);
+		int2 rPos = offsetPos(bestGrabPos, -(dir[d] * rDist)/2);
 		if (lDist > 0 && rDist > 0) { //both are usable, so lerp between the two colors
 			float4 lCol = _GrabTexture.Load(int3(lPos, 0));
 			float4 rCol = _GrabTexture.Load(int3(rPos, 0));
