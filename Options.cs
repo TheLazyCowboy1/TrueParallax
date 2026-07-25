@@ -91,8 +91,8 @@ public partial class Options : AutoConfigOptions
     public static bool EveryOtherPixel = false;
     [Config(CAMERA)]
     public static bool FixBackgroundJitter = true;
-    [Config(CAMERA, rightSide = true, precision = 1), LimitRange(1, 200)]
-    public static float MaxXYSpeedDifference = 10;
+    [Config(CAMERA, rightSide = true, precision = 1), LimitRange(1, 20)]
+    public static float MaxXYSpeedDifference = 2;
 
     public enum ScreenCameraType
     {

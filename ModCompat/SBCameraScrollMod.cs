@@ -107,7 +107,7 @@ public static class SBCameraScrollMod
 
             //apply borders
             var fields = cam.room.abstractRoom.GetFields();
-            Vector2 roomSize = new(fields.total_width, fields.total_height);
+            Vector2 roomSize = new(fields.total_width, fields.total_height - YBorderSize());
             Vector2 corner = fields.min_camera_position;
             Vector2 border = new(Options.CustomCameraXBorder, Options.CustomCameraYBorder);
 
@@ -172,7 +172,7 @@ public static class SBCameraScrollMod
         {
             //c.Next.Operand = 0f;
             //c.Emit(OpCodes.Pop);
-            c.EmitDelegate((float f) => Options.SBCamera == Options.SBCameraType.Default ? f : 2);
+            c.EmitDelegate((float f) => YBorderSize());
             Plugin.Log("Successful SBCameraScroll CheckBorders IL hook");
         }
     }
@@ -240,6 +240,8 @@ public static class SBCameraScrollMod
         var fields = room.GetFields();
         return new Rect(fields.min_camera_position.x, fields.min_camera_position.y, fields.total_width, fields.total_height);
     }
+
+    public static float YBorderSize() => Options.SBCamera == Options.SBCameraType.Default ? 18 : 2;
 
     #endregion
 
