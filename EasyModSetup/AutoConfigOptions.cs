@@ -245,9 +245,9 @@ public abstract class AutoConfigOptions : OptionInterface
                         if (cInfo.config is Configurable<bool> cb)
                             el = new OpCheckBox(cb, x + tInfo.checkboxOffset, y);
                         else if (cInfo.config is Configurable<float> cf)
-                            el = new OpUpdown(cf, new(x, y), w, cInfo.precision);
+                            el = new MouseOpUpdown(cf, new(x, y), w, cInfo.precision);
                         else if (cInfo.config is Configurable<int> ci)
-                            el = new OpUpdown(ci, new(x, y), w);
+                            el = new MouseOpUpdown(ci, new(x, y), w);
                         else if (cInfo.config is Configurable<KeyCode> ck)
                             el = new OpKeyBinder(ck, new(x, y), new(w, h));
                         else if (cInfo.config is Configurable<string> cs)
@@ -378,6 +378,66 @@ public abstract class AutoConfigOptions : OptionInterface
             SetConfig(info, type);
         }
         SimplerPlugin.Log("Set configs for " + mod?.id, 2);
+    }
+
+
+    public class MouseOpUpdown : OpUpdown
+    {
+        public MouseOpUpdown(Configurable<int> config, Vector2 pos, float sizeX) : base(config, pos, sizeX)
+        {
+        }
+
+        public MouseOpUpdown(Configurable<float> config, Vector2 pos, float sizeX, byte decimalNum = 1) : base(config, pos, sizeX, decimalNum)
+        {
+        }
+
+        private Vector2? lastBumpPos = null;
+
+        public override void Update()
+        {
+            base.Update();
+
+            if (base.MenuMouseMode && Input.GetMouseButton(0)) //mouse is active and holding down
+            {
+                if (base.held)
+                {
+                    lastBumpPos ??= base.Menu.lastMousePos;
+                    Vector2 newPos = base.Menu.mousePosition;
+
+                    if (TryBump((int)(0.5f * (newPos.x - lastBumpPos.Value.x))))
+                    {
+                        lastBumpPos = newPos;
+                    }
+                }
+                else if (base.MouseOver)
+                {
+                    base.held = true;
+                    base.PlaySound(SoundID.MENU_First_Scroll_Tick);
+                }
+
+                return;
+            }
+            
+            base.held = false;
+            lastBumpPos = null;
+        }
+
+        private bool TryBump(int bump)
+        {
+            if (this.IsInt)
+            {
+                int val = base.valueInt;
+                base.valueInt = base.ClampValue(val + bump);
+                return val == base.valueInt;
+            }
+            else
+            {
+                float val = base.valueFloat;
+                base.valueFloat = base.ClampValue(val + bump * Mathf.Pow(0.1f, base._dNum));
+                return Mathf.Approximately(val, base.valueFloat);
+            }
+        }
+
     }
 
 }
