@@ -76,21 +76,9 @@ public static class CameraEXT
         => CameraData.list[cam.cameraNumber];
     public static bool TryGetData(this RoomCamera cam, out CameraData data)
         => CameraData.list.TryGetValue(cam.cameraNumber, out data);
-    /// <summary>
-    /// Instantiates the CameraData if necessary.
-    /// </summary>
-    /// <returns>
-    /// The existing CameraData for this camera number if it exists;
-    /// otherwise, it creates a new CameraData instance.
-    /// </returns>
+
     public static CameraData CreateData(this RoomCamera cam)
         => new(cam);
-    /*{
-        if (CameraData.list.ContainsKey(cam.cameraNumber)) return CameraData.list[cam.cameraNumber]; //already exists; doesn't need to be initialized
-        CameraData data = new(cam);
-        CameraData.list.Add(cam.cameraNumber, data);
-        return data;
-    }*/
 
     public static RenderTexture GetLayer2Tex(this RoomCamera cam)
         => TryGetData(cam, out CameraData data) ? data.layer2Textures.GetOrCreateTexture() : null;

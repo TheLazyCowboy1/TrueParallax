@@ -137,12 +137,17 @@ inline uint terrainDep(int2 pos) {
 #if LZC_PROCESSLAYER2 || LZC_BUILDCREATUREBACKGROUND
 static float2 levelSizeMod = (_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize * _screenSize;
 static float2 invLevelSizeMod = 1 / levelSizeMod;
-static float2 levelOffset = floor(_spriteRect.xy * _screenSize);
+static float2 levelOffset = _spriteRect.xy * _screenSize;
 
-int2 offsetPos(int2 sPos, int2 offset)
+int2 sPosToLPos(int2 sPos) {
+	return floor((sPos - levelOffset - 0.5f) * invLevelSizeMod + 0.001f); //.001 to account for rounding errors
+}
+int2 lPosToSPos(int2 lPos)
 {
-	int2 lPos = floor(sPos * invLevelSizeMod - levelOffset + 0.001f); //.001 to account for rounding errors
-	return floor((lPos + offset + levelOffset) * levelSizeMod + 0.001f);
+	return floor(lPos * levelSizeMod + levelOffset + 0.001f); //.001 to account for rounding errors
+}
+int2 offsetPos(int2 sPos, int2 offset) {
+	return lPosToSPos(sPosToLPos(sPos) + offset);
 }
 #endif
 
@@ -153,8 +158,8 @@ inline int depthOfTexel(int2 pos) {
 		return 5;
 	}
 
-	int2 textCoord = (pos - levelOffset) * invLevelSizeMod;
-	return depthOfPixel(_LevelTex.Load(int3(textCoord, 0)).r);
+	//int2 textCoord = (pos - levelOffset) * invLevelSizeMod;
+	return depthOfPixel(_LevelTex.Load(int3(sPosToLPos(pos), 0)).r);
 }
 
 uniform int LZC_CreatureBackgroundTests;
@@ -450,12 +455,17 @@ uniform float _waterLevel;
 uniform float2 _LevelTex_TexelSize;
 static float2 levelSizeMod = (_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize * _screenSize;
 static float2 invLevelSizeMod = 1 / levelSizeMod;
-static float2 levelOffset = floor(_spriteRect.xy * _screenSize);
+static float2 levelOffset = _spriteRect.xy * _screenSize;
 
-int2 offsetPos(int2 sPos, int2 offset)
+int2 sPosToLPos(int2 sPos) {
+	return floor((sPos - levelOffset - 0.5f) * invLevelSizeMod + 0.001f); //.001 to account for rounding errors
+}
+int2 lPosToSPos(int2 lPos)
 {
-	int2 lPos = floor(sPos * invLevelSizeMod - levelOffset + 0.001f); //.001 to account for rounding errors
-	return floor((lPos + offset + levelOffset) * levelSizeMod + 0.001f);
+	return floor(lPos * levelSizeMod + levelOffset + 0.001f); //.001 to account for rounding errors
+}
+int2 offsetPos(int2 sPos, int2 offset) {
+	return lPosToSPos(sPosToLPos(sPos) + offset);
 }
 #endif
 
@@ -527,16 +537,9 @@ v2f vert (appdata_full v)
 #endif
 
 #if levelheat || levelmelt || LZC_WETTERRAIN
-	o.uv = (realUV - _spriteRect.xy) / (_spriteRect.zw - _spriteRect.xy); //this is actually the level uv
+	o.uv = (uv - _spriteRect.xy) / (_spriteRect.zw - _spriteRect.xy); //this is actually the level uv
 	//o.uv = realUV - _spriteRect.xy;
 #endif
-
-		//Determine sub-pixel offset
-	//float2 subpixelOffset = -_spriteRect.xy * _screenSize;// - float2(0.5f, 0.5f); //Futile rounding stuffs I don't understand
-	//float2 levScale = (_spriteRect.zw - _spriteRect.xy) * _screenSize / _LevelTex_TexelSize; //should = 1 normally
-	//lev0SUV *= levScale;
-	//o.suv = o.suv + 100 * frac(subpixelOffset);
-	//int2 levTexPos = (uv - _spriteRect.xy) / ((_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize);
 
     return o;
 }
