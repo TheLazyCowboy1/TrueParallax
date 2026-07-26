@@ -140,11 +140,11 @@ static float2 invLevelSizeMod = 1 / levelSizeMod;
 static float2 levelOffset = _spriteRect.xy * _screenSize;
 
 int2 sPosToLPos(int2 sPos) {
-	return floor((sPos - levelOffset - 0.5f) * invLevelSizeMod + 0.001f); //.001 to account for rounding errors
+	return floor((sPos - levelOffset) * invLevelSizeMod);
 }
 int2 lPosToSPos(int2 lPos)
 {
-	return floor(lPos * levelSizeMod + levelOffset + 0.001f); //.001 to account for rounding errors
+	return floor(lPos * levelSizeMod + levelOffset + 0.5f);
 }
 int2 offsetPos(int2 sPos, int2 offset) {
 	return lPosToSPos(sPosToLPos(sPos) + offset);
@@ -458,11 +458,11 @@ static float2 invLevelSizeMod = 1 / levelSizeMod;
 static float2 levelOffset = _spriteRect.xy * _screenSize;
 
 int2 sPosToLPos(int2 sPos) {
-	return floor((sPos - levelOffset - 0.5f) * invLevelSizeMod + 0.001f); //.001 to account for rounding errors
+	return floor((sPos - levelOffset) * invLevelSizeMod);
 }
 int2 lPosToSPos(int2 lPos)
 {
-	return floor(lPos * levelSizeMod + levelOffset + 0.001f); //.001 to account for rounding errors
+	return floor(lPos * levelSizeMod + levelOffset + 0.5f);
 }
 int2 offsetPos(int2 sPos, int2 offset) {
 	return lPosToSPos(sPosToLPos(sPos) + offset);
