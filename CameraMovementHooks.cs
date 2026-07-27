@@ -128,6 +128,11 @@ public partial class Plugin
             float offset = Options.EveryOtherPixel ? 0.5f : 0;
             Vector2 currentPos = new(Mathf.Floor(properDrawPos.x / stepSize + offset) * stepSize, Mathf.Floor(properDrawPos.y / stepSize + offset) * stepSize);
             data.CurrentUVOffset = properDrawPos - currentPos;
+
+            Vector2 half = new(0.5f, 0.5f);
+            float scale = data.camera.SpriteLayers[0].scale;
+            data.CurrentUVOffset = (data.CurrentUVOffset - half) * scale + half; //scale around 0.5
+
             if (Options.FixBackgroundJitter)
                 data.BackgroundFixOffset.Set(Mathf.Floor(data.CurrentUVOffset.x + 0.5f), Mathf.Floor(data.CurrentUVOffset.y + 0.5f));
         }

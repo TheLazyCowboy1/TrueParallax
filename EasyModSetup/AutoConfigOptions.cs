@@ -392,14 +392,15 @@ public abstract class AutoConfigOptions : OptionInterface
         }
 
         private Vector2? lastBumpPos = null;
+        private bool mouseHeld = false;
 
         public override void Update()
         {
             base.Update();
 
-            if (base.MenuMouseMode && Input.GetMouseButton(0)) //mouse is active and holding down
+            if (base.MenuMouseMode && base.Menu.mouseDown) //mouse is active and holding down
             {
-                if (base.held)
+                if (mouseHeld)
                 {
                     lastBumpPos ??= base.Menu.lastMousePos;
                     Vector2 newPos = base.Menu.mousePosition;
@@ -408,17 +409,17 @@ public abstract class AutoConfigOptions : OptionInterface
                     {
                         lastBumpPos = newPos;
                     }
+                    return;
                 }
-                else if (base.MouseOver)
+                else if (base.MouseOver && !base.Menu.lastMouseDown)
                 {
-                    base.held = true;
+                    mouseHeld = true;
                     base.PlaySound(SoundID.MENU_First_Scroll_Tick);
+                    return;
                 }
-
-                return;
             }
-            
-            base.held = false;
+
+            mouseHeld = false;
             lastBumpPos = null;
         }
 
@@ -428,13 +429,13 @@ public abstract class AutoConfigOptions : OptionInterface
             {
                 int val = base.valueInt;
                 base.valueInt = base.ClampValue(val + bump);
-                return val == base.valueInt;
+                return val != base.valueInt;
             }
             else
             {
                 float val = base.valueFloat;
                 base.valueFloat = base.ClampValue(val + bump * Mathf.Pow(0.1f, base._dNum));
-                return Mathf.Approximately(val, base.valueFloat);
+                return !Mathf.Approximately(val, base.valueFloat);
             }
         }
 
