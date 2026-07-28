@@ -140,13 +140,13 @@ static float2 invLevelSizeMod = 1 / levelSizeMod;
 static float2 levelOffset = _spriteRect.xy * _screenSize;
 
 int2 sPosToLPos(int2 sPos) {
-	return (sPos - levelOffset) * invLevelSizeMod;
+	return (sPos - levelOffset + 0.5) * invLevelSizeMod;
 }
 int2 lPosToSPos(int2 lPos)
 {
 	//return (lPos + 0.5f) * levelSizeMod + levelOffset;
 	//suv = (luv * (_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize + _spriteRect.xy) * _screenSize
-	return (lPos + 0.999f) * levelSizeMod + levelOffset;
+	return ceil(lPos * levelSizeMod + levelOffset - 0.5);
 }
 int2 offsetPos(int2 sPos, int2 offset) {
 	return lPosToSPos(sPosToLPos(sPos) + offset);
@@ -462,14 +462,14 @@ static float2 levelSizeMod = (_spriteRect.zw - _spriteRect.xy) * _LevelTex_Texel
 static float2 invLevelSizeMod = 1 / levelSizeMod;
 static float2 levelOffset = _spriteRect.xy * _screenSize;
 
-float2 sPosToLPos(int2 sPos) {
-	return (sPos - levelOffset) * invLevelSizeMod;
+int2 sPosToLPos(int2 sPos) {
+	return (sPos - levelOffset + 0.5) * invLevelSizeMod;
 }
 int2 lPosToSPos(int2 lPos)
 {
 	//return (lPos + 0.5f) * levelSizeMod + levelOffset;
 	//suv = (luv * (_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize + _spriteRect.xy) * _screenSize
-	return (lPos + 0.999f) * levelSizeMod + levelOffset;
+	return ceil(lPos * levelSizeMod + levelOffset - 0.5);
 }
 int2 offsetPos(int2 sPos, int2 offset) {
 	return lPosToSPos(sPosToLPos(sPos) + offset);
