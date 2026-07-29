@@ -78,7 +78,7 @@ public static class SBCameraScrollMod
     {
         public Vector2 lastPos = new();
         public Vector2 lastDelta = new();
-        public Vector2 lastTargetPos = new();
+        //public Vector2 lastTargetPos = new();
     }
     private static ResizableArray<CustomCameraData> customDataList = new(2);
 
@@ -117,9 +117,16 @@ public static class SBCameraScrollMod
             Vector2 fracPos = (origTargetPos - corner - border) / (roomSize - border - border);
 
             //apply SmoothCurve
+            Vector2 derivSmoothCurve = new(1, 1);
             if (Options.CustomCameraCurve != 0)
             {
-                fracPos.Set(Plugin.SmoothCurve(Mathf.Clamp01(fracPos.x), Options.CustomCameraCurve), Plugin.SmoothCurve(Mathf.Clamp01(fracPos.y), Options.CustomCameraCurve));
+                Vector2 sizeDiff = roomSize - new Vector2(1400, 800 - YBorderSize());
+                Vector2 curveMods = Vector2.one / (Vector2.one + 0.25f * sizeDiff);
+                derivSmoothCurve.x = Plugin.DerivSmoothCurve(Mathf.Clamp01(fracPos.x), Options.CustomCameraCurve * curveMods.x);
+                fracPos.x = Plugin.SmoothCurve(Mathf.Clamp01(fracPos.x), Options.CustomCameraCurve * curveMods.x);
+                derivSmoothCurve.y = Plugin.DerivSmoothCurve(Mathf.Clamp01(fracPos.y), Options.CustomCameraCurve * curveMods.y);
+                fracPos.y = Plugin.SmoothCurve(Mathf.Clamp01(fracPos.y), Options.CustomCameraCurve * curveMods.y);
+                derivSmoothCurve = (derivSmoothCurve + new Vector2(0.01f, 0.01f)) / new Vector2(1.01f, 1.01f); //to avoid / 0
             }
 
             //Vector2 scaledSSize = cam.sSize / cam.SpriteLayers[0].scale;
@@ -144,24 +151,25 @@ public static class SBCameraScrollMod
                 Vector2 moveScaleSize = roomSize - cam.sSize - sSizeIncrease * 2;
                 Vector2 scaledSSize = cam.sSize / cam.SpriteLayers[0].scale;
 
-                //data.xMovement = Mathf.Abs(targetPos.x - cam.lastPos.x) / moveScaleSize.x > (data.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
-                data.xMovement = Mathf.Abs(origTargetPos.x - customData.lastPos.x) / scaledSSize.x > (data.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
+                data.xMovement = Mathf.Abs(targetPos.x - cam.lastPos.x) / moveScaleSize.x / derivSmoothCurve.x > (data.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
+                //data.xMovement = Mathf.Abs(origTargetPos.x - customData.lastTargetPos.x) / scaledSSize.x > (data.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
                 if (data.xMovement)
                     delta.x = Plugin.LerpAndTickWithStop(cam.lastPos.x, targetPos.x, moveSpeed, moveSpeed * 0.005f * moveScaleSize.x, Options.CameraStopDistance * moveScaleSize.x) - cam.lastPos.x;
 
-                data.yMovement = Mathf.Abs(origTargetPos.y - customData.lastPos.y) / scaledSSize.y > (data.yMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
+                data.yMovement = Mathf.Abs(targetPos.y - cam.lastPos.y) / moveScaleSize.y / derivSmoothCurve.y > (data.yMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
                 if (data.yMovement)
                     delta.y = Plugin.LerpAndTickWithStop(cam.lastPos.y, targetPos.y, moveSpeed, moveSpeed * 0.005f * moveScaleSize.y, Options.CameraStopDistance * moveScaleSize.y) - cam.lastPos.y;
 
-                Vector2 maxDelta = customData.lastDelta;
-                maxDelta.Set(Mathf.Abs(maxDelta.x) + Mathf.Abs(Options.CameraMaxAcceleration * delta.x), Mathf.Abs(maxDelta.y) + Mathf.Abs(Options.CameraMaxAcceleration * delta.y));
+                Vector2 maxDelta = customData.lastDelta; //not really used anymore, but the code is kept just in case
+                maxDelta.x = Mathf.Abs(maxDelta.x) + Mathf.Abs(Options.CameraMaxAcceleration * delta.x);
+                maxDelta.y = Mathf.Abs(maxDelta.y) + Mathf.Abs(Options.CameraMaxAcceleration * delta.y);
                 delta.Set(Mathf.Clamp(delta.x, -maxDelta.x, maxDelta.x), Mathf.Clamp(delta.y, -maxDelta.y, maxDelta.y));
 
                 cam.pos = cam.lastPos + delta;
                 customData.lastDelta = delta;
             }
             customData.lastPos = cam.pos;
-            customData.lastTargetPos = origTargetPos;
+            //customData.lastTargetPos = origTargetPos;
 
         }
         catch (Exception ex)
