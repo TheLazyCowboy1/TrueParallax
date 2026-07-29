@@ -362,7 +362,7 @@ public partial class Plugin
         return l + t;
     }
     public static float SmoothCurve(float x, float s) => (x < 0 || x > 1) ? x : x*(3 - 3*s + s*x*(6 - 4*x)) / (3 - s);
-    public static float DerivSmoothCurve(float x, float s) => (x < 0 || x > 1) ? 1 : 6 * s * x * (1 - x);
+    public static float DerivSmoothCurve(float x, float s) => (x < 0 || x > 1) ? 1 : 3*(1 - s + 4*s*x*(1 - x)) / (3 - s);
 
     //Sets the CamPos
     public static void SetCamPos(RoomCamera self, float timeStacker)

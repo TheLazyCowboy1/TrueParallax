@@ -120,13 +120,13 @@ public static class SBCameraScrollMod
             Vector2 derivSmoothCurve = new(1, 1);
             if (Options.CustomCameraCurve != 0)
             {
-                Vector2 sizeDiff = roomSize - new Vector2(1400, 800 - YBorderSize());
+                Vector2 sizeDiff = (roomSize / new Vector2(1400, 800)) - Vector2.one;
                 Vector2 curveMods = Vector2.one / (Vector2.one + 0.25f * sizeDiff);
                 derivSmoothCurve.x = Plugin.DerivSmoothCurve(Mathf.Clamp01(fracPos.x), Options.CustomCameraCurve * curveMods.x);
                 fracPos.x = Plugin.SmoothCurve(Mathf.Clamp01(fracPos.x), Options.CustomCameraCurve * curveMods.x);
                 derivSmoothCurve.y = Plugin.DerivSmoothCurve(Mathf.Clamp01(fracPos.y), Options.CustomCameraCurve * curveMods.y);
                 fracPos.y = Plugin.SmoothCurve(Mathf.Clamp01(fracPos.y), Options.CustomCameraCurve * curveMods.y);
-                derivSmoothCurve = (derivSmoothCurve + new Vector2(0.01f, 0.01f)) / new Vector2(1.01f, 1.01f); //to avoid / 0
+                derivSmoothCurve = (derivSmoothCurve + new Vector2(0.25f, 0.25f)) / new Vector2(1.25f, 1.25f); //to lessen the severity
             }
 
             //Vector2 scaledSSize = cam.sSize / cam.SpriteLayers[0].scale;
@@ -148,8 +148,10 @@ public static class SBCameraScrollMod
             {
 
                 Vector2 delta = Vector2.zero;
-                Vector2 moveScaleSize = roomSize - cam.sSize - sSizeIncrease * 2;
                 Vector2 scaledSSize = cam.sSize / cam.SpriteLayers[0].scale;
+                Vector2 moveScaleSize = roomSize - cam.sSize - sSizeIncrease * 2;
+                moveScaleSize.x = Mathf.Min(moveScaleSize.x, scaledSSize.x);
+                moveScaleSize.y = Mathf.Min(moveScaleSize.y, scaledSSize.y);
 
                 data.xMovement = Mathf.Abs(targetPos.x - cam.lastPos.x) / moveScaleSize.x / derivSmoothCurve.x > (data.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
                 //data.xMovement = Mathf.Abs(origTargetPos.x - customData.lastTargetPos.x) / scaledSSize.x > (data.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);

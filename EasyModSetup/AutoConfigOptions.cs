@@ -398,6 +398,9 @@ public abstract class AutoConfigOptions : OptionInterface
         {
             base.Update();
 
+            if (base._KeyboardOn && base.Menu.mouseDown && !base.MouseOver)
+                base._KeyboardOn = false; //don't keep it stuck typing forever please
+
             if (base.MenuMouseMode && base.Menu.mouseDown) //mouse is active and holding down
             {
                 if (mouseHeld)
