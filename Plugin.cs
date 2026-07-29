@@ -102,6 +102,15 @@ public partial class Plugin : SimplerPlugin
                 Log("Attached MotionBlur MonoBehaviour to camera");
             }
 
+            //replace water shader
+            Shader DeepWater = assetBundle.LoadAsset<Shader>("DeepWater.shader");
+            if (DeepWater == null)
+                Error("Could not find shader DeepWater.shader");
+            else
+            {
+                FShader._shaders.Find(s => s.name == "DeepWater" || s.name.EndsWith("/DeepWater")).shader = DeepWater;
+            }
+
             return;
 
         }

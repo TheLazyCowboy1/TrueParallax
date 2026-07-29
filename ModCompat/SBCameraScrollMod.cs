@@ -78,6 +78,7 @@ public static class SBCameraScrollMod
     {
         public Vector2 lastPos = new();
         public Vector2 lastDelta = new();
+        public Vector2 lastTargetPos = new();
     }
     private static ResizableArray<CustomCameraData> customDataList = new(2);
 
@@ -95,6 +96,9 @@ public static class SBCameraScrollMod
             Vector2 onScreenPosition = cam.GetFields().on_screen_position;
             RoomCameraMod.UpdateOnScreenPosition(cam); //done just in case
 
+            if (!customDataList.TryGetValue(cam.cameraNumber, out CustomCameraData customData))
+                customDataList.Add(cam.cameraNumber, customData = new());
+
             float moveSpeed = Options.CameraMoveSpeed;
             Vector2? critPos = Plugin.GetCritPos(cam, data, Options.CurrentScreenCamera != Options.ScreenCameraType.Default, moveSpeed);
             if (critPos == null)
@@ -102,7 +106,7 @@ public static class SBCameraScrollMod
                 cam.pos = cam.lastPos; //don't move
                 return;
             }
-            Vector2 targetPos = critPos.Value + data.critFollowOffset;
+            Vector2 origTargetPos = critPos.Value + data.critFollowOffset; //before borders and scaling and curves and whatnot
 
             //apply borders
             var fields = cam.room.abstractRoom.GetFields();
@@ -110,7 +114,7 @@ public static class SBCameraScrollMod
             Vector2 corner = fields.min_camera_position;
             Vector2 border = new(Options.CustomCameraXBorder, Options.CustomCameraYBorder);
 
-            Vector2 fracPos = (targetPos - corner - border) / (roomSize - border - border);
+            Vector2 fracPos = (origTargetPos - corner - border) / (roomSize - border - border);
 
             //apply SmoothCurve
             if (Options.CustomCameraCurve != 0)
@@ -122,13 +126,10 @@ public static class SBCameraScrollMod
             //targetPos = fracPos * (roomSize - scaledSSize) + corner;
             float halfInvZoom = 0.5f * (1.0f / cam.SpriteLayers[0].scale - 1); //crazy SBCameraScroll zoom calculation
             Vector2 sSizeIncrease = cam.sSize * halfInvZoom;
-            targetPos = fracPos * (roomSize - cam.sSize - sSizeIncrease * 2) + corner + sSizeIncrease;
+            Vector2 targetPos = fracPos * (roomSize - cam.sSize - sSizeIncrease * 2) + corner + sSizeIncrease;
 
             RoomCameraMod.CheckBorders(cam, ref targetPos); //very important step I forgot, lol
 
-
-            if (!customDataList.TryGetValue(cam.cameraNumber, out CustomCameraData customData))
-                customDataList.Add(cam.cameraNumber, customData = new());
 
             //Actually set position
             if (Options.TransitionsResetCamera && cam.lastPos == onScreenPosition && cam.lastPos != customData.lastPos) //camera position was probably just reset
@@ -141,12 +142,14 @@ public static class SBCameraScrollMod
 
                 Vector2 delta = Vector2.zero;
                 Vector2 moveScaleSize = roomSize - cam.sSize - sSizeIncrease * 2;
+                Vector2 scaledSSize = cam.sSize / cam.SpriteLayers[0].scale;
 
-                data.xMovement = Mathf.Abs(targetPos.x - cam.lastPos.x) / moveScaleSize.x > (data.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
+                //data.xMovement = Mathf.Abs(targetPos.x - cam.lastPos.x) / moveScaleSize.x > (data.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
+                data.xMovement = Mathf.Abs(origTargetPos.x - customData.lastPos.x) / scaledSSize.x > (data.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
                 if (data.xMovement)
                     delta.x = Plugin.LerpAndTickWithStop(cam.lastPos.x, targetPos.x, moveSpeed, moveSpeed * 0.005f * moveScaleSize.x, Options.CameraStopDistance * moveScaleSize.x) - cam.lastPos.x;
 
-                data.yMovement = Mathf.Abs(targetPos.y - cam.lastPos.y) / moveScaleSize.y > (data.yMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
+                data.yMovement = Mathf.Abs(origTargetPos.y - customData.lastPos.y) / scaledSSize.y > (data.yMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
                 if (data.yMovement)
                     delta.y = Plugin.LerpAndTickWithStop(cam.lastPos.y, targetPos.y, moveSpeed, moveSpeed * 0.005f * moveScaleSize.y, Options.CameraStopDistance * moveScaleSize.y) - cam.lastPos.y;
 
@@ -158,6 +161,7 @@ public static class SBCameraScrollMod
                 customData.lastDelta = delta;
             }
             customData.lastPos = cam.pos;
+            customData.lastTargetPos = origTargetPos;
 
         }
         catch (Exception ex)

@@ -71,14 +71,8 @@ public partial class Options : AutoConfigOptions
     public static float DynamicZoom = 0;
     public static bool IsActiveDynamicZoom => !AlwaysCentered && DynamicZoom > 0;
 
-    //[Config(CAMERA, "Camera-Based Camera Position", "TEST OPTION: Changes the camera position to be the CAMERA's position within the room; only useful with SBCameraScroll.")]
-    //public static bool CameraBasedPosition = false;
     [Config(CAMERA, "Adjust SBCamera Position", "TEST OPTION: Adjusts SBCameraScroll's camera position to, uh, make it better?."), LimitRange(-5, 5)]
     public static float AdjustSBCameraFac = 0;
-    //[Config(CAMERA, "Use SB Player Position", "TEST OPTION: Uses SBCameraScroll's calculated player on-screen position, for consistency.")]
-    //public static bool UseSBPlayerPos = false;
-    //[Config(CAMERA, "Use Custom SB Camera", "TEST OPTION: Replaced SBCameraScroll's Position camera with my own version of it, for consistency.")]
-    //public static bool CustomSBCamera = false;
     [Config(CAMERA, "Custom Camera Motion Curve", "TEST OPTION: Adjusts SBCameraScroll's camera position to, uh, make it better?.", rightSide = true), LimitRange(-5, 1)]
     public static float CustomCameraCurve = 1;
     [Config(CAMERA, "Custom Camera X Border", "TEST OPTION: Makes the camera stop moving when it gets really close to the edge of the screen.\nThis helps keep the camera more centered and prevents it from never showing the edges of the room, but the sudden stop can be jarring.", precision = 0), LimitRange(0, 800)]
