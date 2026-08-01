@@ -114,26 +114,32 @@ public static class SBCameraScrollMod
             Vector2 corner = fields.min_camera_position;
             Vector2 border = new(Options.CustomCameraXBorder, Options.CustomCameraYBorder);
 
-            Vector2 fracPos = (origTargetPos - corner - border) / (roomSize - border - border);
+            Vector2 playerArea = roomSize - border - border;
+
+            float halfInvZoom = 0.5f * (1.0f / cam.SpriteLayers[0].scale - 1); //crazy SBCameraScroll zoom calculation
+            Vector2 sSizeIncrease = cam.sSize * halfInvZoom;
+            Vector2 camArea = roomSize - cam.sSize - sSizeIncrease * 2;
+
+            Vector2 fracPos = (origTargetPos - corner - border) / playerArea;
 
             //apply SmoothCurve
             Vector2 derivSmoothCurve = new(1, 1);
             if (Options.CustomCameraCurve != 0)
             {
-                Vector2 sizeDiff = (roomSize / new Vector2(1400, 800)) - Vector2.one;
-                Vector2 curveMods = Vector2.one / (Vector2.one + 0.25f * sizeDiff);
-                derivSmoothCurve.x = Plugin.DerivSmoothCurve(Mathf.Clamp01(fracPos.x), Options.CustomCameraCurve * curveMods.x);
-                fracPos.x = Plugin.SmoothCurve(Mathf.Clamp01(fracPos.x), Options.CustomCameraCurve * curveMods.x);
-                derivSmoothCurve.y = Plugin.DerivSmoothCurve(Mathf.Clamp01(fracPos.y), Options.CustomCameraCurve * curveMods.y);
-                fracPos.y = Plugin.SmoothCurve(Mathf.Clamp01(fracPos.y), Options.CustomCameraCurve * curveMods.y);
+                //Vector2 sizeDiff = (roomSize / new Vector2(1400, 800)) - Vector2.one;
+                Vector2 curves = Options.CustomCameraCurve * new Vector2(
+                    Mathf.Min(1, ProperSmoothFac(camArea.x, playerArea.x)), //don't exceed a curve of 1
+                    Mathf.Min(1, ProperSmoothFac(camArea.y, playerArea.y)));//Vector2.one / (Vector2.one + 0.25f * sizeDiff);
+                derivSmoothCurve.x = DerivSmoothCurve2(Mathf.Clamp01(fracPos.x), curves.x);
+                fracPos.x = SmoothCurve2(Mathf.Clamp01(fracPos.x), curves.x);
+                derivSmoothCurve.y = DerivSmoothCurve2(Mathf.Clamp01(fracPos.y), curves.y);
+                fracPos.y = SmoothCurve2(Mathf.Clamp01(fracPos.y), curves.y);
                 derivSmoothCurve = (derivSmoothCurve + new Vector2(0.25f, 0.25f)) / new Vector2(1.25f, 1.25f); //to lessen the severity
             }
 
             //Vector2 scaledSSize = cam.sSize / cam.SpriteLayers[0].scale;
             //targetPos = fracPos * (roomSize - scaledSSize) + corner;
-            float halfInvZoom = 0.5f * (1.0f / cam.SpriteLayers[0].scale - 1); //crazy SBCameraScroll zoom calculation
-            Vector2 sSizeIncrease = cam.sSize * halfInvZoom;
-            Vector2 targetPos = fracPos * (roomSize - cam.sSize - sSizeIncrease * 2) + corner + sSizeIncrease;
+            Vector2 targetPos = fracPos * camArea + corner + sSizeIncrease;
 
             RoomCameraMod.CheckBorders(cam, ref targetPos); //very important step I forgot, lol
 
@@ -259,6 +265,29 @@ public static class SBCameraScrollMod
 
     public static float YBorderSize() => Options.SBCamera == Options.SBCameraType.Default ? 18 : 2;
 
+    #endregion
+
+    #region Curves
+    private static float _SmoothCurve2_11(float x, float s) => (x + s * x * x * x * (0.2f * x * x - 2 / 3)) / (1 - s * 7 / 15);
+    public static float SmoothCurve2(float x, float s)
+    {
+        x = x + x - 1;
+        return (_SmoothCurve2_11(x, s) + 1) * 0.5f;
+    }
+    private static float _DerivSmoothCurve2_11(float x, float s) => (1 + s * x * x * (x * x - 2)) / (1 - s * 7 / 15);
+    public static float DerivSmoothCurve2(float x, float s)
+    {
+        x = x + x - 1;
+        return (_DerivSmoothCurve2_11(x, s) + 1) * 0.5f;
+    }
+    //(1 + s * x*x*(x*x - 2)) / (1 - s*7/15) = l/m
+    //x = 0
+    //1 / (1 - s*7/15) = l/m
+    //1 = l/m * (1 - s*7/15)
+    //m/l = 1 - s*7/15
+    //s*7/15 = 1 - m/l
+    //s = 15/7 * (1 - m/l)
+    public static float ProperSmoothFac(float camArea, float playerArea) => (1 - camArea / playerArea) * 15.0f / 7.0f;
     #endregion
 
 }

@@ -144,8 +144,6 @@ int2 sPosToLPos(int2 sPos) {
 }
 int2 lPosToSPos(int2 lPos)
 {
-	//return (lPos + 0.5f) * levelSizeMod + levelOffset;
-	//suv = (luv * (_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize + _spriteRect.xy) * _screenSize
 	return ceil(lPos * levelSizeMod + levelOffset - 0.5);
 }
 int2 offsetPos(int2 sPos, int2 offset) {
@@ -160,7 +158,6 @@ inline int depthOfTexel(int2 pos) {
 		return 5;
 	}
 
-	//int2 textCoord = (pos - levelOffset) * invLevelSizeMod;
 	return depthOfPixel(_LevelTex.Load(int3(sPosToLPos(pos), 0)).r);
 }
 
@@ -205,9 +202,6 @@ v2f vert (appdata_full v)
 	float2 uv = TRANSFORM_TEX (v.texcoord, _MainTex);
 	o.suv = uv * _screenSize;
 	o.luv = (uv - _spriteRect.xy) / ((_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize);
-	//luv = (suv/_screenSize - _spriteRect.xy) / ((_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize)
-	//luv * (...) = suv/_screenSize - _spriteRect.xy
-	//suv = (luv * (_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize + _spriteRect.xy) * _screenSize
 	//o.luv = (uv - _spriteRect.xy) * _screenSize;
     return o;
 }
@@ -420,7 +414,6 @@ RWTexture2D<float> _LZC_LevelTex : register(u1);
 //uniform float2 _LZC_LevelTex_TexelSize; //DOES NOT WORK for RWTexture2D
 uniform float2 _screenSize;
 uniform float4 _spriteRect;
-//uniform float2 _LevelTex_TexelSize;
 
 #if LZC_PROCESSLAYER2
 Texture2D<float4> _PreLevelColorGrab;
@@ -467,8 +460,6 @@ int2 sPosToLPos(int2 sPos) {
 }
 int2 lPosToSPos(int2 lPos)
 {
-	//return (lPos + 0.5f) * levelSizeMod + levelOffset;
-	//suv = (luv * (_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize + _spriteRect.xy) * _screenSize
 	return ceil(lPos * levelSizeMod + levelOffset - 0.5);
 }
 int2 offsetPos(int2 sPos, int2 offset) {
@@ -837,7 +828,7 @@ half4 frag (v2f i) : SV_Target
 	if (bestLayer > 1) {
 		uint4 lev = uint4(_LZC_LevelTex.Load(int3(bestGrabPos, 0)) * 255.99f);
 		uint d = lev.w >> 5;
-		int lDist = lev.w & 31;//0b11111;
+		int lDist = lev.w & 31; //0b11111;
 		int rDist = (lev.y >> 5) | ((lev.z & 96) >> 2); //96 = 0b01100000
 
 		fullDirDef //see DirectionDefinitions.cginc
