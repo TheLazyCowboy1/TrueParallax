@@ -159,7 +159,7 @@ public partial class Plugin
             if (critPos != null)
             {
                 //inch offset toward 0
-                moveSpeed *= 0.25f; //make it slower; it's too fast
+                moveSpeed *= 0.75f; //make it slower; it's too fast
                 data.critFollowOffset = LerpAndTick(data.critFollowOffset, Vector2.zero, moveSpeed, moveSpeed * 0.01f);
 
                 //offset by player input
