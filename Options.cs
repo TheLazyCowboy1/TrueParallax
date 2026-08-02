@@ -18,7 +18,7 @@ public partial class Options : AutoConfigOptions
     {
         new(PRESETS),
         new(BASICS) { spacing = 40, startHeight = 500 },
-        new(CAMERA) { inScrollBox = true },
+        new(CAMERA),
         new(LAYER2) { startHeight = 500 },
         new(OPTIMIZATION),
         new(ADVANCED) { leftMargin = 20, spacing = 20, inScrollBox = true }
@@ -51,7 +51,7 @@ public partial class Options : AutoConfigOptions
 
     [Config(CAMERA, "Input Offset", "How much the camera position moves ahead according to the player's inputs.\nGenerally recommended between 0 and 100, unless you have a high Camera Move Speed.", precision = 1, spaceBefore = 15), LimitRange(-500, 500)]
     public static float CameraInputOffset = 0;
-    [Config(CAMERA, "Mouse Sensitivity", "How much the camera moves when the mouse is moved. If 0, mouse movement does not affect the camera.", rightSide = true), LimitRange(-5, 5)]
+    [Config(CAMERA, "Mouse Sensitivity", "How much the camera moves when the mouse is moved. If 0, mouse movement does not affect the camera."), LimitRange(-5, 5)]
     public static float MouseSensitivity = 0;
 
     [Config(CAMERA, "Transitions Reset Camera", "Instantly snaps the camera into place whenever going through screen transitions. If disabled, the camera will often pan across the entire screen upon screen transitions.\nHIGHLY recommended, especially if you are prone to motion-sickness. But personally, I think it looks cool when this option is disabled.", spaceBefore = 15)]
@@ -75,7 +75,7 @@ public partial class Options : AutoConfigOptions
     public static float MaxXYSpeedDifference = 2;
 
     public enum SBCameraType { Default, Custom }
-    [Config(CAMERA, "SBCamera Type", "Custom replaces SBCameraScroll's position camera with one that uses my own calculations, designed for smoother movement.\nDesigned to work with the RoomCamPos screen camera type.", width = 120)]
+    [Config(CAMERA, "SBCamera Type", "Custom replaces SBCameraScroll's position camera with one that uses my own calculations, designed for smoother movement.\nDesigned to work with the RoomCamPos screen camera type.", width = 120, spaceAfter = 20)]
     public static SBCameraType OverrideSBCamera = SBCameraType.Custom;
     public static bool CustomSBCameraActive => Plugin.SBCameraScrollEnabled && OverrideSBCamera != SBCameraType.Default;
     [Config(CAMERA, "Inflate SBCamera Area", "Inflates the area where the camera moves, effectively slowing its movement down very slightly. Especially useful in smaller rooms.\nHighly recommended at 1.", rightSide = true), LimitRange(-5, 5)]

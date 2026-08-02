@@ -127,10 +127,9 @@ public static class SBCameraScrollMod
             Vector2 derivSmoothCurve = new(1, 1);
             if (Options.CustomCameraCurve != 0)
             {
-                //Vector2 sizeDiff = (roomSize / new Vector2(1400, 800)) - Vector2.one;
                 Vector2 curves = Options.CustomCameraCurve * new Vector2(
                     Mathf.Min(1, ProperSmoothFac(camArea.x, playerArea.x)), //don't exceed a curve of 1
-                    Mathf.Min(1, ProperSmoothFac(camArea.y, playerArea.y)));//Vector2.one / (Vector2.one + 0.25f * sizeDiff);
+                    Mathf.Min(1, ProperSmoothFac(camArea.y, playerArea.y)));
                 derivSmoothCurve.x = DerivSmoothCurve2(Mathf.Clamp01(fracPos.x), curves.x);
                 fracPos.x = SmoothCurve2(Mathf.Clamp01(fracPos.x), curves.x);
                 derivSmoothCurve.y = DerivSmoothCurve2(Mathf.Clamp01(fracPos.y), curves.y);
@@ -138,8 +137,6 @@ public static class SBCameraScrollMod
                 derivSmoothCurve = (derivSmoothCurve + new Vector2(0.25f, 0.25f)) / 1.25f; //to lessen the severity
             }
 
-            //Vector2 scaledSSize = cam.sSize / cam.SpriteLayers[0].scale;
-            //targetPos = fracPos * (roomSize - scaledSSize) + corner;
             Vector2 targetPos = fracPos * camArea + corner + sSizeIncrease;
 
             RoomCameraMod.CheckBorders(cam, ref targetPos); //very important step I forgot, lol
@@ -153,10 +150,9 @@ public static class SBCameraScrollMod
             }
             else
             {
-
                 Vector2 delta = Vector2.zero;
                 Vector2 scaledSSize = cam.sSize / cam.SpriteLayers[0].scale;
-                Vector2 moveScaleSize = roomSize - cam.sSize - sSizeIncrease * 2;
+                Vector2 moveScaleSize = camArea;
                 moveScaleSize.x = Mathf.Min(moveScaleSize.x, scaledSSize.x);
                 moveScaleSize.y = Mathf.Min(moveScaleSize.y, scaledSSize.y);
                 moveScaleSize *= derivSmoothCurve;
@@ -164,11 +160,11 @@ public static class SBCameraScrollMod
                 data.xMovement = Mathf.Abs(targetPos.x - cam.lastPos.x) / moveScaleSize.x > (data.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
                 //data.xMovement = Mathf.Abs(origTargetPos.x - customData.lastTargetPos.x) / scaledSSize.x > (data.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
                 if (data.xMovement)
-                    delta.x = Plugin.LerpAndTickWithStop(cam.lastPos.x, targetPos.x, moveSpeed * moveScaleSize.x, moveSpeed * 0.005f * moveScaleSize.x, Options.CameraStopDistance * moveScaleSize.x) - cam.lastPos.x;
+                    delta.x = Plugin.LerpAndTickWithStop(cam.lastPos.x, targetPos.x, moveSpeed, moveSpeed * 0.005f * moveScaleSize.x, Options.CameraStopDistance * moveScaleSize.x) - cam.lastPos.x;
 
                 data.yMovement = Mathf.Abs(targetPos.y - cam.lastPos.y) / moveScaleSize.y > (data.yMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
                 if (data.yMovement)
-                    delta.y = Plugin.LerpAndTickWithStop(cam.lastPos.y, targetPos.y, moveSpeed * moveScaleSize.y, moveSpeed * 0.005f * moveScaleSize.y, Options.CameraStopDistance * moveScaleSize.y) - cam.lastPos.y;
+                    delta.y = Plugin.LerpAndTickWithStop(cam.lastPos.y, targetPos.y, moveSpeed, moveSpeed * 0.005f * moveScaleSize.y, Options.CameraStopDistance * moveScaleSize.y) - cam.lastPos.y;
 
                 Vector2 maxDelta = customData.lastDelta; //not really used anymore, but the code is kept just in case
                 maxDelta.x = Mathf.Abs(maxDelta.x) + Mathf.Abs(Options.CameraMaxAcceleration * delta.x);

@@ -159,6 +159,7 @@ public partial class Plugin
             if (critPos != null)
             {
                 //inch offset toward 0
+                moveSpeed *= 0.25f; //make it slower; it's too fast
                 data.critFollowOffset = LerpAndTick(data.critFollowOffset, Vector2.zero, moveSpeed, moveSpeed * 0.01f);
 
                 //offset by player input
@@ -331,12 +332,12 @@ public partial class Plugin
             if (!alwaysMove)
                 data.xMovement = Mathf.Abs(pos.x - data.CamPos.x) / moveScale.x > (data.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
             if (alwaysMove || data.xMovement)
-                delta.x = LerpAndTickWithStop(data.CamPos.x, pos.x, moveSpeed * moveScale.x, moveSpeed * 0.005f * moveScale.x, Options.CameraStopDistance * moveScale.x) - data.CamPos.x;
+                delta.x = LerpAndTickWithStop(data.CamPos.x, pos.x, moveSpeed, moveSpeed * 0.005f * moveScale.x, Options.CameraStopDistance * moveScale.x) - data.CamPos.x;
 
             if (!alwaysMove)
-                data.yMovement = Mathf.Abs(pos.y - data.CamPos.y) > (data.yMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
+                data.yMovement = Mathf.Abs(pos.y - data.CamPos.y) / moveScale.y > (data.yMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
             if (alwaysMove || data.yMovement)
-                delta.y = LerpAndTickWithStop(data.CamPos.y, pos.y, moveSpeed * moveScale.y, moveSpeed * 0.005f * moveScale.y, Options.CameraStopDistance * moveScale.y) - data.CamPos.y;
+                delta.y = LerpAndTickWithStop(data.CamPos.y, pos.y, moveSpeed, moveSpeed * 0.005f * moveScale.y, Options.CameraStopDistance * moveScale.y) - data.CamPos.y;
 
             //Cap acceleration
             Vector2 maxDelta = data.CamPos - data.lastCamPos;
