@@ -189,7 +189,7 @@ public partial class Plugin
             max.x = Mathf.Max(max.x, pos.x);
             max.y = Mathf.Max(max.y, pos.y);
         }
-        max += new Vector2(1400, 800) - self.sSize / self.SpriteLayers[0].scale; //camera zoom stuff; don't worry about ittttt
+        max += new Vector2(1400, 800);// - self.sSize / self.SpriteLayers[0].scale; //camera zoom stuff; don't worry about ittttt
 
         return Rect.MinMaxRect(min.x, min.y, max.x, max.y);
     }
@@ -204,6 +204,7 @@ public partial class Plugin
             float moveSpeed = Options.CameraMoveSpeed * moveMod;
 
             Vector2 pos = new(0.5f, 0.5f);
+            bool alwaysMove = true;
 
             bool sbCameraMode = Options.CurrentScreenCamera == Options.ScreenCameraType.SBCamera;// && Plugin.SBCameraScrollEnabled;
             if (sbCameraMode)
@@ -212,19 +213,13 @@ public partial class Plugin
             }
             else if (Options.CurrentScreenCamera == Options.ScreenCameraType.RoomCamPos)
             {
-                Rect camArea;
-                if (Plugin.SBCameraScrollEnabled)
-                {
-                    camArea = ModCompat.SBCameraScrollMod.GetRoomRect(self.room.abstractRoom);
-                    camArea.size -= self.sSize;// / self.SpriteLayers[0].scale;
-                    float halfInvZoom = 0.5f * (1.0f / self.SpriteLayers[0].scale - 1); //crazy SBCameraScroll zoom calculation
-                    Vector2 sSizeIncrease = self.sSize * halfInvZoom;
-                    camArea.min += sSizeIncrease;
-                    camArea.max -= sSizeIncrease;
-                    camArea.height -= ModCompat.SBCameraScrollMod.YBorderSize();
-                }
-                else
-                    camArea = GetRoomCameraArea(self);
+                Rect camArea = Plugin.SBCameraScrollEnabled ? ModCompat.SBCameraScrollMod.GetRoomRect(self.room.abstractRoom) : GetRoomCameraArea(self);
+                camArea.size -= self.sSize;// / self.SpriteLayers[0].scale;
+                float halfInvZoom = 0.5f * (1.0f / self.SpriteLayers[0].scale - 1); //crazy SBCameraScroll zoom calculation
+                Vector2 sSizeIncrease = self.sSize * halfInvZoom;
+                camArea.min += sSizeIncrease;
+                camArea.max -= sSizeIncrease;
+                camArea.height -= Plugin.SBCameraScrollEnabled ? ModCompat.SBCameraScrollMod.YBorderSize() : 18f;
 
                 if (camArea.width < 10 || camArea.height < 10) //not a suitable area
                     pos = new(0.5f, 0.5f);
@@ -234,14 +229,14 @@ public partial class Plugin
 
                     //X vs Y SPEED ADJUSTMENTS
 
-                    if (Options.SBCamera == Options.SBCameraType.Custom)
+                    if (Options.OverrideSBCamera == Options.SBCameraType.Custom)
                     {
                         camArea.width += self.sSize.x - Options.CustomCameraXBorder * 2;
                         camArea.height += self.sSize.y - Options.CustomCameraYBorder * 2;
                     }
                     else
                     {
-                        float expand = Options.AdjustSBCameraFac * 2 * data.totalWarp * data.DepthCurve(5f / 30f);
+                        float expand = Options.InflateSBCameraFac * 2 * data.totalWarp * data.DepthCurve(5f / 30f);
                         camArea.width += expand;
                         camArea.height += expand * self.sSize.y / self.sSize.x;
                     }
@@ -259,6 +254,8 @@ public partial class Plugin
             }
             else if (Options.CurrentScreenCamera == Options.ScreenCameraType.Default) //calculate player on-screen position
             {
+                alwaysMove = false;
+
                 Vector2? critPos = GetCritPos(self, data, true, moveSpeed);
                 if (critPos != null)
                 {
@@ -282,13 +279,13 @@ public partial class Plugin
                     float mouseX = Options.MouseSensitivity * Input.GetAxis("Mouse X");
                     if (mouseX != 0f)
                     {
-                        data.mouseOffset.x += Mathf.Clamp(mouseX, -10, 10) * Options.CameraMoveSpeed * moveSpeed * 1.5f; //clamp just for sanity
+                        data.mouseOffset.x += Mathf.Clamp(mouseX, -10, 10) * moveSpeed * 1.5f; //clamp just for sanity
                     }
 
                     float mouseY = Options.MouseSensitivity * Input.GetAxis("Mouse Y");// * 0.5625f; //0.5625 = 9/16 
                     if (mouseY != 0f)
                     {
-                        data.mouseOffset.y += Mathf.Clamp(mouseY, -10, 10) * Options.CameraMoveSpeed * moveSpeed * 1.5f;
+                        data.mouseOffset.y += Mathf.Clamp(mouseY, -10, 10) * moveSpeed * 1.5f;
                     }
 
                     pos += data.mouseOffset;
@@ -298,8 +295,13 @@ public partial class Plugin
 
             pos.Set(Mathf.Clamp01(pos.x), Mathf.Clamp01(pos.y)); //clamp 0 to 1
 
+            Vector2 derivSmoothCurve = new(1, 1);
             if (Options.CameraMotionCurve != 0) //apply smoothing curve
+            {
+                derivSmoothCurve.Set(DerivSmoothCurve(pos.x, Options.CameraMotionCurve), DerivSmoothCurve(pos.y, Options.CameraMotionCurve));
                 pos.Set(SmoothCurve(pos.x, Options.CameraMotionCurve), SmoothCurve(pos.y, Options.CameraMotionCurve));
+                derivSmoothCurve = (derivSmoothCurve + new Vector2(0.25f, 0.25f)) / 1.25f;
+            }
 
             if (Options.InvertPos) //invert position
                 pos = Vector2.one - pos;
@@ -323,14 +325,18 @@ public partial class Plugin
                 }
             }
 
-            Vector2 delta = Vector2.zero;
-            data.xMovement = Mathf.Abs(pos.x - data.CamPos.x) > (data.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
-            if (data.xMovement)
-                delta.x = LerpAndTickWithStop(data.CamPos.x, pos.x, moveSpeed, moveSpeed * 0.005f, Options.CameraStopDistance) - data.CamPos.x;
+            Vector2 moveScale = derivSmoothCurve;
 
-            data.yMovement = Mathf.Abs(pos.y - data.CamPos.y) > (data.yMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
-            if (data.yMovement)
-                delta.y = LerpAndTickWithStop(data.CamPos.y, pos.y, moveSpeed, moveSpeed * 0.005f, Options.CameraStopDistance) - data.CamPos.y;
+            Vector2 delta = Vector2.zero;
+            if (!alwaysMove)
+                data.xMovement = Mathf.Abs(pos.x - data.CamPos.x) / moveScale.x > (data.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
+            if (alwaysMove || data.xMovement)
+                delta.x = LerpAndTickWithStop(data.CamPos.x, pos.x, moveSpeed * moveScale.x, moveSpeed * 0.005f * moveScale.x, Options.CameraStopDistance * moveScale.x) - data.CamPos.x;
+
+            if (!alwaysMove)
+                data.yMovement = Mathf.Abs(pos.y - data.CamPos.y) > (data.yMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
+            if (alwaysMove || data.yMovement)
+                delta.y = LerpAndTickWithStop(data.CamPos.y, pos.y, moveSpeed * moveScale.y, moveSpeed * 0.005f * moveScale.y, Options.CameraStopDistance * moveScale.y) - data.CamPos.y;
 
             //Cap acceleration
             Vector2 maxDelta = data.CamPos - data.lastCamPos;

@@ -32,6 +32,7 @@ public static class SBCameraScrollMod
     {
         PositionHook?.Undo();
         PositionCamUpdateHook?.Undo();
+        CheckBordersHook?.Undo();
     }
 
     private static string LastRoomName;
@@ -40,7 +41,7 @@ public static class SBCameraScrollMod
     private static void Hook_UpdateOnScreenPosition(Action<RoomCamera> orig, RoomCamera room_camera)
     {
         orig(room_camera);
-        if (Options.AdjustSBCameraFac == 0)
+        if (Options.InflateSBCameraFac == 0)
             return;
         if (!room_camera.TryGetData(out CameraData data) || data.Inactive)
             return; //parallax isn't active
@@ -66,7 +67,7 @@ public static class SBCameraScrollMod
             RoomCenter = roomFields.min_camera_position + 0.5f * roomSize;
             Vector2 movementArea = roomSize - cam.sSize;
 
-            float expand = Mathf.Max(0, Options.AdjustSBCameraFac * 2 * data.totalWarp * data.DepthCurve(5f / 30f));
+            float expand = Mathf.Max(0, Options.InflateSBCameraFac * 2 * data.totalWarp * data.DepthCurve(5f / 30f));
             Vector2 newMovementArea = movementArea + new Vector2(expand, expand * cam.sSize.y / cam.sSize.x);
             AreaScale = movementArea / newMovementArea;
             if (movementArea.x <= 0) AreaScale.x = 1; //don't scale x if the camera can't move horizontally anyway
@@ -86,7 +87,7 @@ public static class SBCameraScrollMod
     {
         try
         {
-            if (Options.SBCamera != Options.SBCameraType.Custom || !self._room_camera.TryGetData(out CameraData data))
+            if (Options.OverrideSBCamera != Options.SBCameraType.Custom || !self._room_camera.TryGetData(out CameraData data))
             {
                 orig(self);
                 return;
@@ -134,7 +135,7 @@ public static class SBCameraScrollMod
                 fracPos.x = SmoothCurve2(Mathf.Clamp01(fracPos.x), curves.x);
                 derivSmoothCurve.y = DerivSmoothCurve2(Mathf.Clamp01(fracPos.y), curves.y);
                 fracPos.y = SmoothCurve2(Mathf.Clamp01(fracPos.y), curves.y);
-                derivSmoothCurve = (derivSmoothCurve + new Vector2(0.25f, 0.25f)) / new Vector2(1.25f, 1.25f); //to lessen the severity
+                derivSmoothCurve = (derivSmoothCurve + new Vector2(0.25f, 0.25f)) / 1.25f; //to lessen the severity
             }
 
             //Vector2 scaledSSize = cam.sSize / cam.SpriteLayers[0].scale;
@@ -158,15 +159,16 @@ public static class SBCameraScrollMod
                 Vector2 moveScaleSize = roomSize - cam.sSize - sSizeIncrease * 2;
                 moveScaleSize.x = Mathf.Min(moveScaleSize.x, scaledSSize.x);
                 moveScaleSize.y = Mathf.Min(moveScaleSize.y, scaledSSize.y);
+                moveScaleSize *= derivSmoothCurve;
 
-                data.xMovement = Mathf.Abs(targetPos.x - cam.lastPos.x) / moveScaleSize.x / derivSmoothCurve.x > (data.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
+                data.xMovement = Mathf.Abs(targetPos.x - cam.lastPos.x) / moveScaleSize.x > (data.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
                 //data.xMovement = Mathf.Abs(origTargetPos.x - customData.lastTargetPos.x) / scaledSSize.x > (data.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
                 if (data.xMovement)
-                    delta.x = Plugin.LerpAndTickWithStop(cam.lastPos.x, targetPos.x, moveSpeed, moveSpeed * 0.005f * moveScaleSize.x, Options.CameraStopDistance * moveScaleSize.x) - cam.lastPos.x;
+                    delta.x = Plugin.LerpAndTickWithStop(cam.lastPos.x, targetPos.x, moveSpeed * moveScaleSize.x, moveSpeed * 0.005f * moveScaleSize.x, Options.CameraStopDistance * moveScaleSize.x) - cam.lastPos.x;
 
-                data.yMovement = Mathf.Abs(targetPos.y - cam.lastPos.y) / moveScaleSize.y / derivSmoothCurve.y > (data.yMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
+                data.yMovement = Mathf.Abs(targetPos.y - cam.lastPos.y) / moveScaleSize.y > (data.yMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
                 if (data.yMovement)
-                    delta.y = Plugin.LerpAndTickWithStop(cam.lastPos.y, targetPos.y, moveSpeed, moveSpeed * 0.005f * moveScaleSize.y, Options.CameraStopDistance * moveScaleSize.y) - cam.lastPos.y;
+                    delta.y = Plugin.LerpAndTickWithStop(cam.lastPos.y, targetPos.y, moveSpeed * moveScaleSize.y, moveSpeed * 0.005f * moveScaleSize.y, Options.CameraStopDistance * moveScaleSize.y) - cam.lastPos.y;
 
                 Vector2 maxDelta = customData.lastDelta; //not really used anymore, but the code is kept just in case
                 maxDelta.x = Mathf.Abs(maxDelta.x) + Mathf.Abs(Options.CameraMaxAcceleration * delta.x);
@@ -263,7 +265,7 @@ public static class SBCameraScrollMod
         return new Rect(fields.min_camera_position.x, fields.min_camera_position.y, fields.total_width, fields.total_height);
     }
 
-    public static float YBorderSize() => Options.SBCamera == Options.SBCameraType.Default ? 18 : 2;
+    public static float YBorderSize() => Options.OverrideSBCamera == Options.SBCameraType.Default ? 18 : 2;
 
     #endregion
 
