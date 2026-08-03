@@ -205,7 +205,7 @@ public partial class Plugin
             float moveSpeed = Options.CameraMoveSpeed * moveMod;
 
             Vector2 pos = new(0.5f, 0.5f);
-            bool alwaysMove = true;
+            bool alwaysMove = false;
 
             bool sbCameraMode = Options.CurrentScreenCamera == Options.ScreenCameraType.SBCamera;// && Plugin.SBCameraScrollEnabled;
             if (sbCameraMode)
@@ -214,6 +214,8 @@ public partial class Plugin
             }
             else if (Options.CurrentScreenCamera == Options.ScreenCameraType.RoomCamPos)
             {
+                alwaysMove = true;
+
                 Rect camArea = Plugin.SBCameraScrollEnabled ? ModCompat.SBCameraScrollMod.GetRoomRect(self.room.abstractRoom) : GetRoomCameraArea(self);
                 camArea.size -= self.sSize;// / self.SpriteLayers[0].scale;
                 float halfInvZoom = 0.5f * (1.0f / self.SpriteLayers[0].scale - 1); //crazy SBCameraScroll zoom calculation
@@ -255,8 +257,6 @@ public partial class Plugin
             }
             else if (Options.CurrentScreenCamera == Options.ScreenCameraType.Default) //calculate player on-screen position
             {
-                alwaysMove = false;
-
                 Vector2? critPos = GetCritPos(self, data, true, moveSpeed);
                 if (critPos != null)
                 {
@@ -273,23 +273,25 @@ public partial class Plugin
             {
                 try
                 {
+                    float mouseSpeed = moveSpeed * 0.4f; //move much slower
                     //inch offset toward 0
                     if (!Options.PermanentMouseOffset)
-                        data.mouseOffset = LerpAndTick(data.mouseOffset, Vector2.zero, moveSpeed * 1.5f, moveSpeed * 0.01f);
+                        data.mouseOffset = LerpAndTick(data.mouseOffset, Vector2.zero, mouseSpeed, mouseSpeed * 0.01f);
 
-                    float mouseX = Options.MouseSensitivity * Input.GetAxis("Mouse X");
+                    float mouseX = Input.GetAxis("Mouse X") * 0.2f;
                     if (mouseX != 0f)
                     {
-                        data.mouseOffset.x += Mathf.Clamp(mouseX, -10, 10) * moveSpeed * 1.5f; //clamp just for sanity
+                        data.mouseOffset.x += Options.MouseSensitivity * Mathf.Clamp(mouseX, -5, 5) * mouseSpeed; //clamp just for sanity
                     }
 
-                    float mouseY = Options.MouseSensitivity * Input.GetAxis("Mouse Y");// * 0.5625f; //0.5625 = 9/16 
+                    float mouseY = Input.GetAxis("Mouse Y") * 0.2f;
                     if (mouseY != 0f)
                     {
-                        data.mouseOffset.y += Mathf.Clamp(mouseY, -10, 10) * moveSpeed * 1.5f;
+                        data.mouseOffset.y += Options.MouseSensitivity * Mathf.Clamp(mouseY, -5, 5) * mouseSpeed;
                     }
 
                     pos += data.mouseOffset;
+                    //pos += LerpAndTick(data.CamPos, pos + data.mouseOffset, moveSpeed, moveSpeed * 0.01f) - data.CamPos;
                 }
                 catch { }
             }
@@ -326,17 +328,21 @@ public partial class Plugin
                 }
             }
 
-            Vector2 moveScale = derivSmoothCurve;
+            if (alwaysMove) //try not lerping at all?
+            {
+                data.CamPos = pos;
+                return;
+            }
+
+            Vector2 moveScale = derivSmoothCurve * self.sSize / self.sSize.x; //adjust for aspect ratio
 
             Vector2 delta = Vector2.zero;
-            if (!alwaysMove)
-                data.xMovement = Mathf.Abs(pos.x - data.CamPos.x) / moveScale.x > (data.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
-            if (alwaysMove || data.xMovement)
+            data.xMovement = Mathf.Abs(pos.x - data.CamPos.x) / moveScale.x > (data.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
+            if (data.xMovement)
                 delta.x = LerpAndTickWithStop(data.CamPos.x, pos.x, moveSpeed, moveSpeed * 0.005f * moveScale.x, Options.CameraStopDistance * moveScale.x) - data.CamPos.x;
 
-            if (!alwaysMove)
-                data.yMovement = Mathf.Abs(pos.y - data.CamPos.y) / moveScale.y > (data.yMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
-            if (alwaysMove || data.yMovement)
+            data.yMovement = Mathf.Abs(pos.y - data.CamPos.y) / moveScale.y > (data.yMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
+            if (data.yMovement)
                 delta.y = LerpAndTickWithStop(data.CamPos.y, pos.y, moveSpeed, moveSpeed * 0.005f * moveScale.y, Options.CameraStopDistance * moveScale.y) - data.CamPos.y;
 
             //Cap acceleration

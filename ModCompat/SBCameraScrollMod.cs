@@ -152,10 +152,7 @@ public static class SBCameraScrollMod
             {
                 Vector2 delta = Vector2.zero;
                 Vector2 scaledSSize = cam.sSize / cam.SpriteLayers[0].scale;
-                Vector2 moveScaleSize = camArea;
-                moveScaleSize.x = Mathf.Min(moveScaleSize.x, scaledSSize.x);
-                moveScaleSize.y = Mathf.Min(moveScaleSize.y, scaledSSize.y);
-                moveScaleSize *= derivSmoothCurve;
+                Vector2 moveScaleSize = scaledSSize * camArea / playerArea * derivSmoothCurve;
 
                 data.xMovement = Mathf.Abs(targetPos.x - cam.lastPos.x) / moveScaleSize.x > (data.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
                 //data.xMovement = Mathf.Abs(origTargetPos.x - customData.lastTargetPos.x) / scaledSSize.x > (data.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
