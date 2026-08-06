@@ -45,11 +45,11 @@ public partial class Options : AutoConfigOptions
     //NOT USED: DOESN'T DO MUCH; JUST OVERCOMPLICATES THINGS [Config(CAMERA, "Max Acceleration", "WRITE THIS DESCRIPTION LATER PLEASE DON'T FORGET IT", precision = 3, rightSide = true), LimitRange(0, 1)]
     public const float CameraMaxAcceleration = 1;
     [Config(CAMERA, "Movement Stop Distance", "If the camera's distance from its target position is less than this distance, then it stops moving. Measured as a fraction of the screen size.\nRecommended between 0.005 and 0.02. 0 = camera always tries to inch closer; 1 = camera never moves.", precision = 3), LimitRange(0, 1)]
-    public static float CameraStopDistance = 0.01f;
+    public static float CameraStopDistance = 0.02f;
     [Config(CAMERA, "Movement Start Distance", "The camera does not start moving until its distance from its target position is greater than this distance. Measured as a fraction of the screen size.\nShould be GREATER than Camera Stop Distance. Recommended between 0.005 and 0.02. 0 = camera always tries to inch closer; 1 = camera never moves.", precision = 3, rightSide = true), LimitRange(0, 1)]
-    public static float CameraStartDistance = 0.013f;
+    public static float CameraStartDistance = 0.026f;
 
-    [Config(CAMERA, "Input Offset", "How much the camera position moves ahead according to the player's inputs.\nGenerally recommended between 0 and 100, unless you have a high Camera Move Speed.", precision = 1, spaceBefore = 15), LimitRange(-500, 500)]
+    [Config(CAMERA, "Input Offset", "How much the camera position moves ahead according to the player's inputs, measured in pixels (1 tile = 20).\nGenerally recommended between 0 and 100; not recommended if you have a high Camera Move Speed.", precision = 1, spaceBefore = 15), LimitRange(-500, 500)]
     public static float CameraInputOffset = 0;
     [Config(CAMERA, "Mouse Sensitivity", "How much the camera moves when the mouse is moved. If 0, mouse movement does not affect the camera."), LimitRange(-5, 5)]
     public static float MouseSensitivity = 0;
@@ -60,8 +60,8 @@ public partial class Options : AutoConfigOptions
     public static float BackgroundShift = 0;
 
     [Config(CAMERA, "Camera Motion Curve", "Applies a curve to the camera's motion. Positive values causes the camera to favor being near the edges of the screen; zero means linear motion; negative values mean the camera favors the middle.\nRecommended between 0 and 0.5. Low/negative values allow the camera sometimes to never quite show the edges of the screen, which I find irritating.", spaceBefore = 15), LimitRange(-5, 1)]
-    public static float CameraMotionCurve = 0.3f;
-    [Config(CAMERA, "Invert Position", "Makes the camera think the player is on the opposite end of the room; thus, camera motion is opposite player motion.\nNOT recommended.", rightSide = true)]
+    public static float CameraMotionCurve = 0.2f;
+    [Config(CAMERA, "Invert Position", "Makes the camera think the player is on the opposite end of the screen; thus, camera motion is opposite player motion.\nNOT recommended.", rightSide = true)]
     public static bool InvertPos = false;
 
     public enum ScreenCameraType { Default, Fixed, RoomCamPos, SBCamera }
@@ -75,17 +75,17 @@ public partial class Options : AutoConfigOptions
     public static float MaxXYSpeedDifference = 2;
 
     public enum SBCameraType { Default, Custom }
-    [Config(CAMERA, "SBCamera Type", "Custom replaces SBCameraScroll's position camera with one that uses my own calculations, designed for smoother movement.\nDesigned to work with the RoomCamPos screen camera type.", width = 120, spaceAfter = 20)]
+    [Config(CAMERA, "SB Room Camera", "Custom replaces SBCameraScroll's position camera with one that uses my own calculations, designed for smoother movement.\nDesigned to work especially well with the RoomCamPos screen camera type.", width = 120, spaceAfter = 20)]
     public static SBCameraType OverrideSBCamera = SBCameraType.Custom;
     public static bool CustomSBCameraActive => Plugin.SBCameraScrollEnabled && OverrideSBCamera != SBCameraType.Default;
-    [Config(CAMERA, "Inflate SBCamera Area", "Inflates the area where the camera moves, effectively slowing its movement down very slightly. Especially useful in smaller rooms.\nHighly recommended at 1.", rightSide = true), LimitRange(-5, 5)]
+    [Config(CAMERA, "Inflate SBCamera Area", "Inflates the area where the camera moves, effectively slowing its movement down very slightly. Especially useful in smaller rooms.\nHighly recommended at 1. 0 = no inflation; 2 = double inflation, etc.", rightSide = true), LimitRange(-5, 5)]
     public static float InflateSBCameraFac = 1;
 
     [Config(CAMERA, "Keep Player Centered", "Makes the camera move less linearly in order to keep the player close to the center of the screen (when possible).\n1 = keeps player mostly centered; lower values = follows the player more loosely."), LimitRange(0, 1)]
     public static float CustomCameraCurve = 0.75f;
-    [Config(CAMERA, "Camera X Border", "TEST OPTION: Makes the camera stop moving when it gets really close to the edge of the screen.\nThis helps keep the camera more centered and prevents it from never showing the edges of the room, but the sudden stop can be jarring.", precision = 0), LimitRange(0, 800)]
+    [Config(CAMERA, "Camera X Border", "Makes the camera stop moving when it gets close to the edge of the screen, measured in pixels (1 tile = 20).\nThis helps keep the camera more centered and prevents it from never showing the edges of the room, but the sudden stop can be jarring.", precision = 0), LimitRange(0, 800)]
     public static float CustomCameraXBorder = 80;
-    [Config(CAMERA, "Camera Y Border", "TEST OPTION: Makes the camera stop moving when it gets really close to the edge of the screen.\nThis helps keep the camera more centered and prevents it from never showing the edges of the room, but the sudden stop can be jarring.", precision = 0, rightSide = true), LimitRange(0, 800)]
+    [Config(CAMERA, "Camera Y Border", "Makes the camera stop moving when it gets close to the edge of the screen, measured in pixels (1 tile = 20).\nThis helps keep the camera more centered and prevents it from never showing the edges of the room, but the sudden stop can be jarring.", precision = 0, rightSide = true), LimitRange(0, 800)]
     public static float CustomCameraYBorder = 40;
 
     //LAYER2
@@ -95,16 +95,16 @@ public partial class Options : AutoConfigOptions
     [Config(LAYER2, "Thickness Modifier", "How much thicker wide objects (like pipes) are than narrow ones (like poles).\nRecommended between 0.5 and 1. 0 = everything is the same thickness."), LimitRange(0, 3)]
     public static float ThicknessMod = 0.65f;
     [Config(LAYER2, "Max Depth Difference", "How severe background interpolation can be. Basically, if this number is too high, things can look stretched; but if it is too low, backgrounds look less smooth.\nRecommended between 0.5 and 1. 0 = no background interpolation; 10 = floating bits in background."), LimitRange(0, 10)]
-    public static float MaxDepthDifference = 1;
+    public static float MaxDepthDifference = 0.5f;
     [Config(LAYER2, "Sample Count", "How many texture samples are performed when determining the background. Currently cannot exceed 31 due to being only 5-bit.\nRecommended above 20, because 20 = 1 tile."), LimitRange(1, 31)]
-    public static int BackgroundTestNum = 22;
+    public static int BackgroundTestNum = 31;
 
     [Config(LAYER2, "Simpler Layers", "Reduces the lag when changing screens, but loses some finer details in the process. Specifically, halves the number of texture samples.\nRecommended if you notice lag upon screen transitions.", spaceBefore = 15)]
     public static bool SimplerLayers = false;
-    [Config(LAYER2, "Cached Textures", "How many Layer2 textures are saved. Saves processing when going back to previous screens, at the cost of VRAM.\nRecommended at 2. Any higher is usually useless."), LimitRange(1, 8)]
+    [Config(LAYER2, "Cached Textures", "How many Layer2 textures are saved. Saves processing when going back to previous screens, at the cost of VRAM.\nHIGHLY recommended at 2. Any higher is usually useless."), LimitRange(1, 8)]
     public static int CachedRenderTextures = 2;
 
-    [Config(LAYER2, "Build Creature Backgrounds", "Attempts to infer the room geometry behind creatures by checking the pixels around them. Has a significant performance cost. Also applies to dynamic level elements.\nRecommended if you are using a high Effect Strength and have a stable framerate. Does NOT work with SBCameraScroll's experimental camera zoom option.", spaceBefore = 15)]
+    [Config(LAYER2, "Build Creature Backgrounds", "Attempts to infer the room geometry behind creatures by checking the pixels around them. Has a significant performance cost. Also applies to dynamic level elements.\nRecommended if you are using a high Effect Strength and have a stable framerate.", spaceBefore = 15)]
     public static bool BuildCreatureBackground = false;
     [Config(LAYER2, "Creature Background Samples", "How many pixels around the creature are checked. Will affect performance.\nRecommended below 20."), LimitRange(1, 31)]
     public static int CreatureBackgroundTests = 10;
@@ -119,15 +119,15 @@ public partial class Options : AutoConfigOptions
 
     [Config(OPTIMIZATION, "Dynamic Optimization", "Reduces processing costs (by about 50% on average) for pixels closer to the camera, but can cause some minor visual artefacts (serrated edges, sometimes pixelated backgrounds).\nHIGHLY recommended if you have performance issues.")]
     public static bool DynamicOptimization = false;
-    [Config(OPTIMIZATION, "Center Optimization", "Reduces processing costs (by about 33% on average) when the camera is closer to the center of the screen, but can cause some foreground object to wiggle slightly.\nRecommended as a less aggressive alternative to Dynamic Optimization. Disable if you have both motion-sickness and high frame-rates.")]
+    [Config(OPTIMIZATION, "Center Optimization", "Reduces processing costs (by about 33% on average) when the camera is closer to the center of the screen, but can cause foreground objects to wiggle slightly.\nRecommended as a less aggressive alternative to Dynamic Optimization. Disable if you have both motion-sickness and high frame-rates.")]
     public static bool CenterOptimization = true;
     public static bool IsActiveCenterOptimization => CenterOptimization && !DynamicOptimization;
 
     [Config(OPTIMIZATION, "Max Warp", "Caps the strength of the parallax effect, only affecting the further parts of the screen. This can significantly improve performance.\nIF using Dynamic Optimization, recommended between 0.5 and 0.8. OTHERWISE, keep above 0.8."), LimitRange(0, 1)]
     public static float MaxWarp = 1;
 
-    [Config(OPTIMIZATION, "Target Minimum Framerate", "Attempts to maintain a stable framerate by dynamically lowering the Effect Strength if the frame rate is drops below this number.\n0 = Effect Strength is always constant; 30 = Effect Strength is lowered if FPS is below 30.", spaceBefore = 10), LimitRange(0, 300)]
-    public static float DynamicAdjustmentThreshold = 30;
+    [Config(OPTIMIZATION, "Target Minimum Framerate", "Attempts to maintain a stable framerate by dynamically lowering the Effect Strength if the frame rate is drops below this number.\n0 = Effect Strength is always constant; 60 = Effect Strength is lowered if FPS is below 60.", spaceBefore = 10), LimitRange(0, 300)]
+    public static float DynamicAdjustmentThreshold = 60;
 
     //ADVANCED
 
@@ -136,7 +136,7 @@ public partial class Options : AutoConfigOptions
 
     [Config(ADVANCED, "Anti-Aliasing", "Attempts to break up straight lines that are noticable when moving the camera slowly. (Not really anti-aliasing). Has a minimal effect when the Effect Strength is high.\nRecommended below 1. May be useful when Dynamic Optimization is enabled."), LimitRange(0, 10)]
     public static float AntiAliasing = 0;
-    [Config(ADVANCED, "Motion Blur", "I genuinely don't know why I added this, but maybe you'll think it's cool? The effect is much more noticeable at lower framerates.\nRecommended below 0.1, unless you just want to hurt yourself or get 240 FPS.", rightSide = true), LimitRange(0, 0.9f)]
+    [Config(ADVANCED, "Motion Blur", "I genuinely don't know why I added this, but maybe you'll think it's cool? The effect is much more noticeable at lower framerates. Enabling this has a performance cost.\nRecommended below 0.1, unless you just want to hurt yourself or get 240 FPS.", rightSide = true), LimitRange(0, 0.9f)]
     public static float MotionBlur = 0;
 
     [Config(ADVANCED, "Level Heat/Melt", "Attempts to re-implement the distortion added by the LevelHeat and VoidMelt Room Effects. Unfortunately, these effects also distort creatures as well as the room.")]
@@ -152,34 +152,34 @@ public partial class Options : AutoConfigOptions
     [Config(ADVANCED, "Depth Curve", "Applies a curve to the room depth. INVERSE = mid-ground looks closer; PARABOLIC, CUBIC, REALAPPROX = mid-ground appears farther; REALISTIC = mathematically accurate proportions.\nLINEAR or PARABOLIC recommended. REALISTIC is NOT recommended due to being extremely expensive.", width = 120, spaceAfter = 50)]
     public static DepthCurveOptions DepthCurve = DepthCurveOptions.LINEAR;
 
-    [Config(ADVANCED, "Super Accurate Thickness", "Ensures that the depth curve applies properly to geometry thickness. Adds additional performance cost for a very tiny visual improvement. Does not work for LINEAR or PARABOLIC.\nNOT recommended: The improvement is not worth the cost. This is most useful with the REALISTIC depth curve, but it is also very expensive with that curve.", rightSide = true)]
+    [Config(ADVANCED, "Super Accurate Thickness", "Ensures that the depth curve applies properly to geometry thickness. Adds additional performance cost for a very tiny visual improvement.\nNOT recommended: The improvement is not worth the cost. This is most useful with the REALISTIC depth curve, but it is also very expensive with that curve.", rightSide = true)]
     public static bool SuperAccurateThickness = false;
     public static bool IsActiveSuperAccurateThickness => SuperAccurateThickness && (TwoLayers || LimitProjection) && DepthCurve != DepthCurveOptions.LINEAR;
 
-    [Config(ADVANCED, "Background Depth", "How far away the background (the sky, basically) appears relative to the room geometry. Literally decreases the Effect Strength for everything except the background.\nRecommended at 1, because the background is usually a solid color, making this just a waste of resources (although For Scenes Only helps with this).", spaceBefore = 20), LimitRange(1, 2)]
+    [Config(ADVANCED, "Background Depth", "How far away the background (the sky, basically) appears relative to the room geometry. Literally decreases the Effect Strength for everything except the background.\nRecommended close to 1, because the background is usually a solid color, making this just a waste of resources (although For Scenes Only helps with this).", spaceBefore = 20), LimitRange(1, 2)]
     public static float BackgroundDepth = 1; //1.0 / Layer30Depth
-    [Config(ADVANCED, "For Scenes Only", "Sets Background Depth to 1 EXCEPT when a Background Scene (e.g: AboveCloudsView, RoofTopView) is active in the room.\nRecommended for performance reasons. This only applies when Background Depth is > 1.", rightSide = true)]
+    [Config(ADVANCED, "For Scenes Only", "Sets Background Depth to 1 EXCEPT when a Background Scene (e.g: AboveCloudsView, RoofTopView) is active in the room.\nRecommended, because it makes backgrounds look better without wasting resource in normal rooms.", rightSide = true)]
     public static bool BackDepthForScenesOnly = true;
 
     [Config(ADVANCED, "Fractional Movement", "Makes camera movement much smoother than in vanilla, but can cause some backgrounds to jitter slightly.\nHIGHLY recommended. When disabled, the camera only moves discrete distances, causing the environment to noticably jump.", spaceBefore = 10)]
     public static bool FractionalCameraMovement = true;
     [Config(ADVANCED, "Fix Background Jitter", "Fixes most jittery backgrounds caused by Fractional Movement. I had to manually fix many background elements, so I may have missed some.\nThere is no reason that I know of for you to turn this off.", rightSide = true)]
     public static bool FixBackgroundJitter = true;
-    [Config(ADVANCED, "Fix Flickering", "Fixes vanilla shader issues (flickering and artifacts in decals, lighting, water, and probably more) by having the camera skip every other pixel. Does not always work with SBCameraScroll's zoom feature.\nHIGHLY recommended with Fractional Movement, because it removes all noticable downsides.")]
+    [Config(ADVANCED, "Fix Flickering", "Fixes vanilla shader issues (flickering and artifacts in decals, lighting, water, and probably more) by having the camera skip every other pixel. Does not always work with SBCameraScroll's zoom feature.\nHIGHLY recommended with Fractional Movement, because that removes all noticable downsides.")]
     public static bool EveryOtherPixel = true;
     [Config(ADVANCED, "Smoother Decals", "Fixes decals flickering when the camera moves by disabling their \"erosion\" attribute. This unfortunately makes decals look too smooth.\nNOT RECOMMENDED, because Fix Flickering is far superior.", rightSide = true)]
     public static bool FixDecalFlickering = false;
 
-    [Config(ADVANCED, "Pivot Depth", "What depth stays fixed in place. Decreasing this decreases zoom and causes an inverse parallax effect, where the background moves but the foreground does not.\nRecommended at 1, because lower values look weird. However, setting this below 1 is the best way to make the game look less zoomed-in.", spaceBefore = 10), LimitRange(0, 4)]
+    [Config(ADVANCED, "Pivot Depth", "What depth stays fixed in place. Decreasing this decreases zoom and causes an inverse parallax effect, where the background moves but the foreground does not.\nRecommended at 1, because lower values look weird. However, setting this below 1 is the best way to make the game look less zoomed-in.", precision = 3, spaceBefore = 10), LimitRange(0, 4)]
     public static float PivotDepth = 1;
-    [Config(ADVANCED, "Convergence Scale", "Essentially how \"zoomed in\" the camera appears.\nHIGHLY recommended at 1, because lower values cause black bars on the side, and higher values feel like a waste of resources."), LimitRange(-5, 5)]
+    [Config(ADVANCED, "Convergence Scale", "Essentially how far away the background appears.\nHIGHLY recommended at 1, because lower values cause black bars on the side, and higher values feel like a waste of resources.", precision = 3), LimitRange(-5, 5)]
     public static float ConvergenceScale = 1;
-    [Config(ADVANCED, "General Scale", "Scales the image by multiplying the uv coordinates. Higher scales make things look bigger.\nHIGHLY recommended at 1; this is mostly just a test option."), LimitRange(0.1f, 10)]
+    [Config(ADVANCED, "General Scale", "Scales the image by multiplying the uv coordinates. Higher scales make things look bigger.\nHIGHLY recommended at 1; this is mostly just a test option.", precision = 3), LimitRange(0.1f, 10)]
     public static float GeneralScale = 1;
 
     [Config(ADVANCED, "Permanent Mouse Offset", "Prevents the mouse offset from resetting back to the center. I have no clue why you'd use this except for weird showcases, but one person requested it, so here.", spaceBefore = 10)]
     public static bool PermanentMouseOffset = false;
-    [Config(ADVANCED, "Dynamic Zoom", "How much the camera zooms out when moving towards the center of the screen. Incompatible with Fixed Screen Camera Type\nNOT recommended; keep at 0. 0 = zoom remains constant; 1 = the parallax effect is entirely disabled when standing in the center of the screen.", rightSide = true), LimitRange(0, 1)]
+    [Config(ADVANCED, "Dynamic Zoom", "How much the camera zooms out when moving towards the center of the screen. Incompatible with Fixed Screen Camera Type.\nNOT recommended; keep at 0. 0 = zoom remains constant; 1 = the parallax effect is entirely disabled when standing in the center of the screen.", rightSide = true), LimitRange(0, 1)]
     public static float DynamicZoom = 0;
     public static bool IsActiveDynamicZoom => DynamicZoom > 0 && CurrentScreenCamera != ScreenCameraType.Fixed;
 

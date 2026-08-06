@@ -10,7 +10,7 @@ public partial class Options
 {
     #region UI
     private const string DEFAULT_PRESET = "Default";
-    private const string DEFAULT_DESCRIPTION = "The default, recommended settings for this mod.";
+    private const string DEFAULT_DESCRIPTION = "The default, recommended settings for this mod.\nThis preset cannot be changed.";
     private OpListBox presetsBox;
     private OpTextBox saveNameBox;
     private OpHoldButton loadButton, saveButton, fileButton;

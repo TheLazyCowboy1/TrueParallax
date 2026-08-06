@@ -434,7 +434,7 @@ public partial class Plugin
                 {
                     if (Options.ContinuouslyChangeWarp > 0) //silly showcase option that exists for no good reason
                     {
-                        if (data.currentWarp <= 5)
+                        if (data.currentWarp <= 0)
                             WarpChangeGoingUp = true;
                         else if (data.currentWarp >= data.totalWarp)
                             WarpChangeGoingUp = false;
@@ -451,7 +451,7 @@ public partial class Plugin
         }
         catch (Exception ex) { Error(ex); }
     }
-    protected static bool WarpChangeGoingUp = false;
+    private static bool WarpChangeGoingUp = false;
     #endregion
 
 }

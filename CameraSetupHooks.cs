@@ -127,6 +127,7 @@ public partial class Plugin
         mat.SetFloat(ShadPropWarp, data.currentWarp);
 
         float maxUsedWarp = Options.IsActiveCenterOptimization ? data.CalcMaxUsedWarp() : (data.currentWarp * Options.MaxWarp);
+        int minSteps = (Options.TwoLayers && !Options.DynamicOptimization) ? 30 : 4; //lazily patch bug with low testNum for TwoLayers
         int testNum = Mathf.Max(4, (int)Mathf.Ceil(Mathf.Abs(maxUsedWarp) / Options.OptimizationFac));
 
         mat.SetInt(ShadPropTestNum, testNum);
