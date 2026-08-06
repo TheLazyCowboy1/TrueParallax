@@ -27,16 +27,16 @@ public partial class Options : AutoConfigOptions
     }
 
     //BASICS
-    [Config(BASICS, "Effect Strength", "How strong the parallax effect is. Higher numbers will decrease performance and make the camera more zoomed in.\nRecommended between 50 and 200.", spaceAfter = 20, precision = 1), LimitRange(-1000, 1000)]
+    [Config(BASICS, "Effect Strength", "How strong the parallax effect is. Higher numbers will decrease performance and make the camera more zoomed in.\nRecommended between 50 and 300.", spaceAfter = 20, precision = 1), LimitRange(-1000, 1000)]
     public static float Warp = 100;
 
-    [Config(BASICS, "Limit Projection", "Limits the thickness of objects like poles and creatures, but at a slight performance cost.\nHIGHLY recommended, because otherwise creatures look very stretched.")]
+    [Config(BASICS, "Limit Projection", "Limits the thickness of objects like poles and creatures, but at a slight performance cost.\nHIGHLY recommended, because otherwise creatures and poles look very stretched.")]
     public static bool LimitProjection = true;
     [Config(BASICS, "Max Projection", "How thick poles and creatures appear. Setting this too low will make geometry look disconnected, but setting it too high makes creatures and poles still look stretched.\nRecommended between 0.04 and 0.10. 0 = everything is paper-thin; 1 = everything is fully stretched.", spaceAfter = 20), LimitRange(0, 1)]
-    public static float MaxProjection = 0.1f;
+    public static float MaxProjection = 0.07f;
 
     [Config(BASICS, "Second Layer", "Makes the shader much better at determining how thick to make objects like poles and creatures, at the cost of performance.\nSee the " + LAYER2 + " tab for more advanced control of this feature.")]
-    public static bool TwoLayers = false;
+    public static bool TwoLayers = true;
 
     //CAMERA
 
@@ -156,8 +156,8 @@ public partial class Options : AutoConfigOptions
     public static bool SuperAccurateThickness = false;
     public static bool IsActiveSuperAccurateThickness => SuperAccurateThickness && (TwoLayers || LimitProjection) && DepthCurve != DepthCurveOptions.LINEAR;
 
-    [Config(ADVANCED, "Background Depth", "How far away the background (the sky, basically) appears relative to the room geometry. Literally decreases the Effect Strength for everything except the background.\nRecommended close to 1, because the background is usually a solid color, making this just a waste of resources (although For Scenes Only helps with this).", spaceBefore = 20), LimitRange(1, 2)]
-    public static float BackgroundDepth = 1; //1.0 / Layer30Depth
+    [Config(ADVANCED, "Background Depth", "How far away the background (the sky, basically) appears relative to the room geometry. Literally decreases the Effect Strength for everything except the background.\nRecommended slightly above 1 with the For Scenes Only setting, and at 1 otherwise.", spaceBefore = 20), LimitRange(1, 2)]
+    public static float BackgroundDepth = 1.1f; //1.0 / Layer30Depth
     [Config(ADVANCED, "For Scenes Only", "Sets Background Depth to 1 EXCEPT when a Background Scene (e.g: AboveCloudsView, RoofTopView) is active in the room.\nRecommended, because it makes backgrounds look better without wasting resource in normal rooms.", rightSide = true)]
     public static bool BackDepthForScenesOnly = true;
 
@@ -306,7 +306,7 @@ public partial class Options : AutoConfigOptions
             UIConfigs[nameof(LevelHeatFac)].greyedOut = !LevelHeat;
             UIConfigs[nameof(LevelHeatDecrease)].greyedOut = !LevelHeat;
             UIConfigs[nameof(SuperAccurateThickness)].greyedOut = DepthCurve == DepthCurveOptions.LINEAR || !(Options.LimitProjection || Options.TwoLayers);
-            UIConfigs[nameof(FixBackgroundJitter)].greyedOut = FractionalCameraMovement || EveryOtherPixel;
+            UIConfigs[nameof(FixBackgroundJitter)].greyedOut = !FractionalCameraMovement && !EveryOtherPixel;
 
             PresetsUpdate();
         }

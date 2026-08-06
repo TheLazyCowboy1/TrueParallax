@@ -134,7 +134,7 @@ public partial class Plugin
             data.CurrentUVOffset = (data.CurrentUVOffset - half) * scale + half; //scale around 0.5
 
             if (Options.FixBackgroundJitter)
-                data.BackgroundFixOffset.Set(Mathf.Floor(data.CurrentUVOffset.x + 0.5f), Mathf.Floor(data.CurrentUVOffset.y + 0.5f));
+                data.BackgroundFixOffset.Set(Mathf.Floor(data.CurrentUVOffset.x / Options.PivotDepth + 0.5f), Mathf.Floor(data.CurrentUVOffset.y / Options.PivotDepth + 0.5f));
         }
     }
 
@@ -339,11 +339,11 @@ public partial class Plugin
             Vector2 delta = Vector2.zero;
             data.xMovement = Mathf.Abs(pos.x - data.CamPos.x) / moveScale.x > (data.xMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
             if (data.xMovement)
-                delta.x = LerpAndTickWithStop(data.CamPos.x, pos.x, moveSpeed, moveSpeed * 0.005f * moveScale.x, Options.CameraStopDistance * moveScale.x) - data.CamPos.x;
+                delta.x = LerpAndTickWithStop(data.CamPos.x, pos.x, moveSpeed, moveSpeed * 0.01f * moveScale.x, Options.CameraStopDistance * moveScale.x) - data.CamPos.x;
 
             data.yMovement = Mathf.Abs(pos.y - data.CamPos.y) / moveScale.y > (data.yMovement ? Options.CameraStopDistance : Options.CameraStartDistance);
             if (data.yMovement)
-                delta.y = LerpAndTickWithStop(data.CamPos.y, pos.y, moveSpeed, moveSpeed * 0.005f * moveScale.y, Options.CameraStopDistance * moveScale.y) - data.CamPos.y;
+                delta.y = LerpAndTickWithStop(data.CamPos.y, pos.y, moveSpeed, moveSpeed * 0.01f * moveScale.y, Options.CameraStopDistance * moveScale.y) - data.CamPos.y;
 
             //Cap acceleration
             Vector2 maxDelta = data.CamPos - data.lastCamPos;
