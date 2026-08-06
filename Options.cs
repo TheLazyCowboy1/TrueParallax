@@ -123,7 +123,7 @@ public partial class Options : AutoConfigOptions
     public static bool CenterOptimization = true;
     public static bool IsActiveCenterOptimization => CenterOptimization && !DynamicOptimization;
 
-    [Config(OPTIMIZATION, "Max Warp", "Caps the strength of the parallax effect, only affecting the further parts of the screen. This can significantly improve performance.\nIF using Dynamic Optimization, recommended between 0.5 and 0.8. OTHERWISE, keep above 0.8."), LimitRange(0, 1)]
+    [Config(OPTIMIZATION, "Max Warp", "Caps the strength of the parallax effect, only affecting the further parts of the screen. This can significantly improve performance.\nIF using Dynamic Optimization, recommended between 0.5 and 0.8. OTHERWISE, keep above 0.8."), LimitRange(0.5f, 1)]
     public static float MaxWarp = 1;
 
     [Config(OPTIMIZATION, "Target Minimum Framerate", "Attempts to maintain a stable framerate by dynamically lowering the Effect Strength if the frame rate is drops below this number.\n0 = Effect Strength is always constant; 60 = Effect Strength is lowered if FPS is below 60.", spaceBefore = 10), LimitRange(0, 300)]

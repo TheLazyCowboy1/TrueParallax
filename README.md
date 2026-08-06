@@ -8,3 +8,5 @@ Fun fact: I think the formal term for this method of parallax is "Parallax Occlu
 Known Issues:
 * Some level elements (like poles) can disappear when stepSize is extremely low and TwoLayers is enabled. This does not happen when Dynamic Optimization is enabled.
 * Slugcat hands (when climbing vertical poles) are drawn after the level, so they are not included in PreLevelColorGrab.
+* FixBackgroundJitter doesn't work right with PivotDepth or with SBCameraScroll's zoom feature.
+* SBCameraScroll's zoom feature has several shader bugs (black pixels around creatures; levTex mis-alignments in vanilla shaders) not caused by my mod.
