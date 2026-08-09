@@ -168,6 +168,8 @@ public partial class Plugin : SimplerPlugin
 
         On.RoomCamera.ClearAllSprites += RoomCamera_ClearAllSprites;
 
+        On.MoreSlugcats.CellDistortion.InitiateSprites += CellDistortion_InitiateSprites;
+
         On.CustomDecal.GetIdealGridDiv += CustomDecal_GetIdealGridDiv;
         On.CustomDecal.UpdateVerts += CustomDecal_UpdateVerts;
 
@@ -202,6 +204,8 @@ public partial class Plugin : SimplerPlugin
         On.RoomCamera.ApplyPositionChange -= RoomCamera_ApplyPositionChange;
 
         On.RoomCamera.ClearAllSprites -= RoomCamera_ClearAllSprites;
+
+        On.MoreSlugcats.CellDistortion.InitiateSprites -= CellDistortion_InitiateSprites;
 
         On.CustomDecal.GetIdealGridDiv -= CustomDecal_GetIdealGridDiv;
         On.CustomDecal.UpdateVerts -= CustomDecal_UpdateVerts;
@@ -270,6 +274,19 @@ public partial class Plugin : SimplerPlugin
             }
         }
         catch (Exception ex) { Error(ex); }
+    }
+
+    //Stop distortion from messing with camera please
+    private void CellDistortion_InitiateSprites(On.MoreSlugcats.CellDistortion.orig_InitiateSprites orig, MoreSlugcats.CellDistortion self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam)
+    {
+        orig(self, sLeaser, rCam);
+
+        //move out of Bloom container and into parallax container
+        try
+        {
+            sLeaser.sprites[0].RemoveFromContainer();
+            rCam.ReturnFContainer(PARALLAXCONTAINER).AddChild(sLeaser.sprites[0]);
+        } catch (Exception ex) { Error(ex); }
     }
 
     //Optionally disables decals flickering
