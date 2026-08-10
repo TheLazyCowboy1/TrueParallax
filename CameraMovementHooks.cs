@@ -43,23 +43,26 @@ public partial class Plugin
                 if (Options.DynamicAdjustmentThreshold > 0)
                     data.UpdateDeltaTime();
 
-                if (data.layer2Dirty)
-                {
-                    if (Options.TwoLayers)
-                    {
-                        data.layer2Textures.Resize(Options.CachedRenderTextures); //ensure it's the right size
-
-                        RenderTexture tex = data.layer2Textures.GetOrCreateTexture();
-                        data.SpriteMaterial?.SetTexture(ShadPropLayer2Tex, tex);
-                    }
-                    data.layer2Dirty = false;
-                }
             }
 
         }
         catch (Exception ex) { Error(ex); }
 
         orig(self, timeStacker, timeSpeed);
+
+        //layer 2 setup
+        try
+        {
+            if (Options.TwoLayers && self.TryGetData(out CameraData data) && data.layer2Dirty)
+            {
+                data.layer2Textures.Resize(Options.CachedRenderTextures); //ensure it's the right size
+
+                RenderTexture tex = data.layer2Textures.GetOrCreateTexture();
+                data.SpriteMaterial?.SetTexture(ShadPropLayer2Tex, tex);
+
+                data.layer2Dirty = false;
+            }
+        } catch (Exception ex) { Error(ex); }
 
         SetCamPos(self, timeStacker);
     }
