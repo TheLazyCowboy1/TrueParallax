@@ -48,6 +48,7 @@ public partial class CameraData
     public bool Inactive => sprite == null || sprite.container == null || sprite.container.GetChildIndex(sprite) < 0;
     public bool needSetConstants;
     public LayerTexCache layer2Textures;
+    public bool layer2Dirty = true;
 
     public Material SpriteMaterial => sprite?._renderLayer?._material;
 

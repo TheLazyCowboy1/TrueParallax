@@ -249,13 +249,7 @@ public partial class Plugin : SimplerPlugin
                 SetWarpConstants(data);
             }
 
-            if (Options.TwoLayers)
-            {
-                data.layer2Textures.Resize(Options.CachedRenderTextures); //ensure it's the right size
-
-                RenderTexture tex = data.layer2Textures.GetOrCreateTexture();
-                data.SpriteMaterial?.SetTexture(ShadPropLayer2Tex, tex);
-            }
+            data.layer2Dirty = true;
         }
         catch (Exception ex) { Error(ex); }
     }

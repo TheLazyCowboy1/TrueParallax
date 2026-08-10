@@ -42,6 +42,7 @@ CGPROGRAM
 #pragma fragment frag
 
 			#pragma multi_compile_local _ LZC_SIMPLERLAYERS
+			#pragma multi_compile _ SNOW_ON
 
 #include "UnityCG.cginc"
 
@@ -52,6 +53,10 @@ uniform int LZC_BackgroundTestNum;
 uniform float LZC_ProjectionMod;
 uniform float LZC_MinObjectDepth;
 uniform float LZC_MaxDepDiff;
+
+#if SNOW_ON
+Texture2D<float4> _SnowTex;
+#endif
 
 struct v2f {
     float4  pos : SV_POSITION;
@@ -78,6 +83,10 @@ v2f vert (appdata_full v)
 #endif
 inline int depthOfTexel(int2 pos) {
 	float r = _MainTex.Load(int3(pos, 0)).r;
+#if SNOW_ON
+	float4 snow = _SnowTex.Load(int3(pos, 0));
+    r = lerp(r, snow.x, snow.y);
+#endif
 	return (r < 0.997f) ? ((uint(r*255.99f) - 1) % 30) : 30;
 }
 #include "BackgroundBuilder.cginc"

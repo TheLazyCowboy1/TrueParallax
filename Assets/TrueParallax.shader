@@ -58,6 +58,7 @@ CGPROGRAM
 #pragma vertex vert
 #pragma fragment frag
 
+#pragma multi_compile _ SNOW_ON
 #pragma multi_compile_local _ LZC_PROCESSLAYER2
 #pragma multi_compile_local _ LZC_LIMITPROJECTION
 #if LZC_LIMITPROJECTION || LZC_PROCESSLAYER2
@@ -79,6 +80,10 @@ Texture2D<float4> _LevelTex;
 uniform float2 _LevelTex_TexelSize;
 Texture2D<float4> _PreLevelColorGrab;
 Texture2D<float4> _SlopedTerrainMask;
+
+#if SNOW_ON
+Texture2D<float4> _SnowTex;
+#endif
 
 #if LZC_PROCESSLAYER2
 //sampler2D _LZC_Layer2Tex;
@@ -130,9 +135,20 @@ inline float depthCurve(float d) {
 inline uint depthOfPixel(float r) {
 	return (r < 0.997) ? (uint(r * 255.99f) - 1) % 30 : 30;
 }
-inline uint terrainDep(int2 pos) {
-	return round(30 * (2 - 3 * _SlopedTerrainMask.Load(int3(pos, 0)).r));
+inline uint terrainDep(int2 sPos) {
+	return round(30 * (2 - 3 * _SlopedTerrainMask.Load(int3(sPos, 0)).r));
 }
+
+inline float addSnowR(float r, int2 lPos) {
+#if SNOW_ON
+	float4 snow = _SnowTex.Load(int3(lPos, 0));
+    r = lerp(r, snow.x, snow.y);
+#endif
+	return r;
+}
+inline float sampleLevelR(int2 lPos) {
+	return addSnowR(_LevelTex.Load(int3(lPos, 0)).r, lPos);
+} 
 
 #if LZC_PROCESSLAYER2 || LZC_BUILDCREATUREBACKGROUND
 static float2 levelSizeMod = (_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize * _screenSize;
@@ -152,13 +168,12 @@ int2 offsetPos(int2 sPos, int2 offset) {
 #endif
 
 #if LZC_BUILDCREATUREBACKGROUND
-inline int depthOfTexel(int2 pos) {
-	float4 c = _PreLevelColorGrab.Load(int3(pos, 0));
+inline int depthOfTexel(int2 sPos) {
+	float4 c = _PreLevelColorGrab.Load(int3(sPos, 0));
 	if (c.r > 1.0f / 255.0f || c.g > 0 || c.b > 0) {
 		return 5;
 	}
-
-	return depthOfPixel(_LevelTex.Load(int3(sPosToLPos(pos), 0)).r);
+	return depthOfPixel(sampleLevelR(sPosToLPos(sPos)));
 }
 
 uniform int LZC_CreatureBackgroundTests;
@@ -210,10 +225,11 @@ void frag (v2f i)
 {
 	int2 textCoord = int2(i.luv);
 	float4 lev = _LevelTex.Load(int3(textCoord, 0));
+	float levR = addSnowR(lev.r, textCoord);
 
 	int2 checkPos = int2(i.suv);
 
-	uint ld = depthOfPixel(lev.r);
+	uint ld = depthOfPixel(levR);
 	uint d = ld;
 
 	bool terrainMask = false;
@@ -270,7 +286,8 @@ void frag (v2f i)
 	#if COMBINEDLEVEL
 		float4 origLev = _OrigLevelTex.Load(int3(textCoord, 0));
 		uint origDep = depthOfPixel(origLev.r);
-		if (origDep != ld) { //LevelTexCombiner has altered this pixel's depth
+		uint levDep = depthOfPixel(lev.r); //use level depth BEFORE snow
+		if (origDep != levDep) { //LevelTexCombiner has altered this pixel's depth
 		#if LZC_BUILDCREATUREBACKGROUND
 			uint4 backColInts = GenerateBackground(checkPos, LZC_CreatureBackgroundTests, LZC_MinObjectDepth, LZC_ProjectionMod, LZC_MaxDepDiff);
 			_LZC_LevelTex[checkPos] = float4(r, packBits(backColInts), backColInts.w / 255.0f);
@@ -311,6 +328,7 @@ void frag (v2f i)
 			lCrit = depthOfPixel(_LevelTex.Load(int3(lPos, 0)).r) != depthOfPixel(_OrigLevelTex.Load(int3(lPos, 0)).r); //LevelTex does not match OrigLevelTex
 		}
 	#endif
+			//NOTE: It would be prudent to check for terrainCurve obstructions, but that is hopefully usually unnecessary
 		if (lCrit) {
 			lDist = 0;
 				//set lDist = 0 in packed bits

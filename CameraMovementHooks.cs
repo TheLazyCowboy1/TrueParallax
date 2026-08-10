@@ -42,6 +42,18 @@ public partial class Plugin
 
                 if (Options.DynamicAdjustmentThreshold > 0)
                     data.UpdateDeltaTime();
+
+                if (data.layer2Dirty)
+                {
+                    if (Options.TwoLayers)
+                    {
+                        data.layer2Textures.Resize(Options.CachedRenderTextures); //ensure it's the right size
+
+                        RenderTexture tex = data.layer2Textures.GetOrCreateTexture();
+                        data.SpriteMaterial?.SetTexture(ShadPropLayer2Tex, tex);
+                    }
+                    data.layer2Dirty = false;
+                }
             }
 
         }
