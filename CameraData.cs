@@ -44,6 +44,9 @@ public partial class CameraData
 
     public float averageDeltaTime = -1f; //don't factor in initial loading time
 
+    public FSprite secondFullScreenEffect = null;
+    public RoomSettings.RoomEffect alteredLightAndSkyBloom = null;
+
     public FSprite sprite;
     public bool Inactive => sprite == null || sprite.container == null || sprite.container.GetChildIndex(sprite) < 0;
     public bool needSetConstants;

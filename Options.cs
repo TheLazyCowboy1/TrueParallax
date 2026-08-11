@@ -147,6 +147,8 @@ public partial class Options : AutoConfigOptions
     public static float LevelHeatFac = 1;
     [Config(ADVANCED, "Heat Linear Decrease", "How much the heat distortion decreases as depth increases. This reduces distortion of the background.\nRecommended close to 1, because the background shouldn't be distorted as much.", rightSide = true), LimitRange(0, 1)]
     public static float LevelHeatDecrease = 0.9f;
+    [Config(ADVANCED, "Improve SkyAndLightBloom", "Splits the SkyAndLightBloom room effect into two separate shaders, one applying before and another after the parallax.\nRecommended, because without it some rooms simply look bad.")]
+    public static bool ImproveSkyAndLightBloom = true;
 
     public enum DepthCurveOptions { INVERSE, LINEAR, PARABOLIC, CUBIC, REALAPPROX, REALISTIC };
     [Config(ADVANCED, "Depth Curve", "Applies a curve to the room depth. INVERSE = mid-ground looks closer; PARABOLIC, CUBIC, REALAPPROX = mid-ground appears farther; REALISTIC = mathematically accurate proportions.\nLINEAR or PARABOLIC recommended. REALISTIC is NOT recommended due to being extremely expensive.", width = 120, spaceAfter = 50)]

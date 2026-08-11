@@ -74,6 +74,7 @@ public partial class Plugin : SimplerPlugin
     public static FShader TrueParallaxFShader;
     public static Material ThicknessMapMaterial;
     public static Shader CustomBlendShader;
+    public static FShader CustomSkyBloomFShader;
 
     public static void LoadAssets()
     {
@@ -110,6 +111,12 @@ public partial class Plugin : SimplerPlugin
             {
                 FShader._shaders.Find(s => s.name == "DeepWater" || s.name.EndsWith("/DeepWater")).shader = DeepWater;
             }
+
+            //custom sky bloom
+            Shader NewSkyBloom = assetBundle.LoadAsset<Shader>("NewSkyBloom.shader");
+            if (NewSkyBloom == null)
+                Error("Could not find shader NewSkyBloom.shader");
+            CustomSkyBloomFShader = FShader.CreateShader("LZC_NewSkyBloom", NewSkyBloom);
 
             return;
 
@@ -151,6 +158,10 @@ public partial class Plugin : SimplerPlugin
         On.RoomCamera.WarpMoveCameraActual += RoomCamera_WarpMoveCameraActual;
         On.RoomCamera.ApplyPalette += RoomCamera_ApplyPalette;
 
+        On.MoreSlugcats.CellDistortion.InitiateSprites += CellDistortion_InitiateSprites;
+        On.CustomDecal.GetIdealGridDiv += CustomDecal_GetIdealGridDiv;
+        On.CustomDecal.UpdateVerts += CustomDecal_UpdateVerts;
+
         //BackgroundHooks.cs
         On.BackgroundScene.DrawPos += BackgroundScene_DrawPos;
         On.Watcher.OuterRimView.DrawPos += OuterRimView_DrawPos;
@@ -167,11 +178,6 @@ public partial class Plugin : SimplerPlugin
         On.RoomCamera.ApplyPositionChange += RoomCamera_ApplyPositionChange;
 
         On.RoomCamera.ClearAllSprites += RoomCamera_ClearAllSprites;
-
-        On.MoreSlugcats.CellDistortion.InitiateSprites += CellDistortion_InitiateSprites;
-
-        On.CustomDecal.GetIdealGridDiv += CustomDecal_GetIdealGridDiv;
-        On.CustomDecal.UpdateVerts += CustomDecal_UpdateVerts;
 
         if (SBCameraScrollEnabled)
             SBCameraScrollMod.ApplyHooks();
@@ -190,6 +196,10 @@ public partial class Plugin : SimplerPlugin
         On.RoomCamera.WarpMoveCameraActual -= RoomCamera_WarpMoveCameraActual;
         On.RoomCamera.ApplyPalette -= RoomCamera_ApplyPalette;
 
+        On.MoreSlugcats.CellDistortion.InitiateSprites -= CellDistortion_InitiateSprites;
+        On.CustomDecal.GetIdealGridDiv -= CustomDecal_GetIdealGridDiv;
+        On.CustomDecal.UpdateVerts -= CustomDecal_UpdateVerts;
+
         On.BackgroundScene.DrawPos -= BackgroundScene_DrawPos;
         On.Watcher.OuterRimView.DrawPos -= OuterRimView_DrawPos;
 
@@ -204,11 +214,6 @@ public partial class Plugin : SimplerPlugin
         On.RoomCamera.ApplyPositionChange -= RoomCamera_ApplyPositionChange;
 
         On.RoomCamera.ClearAllSprites -= RoomCamera_ClearAllSprites;
-
-        On.MoreSlugcats.CellDistortion.InitiateSprites -= CellDistortion_InitiateSprites;
-
-        On.CustomDecal.GetIdealGridDiv -= CustomDecal_GetIdealGridDiv;
-        On.CustomDecal.UpdateVerts -= CustomDecal_UpdateVerts;
 
         if (SBCameraScrollEnabled)
             SBCameraScrollMod.RemoveHooks();
@@ -265,64 +270,6 @@ public partial class Plugin : SimplerPlugin
             {
                 data.Clear();
                 Log("Cleared data for camera#" + self.cameraNumber);
-            }
-        }
-        catch (Exception ex) { Error(ex); }
-    }
-
-    //Stop distortion from messing with camera please
-    private void CellDistortion_InitiateSprites(On.MoreSlugcats.CellDistortion.orig_InitiateSprites orig, MoreSlugcats.CellDistortion self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam)
-    {
-        orig(self, sLeaser, rCam);
-
-        //move out of Bloom container and into parallax container
-        try
-        {
-            sLeaser.sprites[0].RemoveFromContainer();
-            rCam.ReturnFContainer(PARALLAXCONTAINER).AddChild(sLeaser.sprites[0]);
-        } catch (Exception ex) { Error(ex); }
-    }
-
-    //Optionally disables decals flickering
-    private int CustomDecal_GetIdealGridDiv(On.CustomDecal.orig_GetIdealGridDiv orig, CustomDecal self)
-    {
-        try
-        {
-            if (Options.FixDecalFlickering)
-            {
-                for (int i = 0; i < self.quad.Length; i++)
-                    self.quad[i] *= 2; //scale up so that we get a bigger gridDiv
-
-                int val = orig(self);
-
-                for (int i = 0; i < self.quad.Length; i++)
-                    self.quad[i] *= 0.5f; //scale back down
-
-                return val;
-            }
-        } catch (Exception ex) { Error(ex); }
-
-        return orig(self);
-    }
-    private void CustomDecal_UpdateVerts(On.CustomDecal.orig_UpdateVerts orig, CustomDecal self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam)
-    {
-        orig(self, sLeaser, rCam);
-
-        try
-        {
-            if (!Options.FixDecalFlickering)
-                return;
-            if (sLeaser.sprites[0] is not TriangleMesh mesh)
-                return;
-            for (int i = 0; i < mesh.verticeColors.Length; i++)
-            {
-                Color c = mesh.verticeColors[i];
-
-                //offset vertices
-                self.verts[i].y -= 40.0f * c.b * (noise.snoise(new float2(self.verts[i].x, self.verts[i].y*0.1f) * 0.015f) + 0.75f);
-
-                c.b = 0; //disable blue channel == disable erosion
-                mesh.verticeColors[i] = c;
             }
         }
         catch (Exception ex) { Error(ex); }

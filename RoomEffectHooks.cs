@@ -1,4 +1,5 @@
 ﻿using System;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace TrueParallax;
@@ -34,6 +35,8 @@ public partial class Plugin
     //Move potentially problematic fullScreenEffects to the correct container
     private void RoomCamera_ApplyPalette(On.RoomCamera.orig_ApplyPalette orig, RoomCamera self)
     {
+        ManageSecondFullScreenEffect(self);
+
         orig(self);
 
         try
@@ -68,6 +71,68 @@ public partial class Plugin
         }
         catch (Exception ex) { Error(ex); }
     }
+
+
+    //Stop distortion from messing with camera please
+    private void CellDistortion_InitiateSprites(On.MoreSlugcats.CellDistortion.orig_InitiateSprites orig, MoreSlugcats.CellDistortion self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam)
+    {
+        orig(self, sLeaser, rCam);
+
+        //move out of Bloom container and into parallax container
+        try
+        {
+            sLeaser.sprites[0].RemoveFromContainer();
+            rCam.ReturnFContainer(PARALLAXCONTAINER).AddChild(sLeaser.sprites[0]);
+        }
+        catch (Exception ex) { Error(ex); }
+    }
+
+    //Optionally disables decals flickering
+    private int CustomDecal_GetIdealGridDiv(On.CustomDecal.orig_GetIdealGridDiv orig, CustomDecal self)
+    {
+        try
+        {
+            if (Options.FixDecalFlickering)
+            {
+                for (int i = 0; i < self.quad.Length; i++)
+                    self.quad[i] *= 2; //scale up so that we get a bigger gridDiv
+
+                int val = orig(self);
+
+                for (int i = 0; i < self.quad.Length; i++)
+                    self.quad[i] *= 0.5f; //scale back down
+
+                return val;
+            }
+        }
+        catch (Exception ex) { Error(ex); }
+
+        return orig(self);
+    }
+    private void CustomDecal_UpdateVerts(On.CustomDecal.orig_UpdateVerts orig, CustomDecal self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam)
+    {
+        orig(self, sLeaser, rCam);
+
+        try
+        {
+            if (!Options.FixDecalFlickering)
+                return;
+            if (sLeaser.sprites[0] is not TriangleMesh mesh)
+                return;
+            for (int i = 0; i < mesh.verticeColors.Length; i++)
+            {
+                Color c = mesh.verticeColors[i];
+
+                //offset vertices
+                self.verts[i].y -= 40.0f * c.b * (noise.snoise(new float2(self.verts[i].x, self.verts[i].y * 0.1f) * 0.015f) + 0.75f);
+
+                c.b = 0; //disable blue channel == disable erosion
+                mesh.verticeColors[i] = c;
+            }
+        }
+        catch (Exception ex) { Error(ex); }
+    }
+
     #endregion
 
     //Disable WetTerrain, which displaces the pixels and causes visual artefacts.
@@ -98,6 +163,55 @@ public partial class Plugin
     #endregion
 
     #region CameraModifications
+    private static void ManageSecondFullScreenEffect(RoomCamera self)
+    {
+        try //stupid LightAndSkyBloom stuff
+        {
+            if (self.TryGetData(out CameraData data))
+            {
+                bool useSecondEffect = false;
+                if (Options.ImproveSkyAndLightBloom)
+                {
+                    if (data.alteredLightAndSkyBloom != null) //fix any previous monkeying
+                    {
+                        data.alteredLightAndSkyBloom.type = RoomSettings.RoomEffect.Type.SkyAndLightBloom;
+                    }
+
+                    RoomSettings settings = self.room.roomSettings;
+                    var LSBloom = settings.GetEffect(RoomSettings.RoomEffect.Type.SkyAndLightBloom);
+                    if (LSBloom != null)
+                    {
+                        LSBloom.type = RoomSettings.RoomEffect.Type.LightBurn; //remove the "Sky" part of SkyAndLightBloom
+                        data.alteredLightAndSkyBloom = LSBloom;
+
+                        useSecondEffect = true;
+                        if (data.secondFullScreenEffect == null)
+                        {
+                            data.secondFullScreenEffect = new FSprite("Futile_White", true)
+                            {
+                                scaleX = self.sSize.x / 16f,
+                                scaleY = 48f,
+                                anchorX = 0f,
+                                anchorY = 0f
+                            };
+                            self.ReturnFContainer(PARALLAXCONTAINER).AddChild(data.secondFullScreenEffect);
+                            Log("Set up secondFullScreenEffect in room " + settings.name, 2);
+                        }
+                        data.secondFullScreenEffect.shader = CustomSkyBloomFShader;
+                        data.secondFullScreenEffect.alpha = 1;
+                    }
+                }
+
+                if (!useSecondEffect)
+                {
+                    data.secondFullScreenEffect?.RemoveFromContainer();
+                    data.secondFullScreenEffect = null;
+                }
+            }
+        }
+        catch (Exception ex) { Error(ex); }
+    }
+
     public static void SetupCameraWetTerrain(RoomCamera camera)
     {
         try
