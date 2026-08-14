@@ -62,7 +62,7 @@ public partial class Plugin
             {
                 self.fullScreenEffect.RemoveFromContainer();
                 self.ReturnFContainer(PARALLAXCONTAINER).AddChild(self.fullScreenEffect);
-                Log("Moved fullScreenEffect to parallax container: " + name, 2);
+                Log("Moved fullScreenEffect into parallax container: " + name, 2);
             }
             else
             {
@@ -72,6 +72,19 @@ public partial class Plugin
         catch (Exception ex) { Error(ex); }
     }
 
+
+    //Move rain to parallax container, because it distorts the screen
+    private void RoomRain_AddToContainer(On.RoomRain.orig_AddToContainer orig, RoomRain self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, FContainer newContatiner)
+    {
+        orig(self, sLeaser, rCam, newContatiner);
+
+        try
+        {
+            sLeaser.sprites[0].RemoveFromContainer();
+            rCam.ReturnFContainer(PARALLAXCONTAINER).AddChildAtIndex(sLeaser.sprites[0], 1); //make sure it is after parallax but BEFORE full-screen effects
+            Log($"Moved rain in room {self.room.abstractRoom.name} into parallax container.", 2);
+        } catch (Exception ex) { Error(ex); }
+    }
 
     //Stop distortion from messing with camera please
     private void CellDistortion_InitiateSprites(On.MoreSlugcats.CellDistortion.orig_InitiateSprites orig, MoreSlugcats.CellDistortion self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam)
@@ -167,46 +180,48 @@ public partial class Plugin
     {
         try //stupid LightAndSkyBloom stuff
         {
-            if (self.TryGetData(out CameraData data))
+            if (self.room == null)
+                return;
+            if (!self.TryGetData(out CameraData data))
+                return;
+
+            bool useSecondEffect = false;
+            if (Options.ImproveSkyAndLightBloom)
             {
-                bool useSecondEffect = false;
-                if (Options.ImproveSkyAndLightBloom)
+                if (data.alteredLightAndSkyBloom != null) //fix any previous monkeying
                 {
-                    if (data.alteredLightAndSkyBloom != null) //fix any previous monkeying
-                    {
-                        data.alteredLightAndSkyBloom.type = RoomSettings.RoomEffect.Type.SkyAndLightBloom;
-                    }
+                    data.alteredLightAndSkyBloom.type = RoomSettings.RoomEffect.Type.SkyAndLightBloom;
+                }
 
-                    RoomSettings settings = self.room.roomSettings;
-                    var LSBloom = settings.GetEffect(RoomSettings.RoomEffect.Type.SkyAndLightBloom);
-                    if (LSBloom != null)
-                    {
-                        LSBloom.type = RoomSettings.RoomEffect.Type.LightBurn; //remove the "Sky" part of SkyAndLightBloom
-                        data.alteredLightAndSkyBloom = LSBloom;
+                RoomSettings settings = self.room.roomSettings;
+                var LSBloom = settings.GetEffect(RoomSettings.RoomEffect.Type.SkyAndLightBloom);
+                if (LSBloom != null)
+                {
+                    LSBloom.type = RoomSettings.RoomEffect.Type.LightBurn; //remove the "Sky" part of SkyAndLightBloom
+                    data.alteredLightAndSkyBloom = LSBloom;
 
-                        useSecondEffect = true;
-                        if (data.secondFullScreenEffect == null)
+                    useSecondEffect = true;
+                    if (data.secondFullScreenEffect == null)
+                    {
+                        data.secondFullScreenEffect = new FSprite("Futile_White", true)
                         {
-                            data.secondFullScreenEffect = new FSprite("Futile_White", true)
-                            {
-                                scaleX = self.sSize.x / 16f,
-                                scaleY = 48f,
-                                anchorX = 0f,
-                                anchorY = 0f
-                            };
-                            self.ReturnFContainer(PARALLAXCONTAINER).AddChild(data.secondFullScreenEffect);
-                            Log("Set up secondFullScreenEffect in room " + settings.name, 2);
-                        }
-                        data.secondFullScreenEffect.shader = CustomSkyBloomFShader;
-                        data.secondFullScreenEffect.alpha = 1;
+                            scaleX = self.sSize.x / 16f,
+                            scaleY = 48f,
+                            anchorX = 0f,
+                            anchorY = 0f
+                        };
+                        self.ReturnFContainer(PARALLAXCONTAINER).AddChild(data.secondFullScreenEffect);
+                        Log("Set up secondFullScreenEffect in room " + settings.name, 2);
                     }
+                    data.secondFullScreenEffect.shader = CustomSkyBloomFShader;
+                    data.secondFullScreenEffect.alpha = 1;
                 }
+            }
 
-                if (!useSecondEffect)
-                {
-                    data.secondFullScreenEffect?.RemoveFromContainer();
-                    data.secondFullScreenEffect = null;
-                }
+            if (!useSecondEffect)
+            {
+                data.secondFullScreenEffect?.RemoveFromContainer();
+                data.secondFullScreenEffect = null;
             }
         }
         catch (Exception ex) { Error(ex); }

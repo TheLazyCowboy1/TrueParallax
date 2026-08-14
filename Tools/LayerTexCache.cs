@@ -101,7 +101,7 @@ public class LayerTexCache
                 array[i] = array[i - 1];
 
             array[0] = new(key, tex);
-            Plugin.Log("Generated new Layer2Tex: " + key);
+            Plugin.Log("Generated new Layer2Tex: " + key, 2);
         }
 
         return FixRenderTex(array[0].Value, levelTex);

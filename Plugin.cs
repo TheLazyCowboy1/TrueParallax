@@ -158,6 +158,7 @@ public partial class Plugin : SimplerPlugin
         On.RoomCamera.WarpMoveCameraActual += RoomCamera_WarpMoveCameraActual;
         On.RoomCamera.ApplyPalette += RoomCamera_ApplyPalette;
 
+        On.RoomRain.AddToContainer += RoomRain_AddToContainer;
         On.MoreSlugcats.CellDistortion.InitiateSprites += CellDistortion_InitiateSprites;
         On.CustomDecal.GetIdealGridDiv += CustomDecal_GetIdealGridDiv;
         On.CustomDecal.UpdateVerts += CustomDecal_UpdateVerts;
@@ -196,6 +197,7 @@ public partial class Plugin : SimplerPlugin
         On.RoomCamera.WarpMoveCameraActual -= RoomCamera_WarpMoveCameraActual;
         On.RoomCamera.ApplyPalette -= RoomCamera_ApplyPalette;
 
+        On.RoomRain.AddToContainer -= RoomRain_AddToContainer;
         On.MoreSlugcats.CellDistortion.InitiateSprites -= CellDistortion_InitiateSprites;
         On.CustomDecal.GetIdealGridDiv -= CustomDecal_GetIdealGridDiv;
         On.CustomDecal.UpdateVerts -= CustomDecal_UpdateVerts;
