@@ -125,6 +125,8 @@ half4 frag (v2f i) : SV_Target
 
     //MODDED: don't apply shader to the sky
     half4 levelCol = tex2D(_LevelTex, textCoord);
+    levelCol = AddSnow(levelCol, textCoord, i.scrPos);
+    levelCol = AddTerrain(levelCol, textCoord, _spriteRect);
     if (levelCol.r >= 1 && levelCol.g >= 1 && levelCol.b >= 1) {
         return tex2D(_GrabTexture, i.scrPos);
     }
