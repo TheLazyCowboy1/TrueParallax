@@ -112,6 +112,15 @@ public partial class Plugin : SimplerPlugin
                 FShader._shaders.Find(s => s.name == "DeepWater" || s.name.EndsWith("/DeepWater")).shader = DeepWater;
             }
 
+            //replace LightBloom shader
+            Shader LightBloom = assetBundle.LoadAsset<Shader>("LightBloom.shader");
+            if (LightBloom == null)
+                Error("Could not find shader LightBloom.shader");
+            else
+            {
+                FShader._shaders.Find(s => s.name == "LightBloom" || s.name.EndsWith("/LightBloom")).shader = LightBloom;
+            }
+
             //custom sky bloom
             Shader NewSkyBloom = assetBundle.LoadAsset<Shader>("NewSkyBloom.shader");
             if (NewSkyBloom == null)
