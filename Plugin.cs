@@ -175,6 +175,7 @@ public partial class Plugin : SimplerPlugin
         //BackgroundHooks.cs
         On.BackgroundScene.DrawPos += BackgroundScene_DrawPos;
         On.Watcher.OuterRimView.DrawPos += OuterRimView_DrawPos;
+        On.RotWormScene.DrawPos += RotWormScene_DrawPos;
 
         On.AboveCloudsView.CloseCloud.DrawSprites += CloseCloud_DrawSprites;
         On.AboveCloudsView.DistantCloud.DrawSprites += DistantCloud_DrawSprites;
@@ -213,6 +214,7 @@ public partial class Plugin : SimplerPlugin
 
         On.BackgroundScene.DrawPos -= BackgroundScene_DrawPos;
         On.Watcher.OuterRimView.DrawPos -= OuterRimView_DrawPos;
+        On.RotWormScene.DrawPos -= RotWormScene_DrawPos;
 
         On.AboveCloudsView.CloseCloud.DrawSprites -= CloseCloud_DrawSprites;
         On.AboveCloudsView.DistantCloud.DrawSprites -= DistantCloud_DrawSprites;
