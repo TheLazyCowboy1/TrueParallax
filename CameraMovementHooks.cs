@@ -254,7 +254,7 @@ public partial class Plugin
                     }
                     else
                     {
-                        float expand = Options.InflateSBCameraFac * 2 * data.totalWarp * data.DepthCurve(5f / 30f);
+                        float expand = Options.InflateSBCameraFac * data.totalWarp * data.EffectiveDepthMod(5);
                         camArea.width += expand;
                         camArea.height += expand * self.sSize.y / self.sSize.x;
                     }

@@ -27,10 +27,13 @@ public partial class CameraData
         }
         return posCamDiff;
     }
+    public float EffectiveDepthMod(float depth = 5)
+    {
+        return Options.PivotDepth - (depth >= 30 ? 1 : DepthCurve(depth / 30.0f) / Options.BackgroundDepth);
+    }
     public Vector2 CalculateWarp(Vector2 pos, float depth = 5)
     {
-        float d = depth >= 30 ? 1 : DepthCurve(depth / 30.0f) / Options.BackgroundDepth;
-        return this.currentWarp * (Options.PivotDepth - d) * CalcPosCamDiff(pos); //1 - d, because d=1 => no warp, but d=0 => full warp
+        return this.currentWarp * EffectiveDepthMod(depth) * CalcPosCamDiff(pos); //1 - d, because d=1 => no warp, but d=0 => full warp
     }
 
     public float DepthCurve(float d) => Options.DepthCurve switch
