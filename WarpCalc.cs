@@ -1,31 +1,34 @@
 ﻿using RWCustom;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace TrueParallax;
 
 public partial class CameraData
 {
+    private static Vector2 Clamp(Vector2 v, Vector2 min, Vector2 max)
+        => new(Mathf.Clamp(v.x, min.x, max.x), Mathf.Clamp(v.y, min.y, max.y));
     public Vector2 CalcPosCamDiff(Vector2 pos)
     {
-        Vector2 centerUV = new(0.5f, 0.5f);
-        if (Options.GeneralScale > 1)
-        {
-            float maxCenterMove = 0.5f * (1 - 1.0f / Options.GeneralScale);
-            centerUV = this._camPos - new Vector2(0.5f, 0.5f);
-            centerUV = new Vector2(0.5f, 0.5f)
-                + new Vector2(Mathf.Clamp(centerUV.x, -maxCenterMove, maxCenterMove), Mathf.Clamp(centerUV.y, -maxCenterMove, maxCenterMove));
-        }
-        Vector2 uv = (pos - new Vector2(0.5f, 0.5f)) / Options.GeneralScale + centerUV;
-        float absBackScale = Mathf.Abs(Options.ConvergenceScale);
-        Vector2 posCamDiff = (Vector2.LerpUnclamped(new(0.5f, 0.5f), uv, Options.ConvergenceScale) - this._camPos) * Options.GeneralScale / (absBackScale + 0.5f * (1 - absBackScale));
+        //Apply LZC_GeneralScale
+        float generalScale = 1.0f / Options.GeneralScale;
+        Vector2 half = new(0.5f, 0.5f);
+        Vector2 maxCenterMove = half * (1 - Mathf.Clamp01(generalScale)); //saturate because it goes crazy outside that range
+        Vector2 centerUV = half + Clamp(this.drawCamPos - half, -maxCenterMove, maxCenterMove);
+        Vector2 uv = (pos - half) * Options.GeneralScale + centerUV;
+
+        //Apply LZC_ConvergenceScale
+        float absBackScale = Mathf.Abs(Options.ConvergenceScale); //prevents ridiculous results when BackgroundScale is < 0, especially: -1 caused division by 0
+        Vector2 posCamDiff = (Vector2.LerpUnclamped(centerUV, uv, Options.ConvergenceScale) - this.drawCamPos) / (generalScale * (absBackScale + 0.5f * (1 - absBackScale)));
+
+        Vector2 sSize = Custom.rainWorld.screenSize;
         if (!Options.DynamicOptimization)
         {
             posCamDiff.x = Mathf.Clamp(posCamDiff.x, -Options.MaxWarp, Options.MaxWarp);
-            Vector2 sSize = Custom.rainWorld.screenSize;
             float maxWarpY = Options.MaxWarp * sSize.x / sSize.y; //MaxWarp.y is increased due to aspect ratio
             posCamDiff.y = Mathf.Clamp(posCamDiff.y, -maxWarpY, maxWarpY);
         }
-        return posCamDiff;
+        return posCamDiff * new Vector2(1, sSize.y / sSize.x); //scale y component
     }
     public float EffectiveDepthMod(float depth = 5)
     {
@@ -48,9 +51,7 @@ public partial class CameraData
 
     public float CalcMaxUsedWarp()
     {
-        Vector2 maxDiff = CalcPosCamDiff(new(this._camPos.x > 0.5f ? 0 : 1, this._camPos.y > 0.5f ? 0 : 1)); //simply use far corner of screen for calculations
-        Vector2 sSize = Custom.rainWorld.screenSize;
-        maxDiff *= new Vector2(1, sSize.y / sSize.x);
+        Vector2 maxDiff = CalcPosCamDiff(new(this.drawCamPos.x > 0.5f ? 0 : 1, this.drawCamPos.y > 0.5f ? 0 : 1)); //simply use far corner of screen for calculations
         return currentWarp * Mathf.Max(Mathf.Abs(maxDiff.x), Mathf.Abs(maxDiff.y));
     }
 }

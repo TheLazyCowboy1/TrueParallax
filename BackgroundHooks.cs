@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Linq;
 using UnityEngine;
+using Watcher;
 
 namespace TrueParallax;
 
@@ -25,6 +27,50 @@ public partial class Plugin
         FixBackgroundCamPos(self, CurrentlyRenderingCamera, ref camPos);
 
         return ShiftBackgroundOutput(CurrentlyRenderingCamera, orig(self, element, camPos));
+    }
+
+    public void BackgroundHooks_RoomCamera_DrawUpdate(On.RoomCamera.orig_DrawUpdate orig, RoomCamera self, float timeStacker, float timeSpeed)
+    {
+        try
+        {
+            BackgroundScene scene = self.room.updateList.FirstOrDefault(uad => uad is BackgroundScene) as BackgroundScene;
+            if (!Options.RotateBackground || scene == null || !self.TryGetData(out CameraData data))
+            {
+                orig(self, timeStacker, timeSpeed);
+                return;
+            }
+
+            //remember old convergencePoint
+            Vector2 convergencePoint = scene.convergencePoint;
+            Vector2 perspectiveCenter = new();
+
+            //offset convergencePoint
+            Vector2 offset = data.CalculateWarp(new(0.5f, 0.5f), 30);
+            scene.convergencePoint += offset;
+            OuterRimView orv = scene as OuterRimView;
+            RotWormScene rws = scene as RotWormScene;
+            if (orv != null)
+            {
+                perspectiveCenter = orv.perspectiveCenter;
+                orv.perspectiveCenter += offset;
+            }
+            else if (rws != null)
+            {
+                perspectiveCenter = rws.perspectiveCenter;
+                rws.perspectiveCenter += offset;
+            }
+
+            //orig
+            orig(self, timeStacker, timeSpeed);
+
+            //reset convergencePoint to its old value
+            scene.convergencePoint = convergencePoint;
+            if (orv != null)
+                orv.perspectiveCenter = perspectiveCenter;
+            else if (rws != null)
+                rws.perspectiveCenter = perspectiveCenter;
+        }
+        catch (Exception ex) { Error(ex); orig(self, timeStacker, timeSpeed); }
     }
 
     #endregion

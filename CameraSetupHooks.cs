@@ -9,8 +9,9 @@ namespace TrueParallax;
 
 public partial class Plugin
 {
-    private const string BEFOREPARALLAXCONTAINER = "HUD";
+    private const string INSERTPARALLAXBEFORE = "HUD";
     public const string PARALLAXCONTAINER = "PARALLAX";//"HUD";
+    public const string AFTERPARALLAXCONTAINER = "AFTERPARALLAX";
 
     public static RenderTexture ScreenLevelTex;
 
@@ -41,25 +42,34 @@ public partial class Plugin
             //add full screen effect to camera
 
             //resize FContainer array
-            int beforeIdx = self.SpriteLayerIndex[BEFOREPARALLAXCONTAINER];
-            Array.Resize(ref self.SpriteLayers, self.SpriteLayers.Length + 1);
+            int contIdx = self.SpriteLayerIndex[INSERTPARALLAXBEFORE];
+            Array.Resize(ref self.SpriteLayers, self.SpriteLayers.Length + 2);
 
             foreach (string key in self.SpriteLayerIndex.Keys.ToArray()) //increase HUD layer indices
             {
-                if (self.SpriteLayerIndex[key] >= beforeIdx)
-                    self.SpriteLayerIndex[key]++;
+                if (self.SpriteLayerIndex[key] >= contIdx)
+                    self.SpriteLayerIndex[key] += 2;
             }
-            for (int i = self.SpriteLayers.Length - 1; i > beforeIdx; i--) //shift HUD layers right by one
-                self.SpriteLayers[i] = self.SpriteLayers[i - 1];
+            for (int i = self.SpriteLayers.Length - 1; i > contIdx; i--) //shift HUD layers right by two
+                self.SpriteLayers[i] = self.SpriteLayers[i - 2];
 
             //create new container
-            self.SpriteLayers[beforeIdx] = new();
-            self.SpriteLayerIndex.Add(PARALLAXCONTAINER, beforeIdx);
+            int parallaxIdx = contIdx;
+            int afterIdx = contIdx + 1;
+            int hudIdx = contIdx + 2;
+            FContainer parallaxContainer = self.SpriteLayers[parallaxIdx] = new();
+            self.SpriteLayerIndex.Add(PARALLAXCONTAINER, parallaxIdx);
+            FContainer afterContainer = self.SpriteLayers[afterIdx] = new();
+            self.SpriteLayerIndex.Add(AFTERPARALLAXCONTAINER, afterIdx);
+            FContainer hudContainer = self.SpriteLayers[hudIdx];
+
             //add the container at the HUD container's current index
-            Futile.stage.AddChildAtIndex(self.SpriteLayers[beforeIdx], Futile.stage.GetChildIndex(self.SpriteLayers[beforeIdx + 1]));
+            Futile.stage.AddChildAtIndex(parallaxContainer, Futile.stage.GetChildIndex(hudContainer));
+            Futile.stage.AddChildAtIndex(afterContainer, Futile.stage.GetChildIndex(hudContainer));
 
             //SplitScreenCoop compatibility
-            SafeSplitscreenCompat.OffsetContainer(self, self.SpriteLayers[beforeIdx]);
+            SafeSplitscreenCompat.OffsetContainer(self, parallaxContainer);
+            SafeSplitscreenCompat.OffsetContainer(self, afterContainer);
 
             //create the actual sprite
             data.sprite = new(Futile.whiteElement) {

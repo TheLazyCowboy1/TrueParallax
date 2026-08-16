@@ -48,7 +48,10 @@ public partial class Plugin
         }
         catch (Exception ex) { Error(ex); }
 
-        orig(self, timeStacker, timeSpeed);
+        SetCamPos(self, timeStacker);
+
+        //run orig
+        BackgroundHooks_RoomCamera_DrawUpdate(orig, self, timeStacker, timeSpeed);
 
         //layer 2 setup
         try
@@ -64,7 +67,7 @@ public partial class Plugin
             }
         } catch (Exception ex) { Error(ex); }
 
-        SetCamPos(self, timeStacker);
+        UpdateAfterParallaxContainer(self);
     }
 
     private void RoomCamera_Update(On.RoomCamera.orig_Update orig, RoomCamera self)
@@ -142,14 +145,14 @@ public partial class Plugin
             float stepSize = Options.EveryOtherPixel ? 2 : 1;
             float offset = Options.EveryOtherPixel ? 0.5f : 0;
             Vector2 currentPos = new(Mathf.Floor(properDrawPos.x / stepSize + offset) * stepSize, Mathf.Floor(properDrawPos.y / stepSize + offset) * stepSize);
-            data.CurrentUVOffset = properDrawPos - currentPos;
+            Vector2 unscaledUVOffset = properDrawPos - currentPos;
 
             Vector2 half = new(0.5f, 0.5f);
             float scale = data.camera.SpriteLayers[0].scale;
-            data.CurrentUVOffset = (data.CurrentUVOffset - half) * scale + half; //scale around 0.5
+            data.CurrentUVOffset = (unscaledUVOffset - half) * scale + half; //scale around 0.5
 
             if (Options.FixBackgroundJitter)
-                data.BackgroundFixOffset.Set(Mathf.Floor(data.CurrentUVOffset.x / Options.PivotDepth + 0.5f), Mathf.Floor(data.CurrentUVOffset.y / Options.PivotDepth + 0.5f));
+                data.BackgroundFixOffset.Set(Mathf.Floor((unscaledUVOffset.x + 0.5f)), Mathf.Floor(unscaledUVOffset.y + 0.5f));
         }
     }
 
@@ -254,7 +257,7 @@ public partial class Plugin
                     }
                     else
                     {
-                        float expand = Options.InflateSBCameraFac * data.totalWarp * data.EffectiveDepthMod(5);
+                        float expand = Options.InflateSBCameraFac * data.totalWarp * data.EffectiveDepthMod();
                         camArea.width += expand;
                         camArea.height += expand * self.sSize.y / self.sSize.x;
                     }
@@ -400,6 +403,8 @@ public partial class Plugin
         {
             if (!self.TryGetData(out CameraData data)) return;
 
+            data.drawCamPos = Vector2.Lerp(data.lastCamPos, data.CamPos, timeStacker);
+
             if (data.needSetConstants && data.SpriteMaterial != null)
             {
                 SetCameraConstants(data);
@@ -425,7 +430,7 @@ public partial class Plugin
             //set the CamPos in the actual material
             if (mat != null)
             {
-                mat.SetVector(ShadPropCamPos, data.CamPos);
+                mat.SetVector(ShadPropCamPos, data.drawCamPos);
 
                 if (Options.FractionalCameraMovement)
                 {
@@ -434,7 +439,7 @@ public partial class Plugin
 
                 if (Options.IsActiveDynamicZoom)
                 {
-                    Vector2 camDiff2 = data.CamPos - new Vector2(0.5f, 0.5f);
+                    Vector2 camDiff2 = data.drawCamPos - new Vector2(0.5f, 0.5f);
                     camDiff2 *= camDiff2;
 
                     float centerDistance = Mathf.Max(camDiff2.x, camDiff2.y);
@@ -449,7 +454,7 @@ public partial class Plugin
                 {
                     if (Options.ContinuouslyChangeWarp > 0) //silly showcase option that exists for no good reason
                     {
-                        if (data.currentWarp <= 0)
+                        if (data.currentWarp <= 5)
                             WarpChangeGoingUp = true;
                         else if (data.currentWarp >= data.totalWarp)
                             WarpChangeGoingUp = false;
@@ -467,6 +472,26 @@ public partial class Plugin
         catch (Exception ex) { Error(ex); }
     }
     private static bool WarpChangeGoingUp = false;
+
+    private static void UpdateAfterParallaxContainer(RoomCamera self)
+    {
+        try
+        {
+            if (!self.TryGetData(out CameraData data))
+                return;
+
+            float scale = 1 + data.currentWarp * data.EffectiveDepthMod() / self.sSize.x;
+            Vector2 offset = data.CalculateWarp(new(0.5f, 0.5f));
+
+            FContainer container = self.ReturnFContainer(AFTERPARALLAXCONTAINER);
+            container.scale = scale * self.ReturnFContainer("Foreground").scale;
+
+            if (Options.EveryOtherPixel)
+                offset -= new Vector2(Mathf.Floor(data.CurrentUVOffset.x), Mathf.Floor(data.CurrentUVOffset.y));
+            container.SetPosition((1 - container.scale) * 0.5f * self.sSize + offset * scale);
+        }
+        catch (Exception ex) { Error(ex); }
+    }
 
     #endregion
 

@@ -67,7 +67,7 @@ public static class SBCameraScrollMod
             RoomCenter = roomFields.min_camera_position + 0.5f * roomSize;
             Vector2 movementArea = roomSize - cam.sSize;
 
-            float expand = Mathf.Max(0, Options.InflateSBCameraFac * data.totalWarp * data.EffectiveDepthMod(5));
+            float expand = Mathf.Max(0, Options.InflateSBCameraFac * data.totalWarp * data.EffectiveDepthMod());
             Vector2 newMovementArea = movementArea + new Vector2(expand, expand * cam.sSize.y / cam.sSize.x);
             AreaScale = movementArea / newMovementArea;
             if (movementArea.x <= 0) AreaScale.x = 1; //don't scale x if the camera can't move horizontally anyway

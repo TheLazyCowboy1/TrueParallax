@@ -11,7 +11,11 @@ public partial class CameraData
 
     public Vector2 lastCamPos;
     private Vector2 _camPos;
-    public Vector2 CamPos { get => _camPos; set { lastCamPos = _camPos; posDirty = true; _camPos = value; } }
+    public Vector2 CamPos {
+        get => _camPos;
+        set { lastCamPos = _camPos; posDirty = true; _camPos = value; drawCamPos = value; }
+    }
+    public Vector2 drawCamPos;
 
     public Vector2 UnflooredCameraPos = new();
     public Vector2 CurrentUVOffset = new();
