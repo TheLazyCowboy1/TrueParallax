@@ -99,6 +99,9 @@ RWTexture2D<float> _LZC_LevelTex : register(u1);
 
 uniform float4 _spriteRect;
 uniform float2 _screenSize;
+uniform float _rimFix;
+float4 subtractFloat2(float4 a, float2 b) { return float4(a.xy - b, a.zw - b); }
+static float4 fixedSpriteRect = subtractFloat2(_spriteRect, _rimFix * (_spriteRect.zw - _spriteRect.xy) / _screenSize);
 
 uniform float LZC_Layer30Depth;
 
@@ -153,7 +156,7 @@ inline float sampleLevelR(int2 lPos) {
 #if LZC_PROCESSLAYER2 || LZC_BUILDCREATUREBACKGROUND
 static float2 levelSizeMod = (_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize * _screenSize;
 static float2 invLevelSizeMod = 1 / levelSizeMod;
-static float2 levelOffset = _spriteRect.xy * _screenSize;
+static float2 levelOffset = fixedSpriteRect.xy * _screenSize;
 
 int2 sPosToLPos(int2 sPos) {
 	return (sPos - levelOffset + 0.5) * invLevelSizeMod;
@@ -220,8 +223,7 @@ v2f vert (appdata_full v)
     //o.uv = TRANSFORM_TEX (v.texcoord, _MainTex);
 	float2 uv = TRANSFORM_TEX (v.texcoord, _MainTex);
 	o.suv = uv * _screenSize;
-	o.luv = (uv - _spriteRect.xy) / ((_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize);
-	//o.luv = (uv - _spriteRect.xy) * _screenSize;
+	o.luv = (uv - fixedSpriteRect.xy) / ((_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize);
     return o;
 }
 
@@ -438,6 +440,8 @@ Texture2D<float4> _GrabTexture : register(t0);
 sampler2D _NoiseTex;
 uniform float4 _NoiseTex_TexelSize;
 
+uniform float2 _LevelTex_TexelSize;
+
 #if LZC_PROCESSLAYER2
 RWTexture2D<float4> _LZC_LevelTex : register(u1);
 #else
@@ -446,6 +450,9 @@ RWTexture2D<float> _LZC_LevelTex : register(u1);
 //uniform float2 _LZC_LevelTex_TexelSize; //DOES NOT WORK for RWTexture2D
 uniform float2 _screenSize;
 uniform float4 _spriteRect;
+uniform float _rimFix;
+float4 subtractFloat2(float4 a, float2 b) { return float4(a.xy - b, a.zw - b); }
+static float4 fixedSpriteRect = subtractFloat2(_spriteRect, _rimFix * (_spriteRect.zw - _spriteRect.xy) / _screenSize);
 
 uniform float2 LZC_CamPos;
 uniform float2 LZC_UVOffset;
@@ -478,10 +485,9 @@ uniform float _waterLevel;
 #endif
 
 #if LZC_PROCESSLAYER2
-uniform float2 _LevelTex_TexelSize;
 static float2 levelSizeMod = (_spriteRect.zw - _spriteRect.xy) * _LevelTex_TexelSize * _screenSize;
 static float2 invLevelSizeMod = 1 / levelSizeMod;
-static float2 levelOffset = _spriteRect.xy * _screenSize;
+static float2 levelOffset = fixedSpriteRect.xy * _screenSize;
 
 int2 sPosToLPos(int2 sPos) {
 	return (sPos - levelOffset + 0.5) * invLevelSizeMod;
@@ -530,11 +536,8 @@ struct v2f {
 	float2  estTests : TEXCOORD3;
 #endif
 #if levelheat || levelmelt || LZC_WETTERRAIN
-	#if LZC_DYNAMICOPTIMIZATION
     float2  uv : TEXCOORD4;
-	#else
-    float2  uv : TEXCOORD3;
-	#endif
+	float2  luv : TEXCOORD5;
 #endif
 };
 
@@ -563,8 +566,8 @@ v2f vert (appdata_full v)
 #endif
 
 #if levelheat || levelmelt || LZC_WETTERRAIN
-	o.uv = (uv - _spriteRect.xy) / (_spriteRect.zw - _spriteRect.xy); //this is actually the level uv
-	//o.uv = realUV - _spriteRect.xy;
+	o.luv = (uv - fixedSpriteRect.xy) / (_spriteRect.zw - _spriteRect.xy); //this is actually the level uv
+	o.uv = o.luv / (float2(1400, 800) * _LevelTex_TexelSize); //scale up for proper distortion effect strengths
 #endif
 
     return o;
@@ -624,7 +627,7 @@ half4 frag (v2f i) : SV_Target
 
 //WET TERRAIN
 #if LZC_WETTERRAIN
-	if (i.uv.y + _spriteRect.y <= _waterLevel) {
+	if (i.luv.y + fixedSpriteRect.y <= _waterLevel) { //use luv not uv for accuracy
 		float ugh = 0; //does this even make a big difference? It ranges from 0 to 0.1
 			//COPIED FROM LevelColor.shader
 		float displace = tex2D(_NoiseTex, float2((i.uv.x * 1.5)  - ugh + _RAIN * 0.01,
