@@ -1,4 +1,5 @@
-﻿using MonoMod.Cil;
+﻿using Mono.Unix.Native;
+using MonoMod.Cil;
 using RWCustom;
 using System;
 using System.Linq;
@@ -11,6 +12,14 @@ public partial class Plugin
     public static RoomCamera CurrentlyRenderingCamera;
     #region Hooks
     private void RoomCamera_DrawUpdate(On.RoomCamera.orig_DrawUpdate orig, RoomCamera self, float timeStacker, float timeSpeed)
+    {
+        RoomCameraGeneralDrawUpdate(() => orig(self, timeStacker, timeSpeed), self, timeStacker, timeSpeed);
+    }
+    private void RoomCamera_PausedDrawUpdate(On.RoomCamera.orig_PausedDrawUpdate orig, RoomCamera self, float timeStacker, float timeSpeed)
+    {
+        RoomCameraGeneralDrawUpdate(() => orig(self, timeStacker, timeSpeed), self, timeStacker, timeSpeed);
+    }
+    private void RoomCameraGeneralDrawUpdate(Action orig, RoomCamera self, float timeStacker, float timeSpeed)
     {
         try
         {
@@ -65,7 +74,8 @@ public partial class Plugin
 
                 data.layer2Dirty = false;
             }
-        } catch (Exception ex) { Error(ex); }
+        }
+        catch (Exception ex) { Error(ex); }
 
         SetCamPos(self);
 

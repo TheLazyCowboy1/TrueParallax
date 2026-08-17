@@ -173,6 +173,10 @@ inline int depthOfTexel(int2 sPos) {
 	if (c.r > 1.0f / 255.0f || c.g > 0 || c.b > 0) {
 		return 5;
 	}
+	c = _LZC_LevelTex[sPos];
+	if (c.b >= 128.0f / 255.0f) { //slugcat hands
+		return 5;
+	}
 	return depthOfPixel(sampleLevelR(sPosToLPos(sPos)));
 }
 
@@ -241,7 +245,11 @@ void frag (v2f i)
 
 		//check creature mask, if applicable
 	bool creatureMask = false;
-	if (d >= 5) {
+	if (_LZC_LevelTex[checkPos].r == 1) { //check for slugcat hands
+		d = 5;
+		creatureMask = true;
+	}
+	else if (d >= 5) {
 		float4 c = _PreLevelColorGrab.Load(int3(checkPos, 0));
 		if (c.r > 1.0f / 255.0f || c.g > 0 || c.b > 0) {
 			d = 5;
@@ -267,7 +275,7 @@ void frag (v2f i)
 	#else
 		_LZC_LevelTex[checkPos] = float4(r,
 			max(1, LZC_StepSize * 30) / 255.0f, //thickness = 1
-			0, //layer2 = none
+			128.0f / 255.0f, //layer2 = none; creature background
 			0); //distance = 0
 	#endif
 		return;
@@ -322,6 +330,9 @@ void frag (v2f i)
 			float4 lCritCol = _PreLevelColorGrab.Load(int3(lPos, 0));
 			lCrit = lCritCol.r > 1.0f / 255.0f || lCritCol.g > 0 || lCritCol.b > 0;
 		}
+		if (!lCrit) { //check for slugcat hands
+			lCrit = _LZC_LevelTex[lPos].b >= 128.0f / 255.0f;
+		}
 	#if COMBINEDLEVEL
 		if (!lCrit) { //check if LevelTexCombiner is messing this pixel up
 			lPos = textCoord + lOffset;
@@ -345,6 +356,9 @@ void frag (v2f i)
 		if (!lCrit) { //check for creatures
 			float4 lCritCol = _PreLevelColorGrab.Load(int3(lPos, 0));
 			lCrit = lCritCol.r > 1.0f / 255.0f || lCritCol.g > 0 || lCritCol.b > 0;
+		}
+		if (!lCrit) { //check for slugcat hands
+			lCrit = _LZC_LevelTex[lPos].b >= 128.0f / 255.0f;
 		}
 	#if COMBINEDLEVEL
 		if (!lCrit) { //check if LevelTexCombiner is messing this pixel up
@@ -374,7 +388,7 @@ void frag (v2f i)
 	//layer1dep = 5, layer1thick = 5, layer2dep = 5, lDist = 5, rDist = 5, dir = 3;   total = 28
 	//r = layer1dep
 	//g = layer1thick, rDist(3)
-	//b = layer2dep, rDist(2)
+	//b = layer2dep, rDist(2), critBkg
 	//a = lDist, dir
 
 	//layer2Tex: r = rDist, g = layer1thick, b = layer2dep, a = lDist, dir
@@ -432,10 +446,6 @@ RWTexture2D<float> _LZC_LevelTex : register(u1);
 //uniform float2 _LZC_LevelTex_TexelSize; //DOES NOT WORK for RWTexture2D
 uniform float2 _screenSize;
 uniform float4 _spriteRect;
-
-#if LZC_PROCESSLAYER2
-Texture2D<float4> _PreLevelColorGrab;
-#endif
 
 uniform float2 LZC_CamPos;
 uniform float2 LZC_UVOffset;

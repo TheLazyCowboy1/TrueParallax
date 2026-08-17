@@ -29,14 +29,14 @@ public partial class Plugin
         return ShiftBackgroundOutput(CurrentlyRenderingCamera, orig(self, element, camPos));
     }
 
-    public void BackgroundHooks_RoomCamera_DrawUpdate(On.RoomCamera.orig_DrawUpdate orig, RoomCamera self, float timeStacker, float timeSpeed)
+    public void BackgroundHooks_RoomCamera_DrawUpdate(Action orig, RoomCamera self, float timeStacker, float timeSpeed)
     {
         try
         {
             BackgroundScene scene = self.room.updateList.FirstOrDefault(uad => uad is BackgroundScene) as BackgroundScene;
             if (Options.RotateBackground == 0 || scene == null || !self.TryGetData(out CameraData data))
             {
-                orig(self, timeStacker, timeSpeed);
+                orig();
                 return;
             }
 
@@ -61,7 +61,7 @@ public partial class Plugin
             }
 
             //orig
-            orig(self, timeStacker, timeSpeed);
+            orig();
 
             //reset convergencePoint to its old value
             scene.convergencePoint = convergencePoint;
@@ -70,7 +70,7 @@ public partial class Plugin
             else if (rws != null)
                 rws.perspectiveCenter = perspectiveCenter;
         }
-        catch (Exception ex) { Error(ex); orig(self, timeStacker, timeSpeed); }
+        catch (Exception ex) { Error(ex); orig(); }
     }
 
     #endregion

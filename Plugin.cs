@@ -73,9 +73,30 @@ public partial class Plugin : SimplerPlugin
 
     public static FShader TrueParallaxFShader;
     public static Material ThicknessMapMaterial;
-    public static Shader CustomBlendShader;
+    public static FShader ForegroundCreatureFShader;
     public static FShader CustomSkyBloomFShader;
+    public static Shader CustomBlendShader;
 
+    private static Shader LoadShader(AssetBundle bundle, string name)
+    {
+        name += ".shader";
+        Shader shader = bundle.LoadAsset<Shader>(name);
+        if (shader == null)
+            Error("Could not find shader " + name);
+        return shader;
+    }
+    private static void ReplaceShader(AssetBundle bundle, string name)
+    {
+        try
+        {
+            Shader shader = LoadShader(bundle, name);
+            if (shader != null)
+            {
+                FShader._shaders.Find(s => s.name == name || s.name.EndsWith("/" + name)).shader = shader;
+                Log("Successfully replaced shader " + name);
+            }
+        } catch (Exception ex) { Error(ex); }
+    }
     public static void LoadAssets()
     {
         try
@@ -83,51 +104,26 @@ public partial class Plugin : SimplerPlugin
             AssetBundle assetBundle = AssetBundle.LoadFromFile(AssetManager.ResolveFilePath("AssetBundles\\ParallaxEffect.assets"));
 
             //load true parallax shader
-            Shader TrueParallaxShader = assetBundle.LoadAsset<Shader>("TrueParallax.shader");
-            if (TrueParallaxShader == null)
-                Error("Could not find shader TrueParallax.shader");
-            TrueParallaxFShader = FShader.CreateShader("LZC_TrueParallax", TrueParallaxShader);
+            TrueParallaxFShader = FShader.CreateShader("LZC_TrueParallax", LoadShader(assetBundle, "TrueParallax"));
 
-            Shader ThicknessMapShader = assetBundle.LoadAsset<Shader>("ThicknessMap.shader");
-            if (ThicknessMapShader == null)
-                Error("Could not find shader ThicknessMap.shader");
-            ThicknessMapMaterial = new(ThicknessMapShader);
+            ThicknessMapMaterial = new(LoadShader(assetBundle, "ThicknessMap"));
+
+            ForegroundCreatureFShader = FShader.CreateShader("LZC_ForegroundCreature", LoadShader(assetBundle, "ForegroundCreature"));
+
+            CustomSkyBloomFShader = FShader.CreateShader("LZC_NewSkyBloom", LoadShader(assetBundle, "NewSkyBloom"));
 
             //motion blur stuff?
-            CustomBlendShader = assetBundle.LoadAsset<Shader>("CustomBlend.shader");
-            if (CustomBlendShader == null)
-                Error("Could not find shader CustomBlend.shader");
-            else
+            CustomBlendShader = LoadShader(assetBundle, "CustomBlend");
+            if (CustomBlendShader != null)
             {
                 Futile.instance.camera.gameObject.AddComponent<MotionBlur>();
                 Log("Attached MotionBlur MonoBehaviour to camera");
             }
 
-            //replace water shader
-            Shader DeepWater = assetBundle.LoadAsset<Shader>("DeepWater.shader");
-            if (DeepWater == null)
-                Error("Could not find shader DeepWater.shader");
-            else
-            {
-                FShader._shaders.Find(s => s.name == "DeepWater" || s.name.EndsWith("/DeepWater")).shader = DeepWater;
-            }
+            //replace shaders
+            ReplaceShader(assetBundle, "DeepWater");
 
-            //replace LightBloom shader
-            Shader LightBloom = assetBundle.LoadAsset<Shader>("LightBloom.shader");
-            if (LightBloom == null)
-                Error("Could not find shader LightBloom.shader");
-            else
-            {
-                FShader._shaders.Find(s => s.name == "LightBloom" || s.name.EndsWith("/LightBloom")).shader = LightBloom;
-            }
-
-            //custom sky bloom
-            Shader NewSkyBloom = assetBundle.LoadAsset<Shader>("NewSkyBloom.shader");
-            if (NewSkyBloom == null)
-                Error("Could not find shader NewSkyBloom.shader");
-            CustomSkyBloomFShader = FShader.CreateShader("LZC_NewSkyBloom", NewSkyBloom);
-
-            return;
+            ReplaceShader(assetBundle, "LightBloom");
 
         }
         catch (Exception ex) { Error(ex); }
@@ -159,6 +155,7 @@ public partial class Plugin : SimplerPlugin
 
         //CameraMovementHooks.cs
         On.RoomCamera.DrawUpdate += RoomCamera_DrawUpdate;
+        On.RoomCamera.PausedDrawUpdate += RoomCamera_PausedDrawUpdate;
         On.RoomCamera.Update += RoomCamera_Update;
         IL.RoomCamera.DrawUpdate += IL_RoomCamera_DrawUpdate;
 
@@ -167,12 +164,16 @@ public partial class Plugin : SimplerPlugin
         On.RoomCamera.WarpMoveCameraActual += RoomCamera_WarpMoveCameraActual;
         On.RoomCamera.ApplyPalette += RoomCamera_ApplyPalette;
 
+        //ObjectHooks.cs
+        On.RoomCamera.SpriteLeaser.ctor += SpriteLeaser_ctor;
+        On.RoomCamera.ReturnFContainer += RoomCamera_ReturnFContainer;
         On.RoomRain.AddToContainer += RoomRain_AddToContainer;
         On.MoreSlugcats.CellDistortion.InitiateSprites += CellDistortion_InitiateSprites;
         On.CustomDecal.GetIdealGridDiv += CustomDecal_GetIdealGridDiv;
         On.CustomDecal.UpdateVerts += CustomDecal_UpdateVerts;
         On.GateKarmaGlyph.InitiateSprites += GateKarmaGlyph_InitiateSprites;
         On.Watcher.WeaverThread.InitiateSprites += WeaverThread_InitiateSprites;
+        On.PlayerGraphics.AddToContainer += PlayerGraphics_AddToContainer;
 
         //BackgroundHooks.cs
         On.BackgroundScene.DrawPos += BackgroundScene_DrawPos;
@@ -202,6 +203,7 @@ public partial class Plugin : SimplerPlugin
         On.RoomCamera.ctor -= RoomCamera_ctor;
 
         On.RoomCamera.DrawUpdate -= RoomCamera_DrawUpdate;
+        On.RoomCamera.PausedDrawUpdate -= RoomCamera_PausedDrawUpdate;
         On.RoomCamera.Update -= RoomCamera_Update;
         IL.RoomCamera.DrawUpdate -= IL_RoomCamera_DrawUpdate;
 
@@ -209,12 +211,15 @@ public partial class Plugin : SimplerPlugin
         On.RoomCamera.WarpMoveCameraActual -= RoomCamera_WarpMoveCameraActual;
         On.RoomCamera.ApplyPalette -= RoomCamera_ApplyPalette;
 
+        On.RoomCamera.SpriteLeaser.ctor -= SpriteLeaser_ctor;
+        On.RoomCamera.ReturnFContainer -= RoomCamera_ReturnFContainer;
         On.RoomRain.AddToContainer -= RoomRain_AddToContainer;
         On.MoreSlugcats.CellDistortion.InitiateSprites -= CellDistortion_InitiateSprites;
         On.CustomDecal.GetIdealGridDiv -= CustomDecal_GetIdealGridDiv;
         On.CustomDecal.UpdateVerts -= CustomDecal_UpdateVerts;
         On.GateKarmaGlyph.InitiateSprites -= GateKarmaGlyph_InitiateSprites;
         On.Watcher.WeaverThread.InitiateSprites -= WeaverThread_InitiateSprites;
+        On.PlayerGraphics.AddToContainer -= PlayerGraphics_AddToContainer;
 
         On.BackgroundScene.DrawPos -= BackgroundScene_DrawPos;
         On.Watcher.OuterRimView.DrawPos -= OuterRimView_DrawPos;
