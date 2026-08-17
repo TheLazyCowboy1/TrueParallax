@@ -197,31 +197,6 @@ public partial class Plugin : SimplerPlugin
 
     }
 
-    private void WeaverThread_InitiateSprites(On.Watcher.WeaverThread.orig_InitiateSprites orig, Watcher.WeaverThread self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam)
-    {
-        orig(self, sLeaser, rCam);
-
-        try
-        {
-            self.AddToContainer(sLeaser, rCam, rCam.ReturnFContainer(AFTERPARALLAXCONTAINER));
-        } catch (Exception ex) { Error(ex); }
-    }
-
-    private void GateKarmaGlyph_InitiateSprites(On.GateKarmaGlyph.orig_InitiateSprites orig, GateKarmaGlyph self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam)
-    {
-        orig(self, sLeaser, rCam);
-
-        try
-        {
-            FContainer container = rCam.ReturnFContainer(AFTERPARALLAXCONTAINER);
-            for (int i = 1; i < sLeaser.sprites.Length; i++)
-            {
-                sLeaser.sprites[i].RemoveFromContainer();
-                container.AddChild(sLeaser.sprites[i]);
-            }
-        } catch (Exception ex) { Error(ex); }
-    }
-
     public override void RemoveHooks()
     {
         On.RoomCamera.ctor -= RoomCamera_ctor;
@@ -238,6 +213,8 @@ public partial class Plugin : SimplerPlugin
         On.MoreSlugcats.CellDistortion.InitiateSprites -= CellDistortion_InitiateSprites;
         On.CustomDecal.GetIdealGridDiv -= CustomDecal_GetIdealGridDiv;
         On.CustomDecal.UpdateVerts -= CustomDecal_UpdateVerts;
+        On.GateKarmaGlyph.InitiateSprites -= GateKarmaGlyph_InitiateSprites;
+        On.Watcher.WeaverThread.InitiateSprites -= WeaverThread_InitiateSprites;
 
         On.BackgroundScene.DrawPos -= BackgroundScene_DrawPos;
         On.Watcher.OuterRimView.DrawPos -= OuterRimView_DrawPos;

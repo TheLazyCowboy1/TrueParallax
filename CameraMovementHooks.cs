@@ -48,7 +48,7 @@ public partial class Plugin
         }
         catch (Exception ex) { Error(ex); }
 
-        SetCamPos(self, timeStacker);
+        UpdateDrawCamPos(self, timeStacker);
 
         //run orig
         BackgroundHooks_RoomCamera_DrawUpdate(orig, self, timeStacker, timeSpeed);
@@ -66,6 +66,8 @@ public partial class Plugin
                 data.layer2Dirty = false;
             }
         } catch (Exception ex) { Error(ex); }
+
+        SetCamPos(self);
 
         UpdateAfterParallaxContainer(self);
     }
@@ -137,27 +139,25 @@ public partial class Plugin
 
     private static void CalcCurrentUVOffset(CameraData data)
     {
-        if (Options.FractionalCameraMovement)
-        {
-            if (data == null)
-                return;
-            Vector2 properDrawPos = data.UnflooredCameraPos;
-            float stepSize = Options.EveryOtherPixel ? 2 : 1;
-            float offset = Options.EveryOtherPixel ? 0.5f : 0;
-            Vector2 currentPos = new(Mathf.Floor(properDrawPos.x / stepSize + offset) * stepSize, Mathf.Floor(properDrawPos.y / stepSize + offset) * stepSize);
-            Vector2 unscaledUVOffset = properDrawPos - currentPos;
+        if (!Options.FractionalCameraMovement || data == null)
+            return;
 
-            Vector2 half = new(0.5f, 0.5f);
-            float scale = data.camera.SpriteLayers[0].scale;
-            data.CurrentUVOffset = (unscaledUVOffset - half) * scale + half; //scale around 0.5
+        Vector2 properDrawPos = data.UnflooredCameraPos;
+        float stepSize = Options.EveryOtherPixel ? 2 : 1;
+        float offset = Options.EveryOtherPixel ? 0.5f : 0;
+        Vector2 currentPos = new(Mathf.Floor(properDrawPos.x / stepSize + offset) * stepSize, Mathf.Floor(properDrawPos.y / stepSize + offset) * stepSize);
+        Vector2 unscaledUVOffset = properDrawPos - currentPos;
 
-            if (Options.FixBackgroundJitter)
-                data.BackgroundFixOffset.Set(Mathf.Floor((unscaledUVOffset.x + 0.5f)), Mathf.Floor(unscaledUVOffset.y + 0.5f));
-        }
-    }
+        Vector2 half = new(0.5f, 0.5f);
+        float scale = data.camera.SpriteLayers[0].scale;
+        data.CurrentUVOffset = (unscaledUVOffset - half) * scale + half; //scale around 0.5
 
-    public static bool ParallaxShouldBeInactive(CameraData data)
-        => data.camera.voidSeaMode || data.camera.freeMoveRect != null || (!Options.SplitscreenParallax && data.camera.cameraNumber > 0);
+        if (Options.FixBackgroundJitter)
+            data.BackgroundFixOffset.Set(Mathf.Floor((unscaledUVOffset.x + 0.5f)), Mathf.Floor(unscaledUVOffset.y + 0.5f));
+}
+
+public static bool ParallaxShouldBeInactive(CameraData data)
+    => data.camera.voidSeaMode || data.camera.freeMoveRect != null || (!Options.SplitscreenParallax && data.camera.cameraNumber > 0);
 
     public static Vector2? GetCritPos(RoomCamera self, CameraData data, bool updateOffset = false, float moveSpeed = 0)
     {
@@ -396,14 +396,16 @@ public partial class Plugin
     public static float DerivSmoothCurve(float x, float s) => (x < 0 || x > 1) ? 1 : 3*(1 - s + 4*s*x*(1 - x)) / (3 - s);
 
 
-    //Sets the CamPos
-    public static void SetCamPos(RoomCamera self, float timeStacker)
+    public static void UpdateDrawCamPos(RoomCamera self, float timeStacker)
+    {
+        if (!self.TryGetData(out CameraData data)) return;
+        data.drawCamPos = Vector2.Lerp(data.lastCamPos, data.CamPos, timeStacker);
+    }
+    public static void SetCamPos(RoomCamera self)
     {
         try
         {
             if (!self.TryGetData(out CameraData data)) return;
-
-            data.drawCamPos = Vector2.Lerp(data.lastCamPos, data.CamPos, timeStacker);
 
             if (data.needSetConstants && data.SpriteMaterial != null)
             {

@@ -283,6 +283,34 @@ public partial class Plugin
         }
         catch (Exception ex) { Error(ex); }
     }
+
+
+    private void GateKarmaGlyph_InitiateSprites(On.GateKarmaGlyph.orig_InitiateSprites orig, GateKarmaGlyph self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam)
+    {
+        orig(self, sLeaser, rCam);
+
+        try
+        {
+            FContainer container = rCam.ReturnFContainer(AFTERPARALLAXCONTAINER);
+            for (int i = 1; i < sLeaser.sprites.Length; i++)
+            {
+                sLeaser.sprites[i].RemoveFromContainer();
+                container.AddChild(sLeaser.sprites[i]);
+            }
+        }
+        catch (Exception ex) { Error(ex); }
+    }
+
+    private void WeaverThread_InitiateSprites(On.Watcher.WeaverThread.orig_InitiateSprites orig, Watcher.WeaverThread self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam)
+    {
+        orig(self, sLeaser, rCam);
+
+        try
+        {
+            self.AddToContainer(sLeaser, rCam, rCam.ReturnFContainer(AFTERPARALLAXCONTAINER));
+        }
+        catch (Exception ex) { Error(ex); }
+    }
     #endregion
 
 }

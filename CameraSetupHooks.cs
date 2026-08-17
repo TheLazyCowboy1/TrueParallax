@@ -182,7 +182,7 @@ public partial class Plugin
         mat.SetFloat("LZC_LevelHeatDecrease", Options.LevelHeatDecrease);
     }
 
-    private static void SetupScreenLevelTex()
+    public static void SetupScreenLevelTex()
     {
         Vector2 sSize = Custom.rainWorld.screenSize;
         int w = Mathf.RoundToInt(sSize.x), h = Mathf.RoundToInt(sSize.y); //idk when exactly this happens
@@ -204,6 +204,15 @@ public partial class Plugin
 
             Log("Created ScreenLevelTex. System RandomWrite textures: " + SystemInfo.supportedRandomWriteTargetCount, 2);
         }
+
+        ClearRenderTexture(ScreenLevelTex);
+    }
+    private static void ClearRenderTexture(RenderTexture rt)
+    {
+        RenderTexture old = RenderTexture.active;
+        RenderTexture.active = ScreenLevelTex;
+        GL.Clear(false, true, Color.clear);
+        RenderTexture.active = old;
     }
     #endregion
 

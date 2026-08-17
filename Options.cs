@@ -174,8 +174,8 @@ public partial class Options : AutoConfigOptions
 
     [Config(ADVANCED, "Pivot Depth", "What depth stays fixed in place. Decreasing this decreases zoom and causes an inverse parallax effect, where the background moves but the foreground does not.\nRecommended at 1, because lower values look weird. However, setting this below 1 is the best way to make the game look less zoomed-in.", precision = 3, spaceBefore = 10), LimitRange(0, 4)]
     public static float PivotDepth = 1;
-    [Config(ADVANCED, "Rotate Background", "Moves the background perspective so that it looks accurate. Only has an effect when Pivot Depth is not 1.", rightSide = true)]
-    public static bool RotateBackground = true;
+    [Config(ADVANCED, "Rotate Background", "Moves the background perspective so that it looks accurate. Only has an effect when Pivot Depth is not 1.\nRecommended between 0 (disabled) and 1.", rightSide = true), LimitRange(-10, 10)]
+    public static float RotateBackground = 0.5f;
     [Config(ADVANCED, "Convergence Scale", "Essentially how far away the background appears.\nHIGHLY recommended at 1, because lower values cause black bars on the side, and higher values feel like a waste of resources.", precision = 3), LimitRange(-5, 5)]
     public static float ConvergenceScale = 1;
     [Config(ADVANCED, "General Scale", "Scales the image by multiplying the uv coordinates. Higher scales make things look bigger.\nHIGHLY recommended at 1; this is mostly just a test option.", precision = 3), LimitRange(0.1f, 10)]

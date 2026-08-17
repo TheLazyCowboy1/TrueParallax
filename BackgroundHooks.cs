@@ -34,7 +34,7 @@ public partial class Plugin
         try
         {
             BackgroundScene scene = self.room.updateList.FirstOrDefault(uad => uad is BackgroundScene) as BackgroundScene;
-            if (!Options.RotateBackground || scene == null || !self.TryGetData(out CameraData data))
+            if (Options.RotateBackground == 0 || scene == null || !self.TryGetData(out CameraData data))
             {
                 orig(self, timeStacker, timeSpeed);
                 return;
@@ -45,7 +45,7 @@ public partial class Plugin
             Vector2 perspectiveCenter = new();
 
             //offset convergencePoint
-            Vector2 offset = data.CalculateWarp(new(0.5f, 0.5f), 30);
+            Vector2 offset = Options.RotateBackground * data.CalculateWarp(new(0.5f, 0.5f), 30);
             scene.convergencePoint += offset;
             OuterRimView orv = scene as OuterRimView;
             RotWormScene rws = scene as RotWormScene;
