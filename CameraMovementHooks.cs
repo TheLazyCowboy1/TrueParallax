@@ -17,9 +17,9 @@ public partial class Plugin
     }
     private void RoomCamera_PausedDrawUpdate(On.RoomCamera.orig_PausedDrawUpdate orig, RoomCamera self, float timeStacker, float timeSpeed)
     {
-        RoomCameraGeneralDrawUpdate(() => orig(self, timeStacker, timeSpeed), self, timeStacker, timeSpeed);
+        RoomCameraGeneralDrawUpdate(() => orig(self, timeStacker, timeSpeed), self, timeStacker, timeSpeed, true);
     }
-    private void RoomCameraGeneralDrawUpdate(Action orig, RoomCamera self, float timeStacker, float timeSpeed)
+    private void RoomCameraGeneralDrawUpdate(Action orig, RoomCamera self, float timeStacker, float timeSpeed, bool paused = false)
     {
         try
         {
@@ -57,7 +57,7 @@ public partial class Plugin
         }
         catch (Exception ex) { Error(ex); }
 
-        UpdateDrawCamPos(self, timeStacker);
+        UpdateDrawCamPos(self, paused ? 0.5f : timeStacker);
 
         //run orig
         BackgroundHooks_RoomCamera_DrawUpdate(orig, self, timeStacker, timeSpeed);

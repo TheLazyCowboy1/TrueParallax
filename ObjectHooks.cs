@@ -11,11 +11,11 @@ namespace TrueParallax;
 public partial class Plugin
 {
 
-    private bool MoveHUDToAfterParallaxContainer = true;
+    private bool MoveHUDToAfterParallaxContainer = false;
 
     private void SpriteLeaser_ctor(On.RoomCamera.SpriteLeaser.orig_ctor orig, RoomCamera.SpriteLeaser self, IDrawable obj, RoomCamera rCam)
     {
-        MoveHUDToAfterParallaxContainer = true;
+        MoveHUDToAfterParallaxContainer = rCam.SpriteLayerIndex.ContainsKey(AFTERPARALLAXCONTAINER);
         orig(self, obj, rCam);
         MoveHUDToAfterParallaxContainer = false;
     }
