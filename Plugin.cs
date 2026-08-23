@@ -309,14 +309,14 @@ public partial class Plugin : SimplerPlugin
 
         try
         {
-            if (true)//SystemInfo.supportedRandomWriteTargetCount < 1)
+            if (self.popupAlert == null)//SystemInfo.supportedRandomWriteTargetCount < 1)
             {
                 Menu.Page page = self.pages[0];
-                page.subObjects.Add(
-                    new Menu.DialogBoxNotify(self, page,
-                    "Your device may not be compatible with the True Parallax mod.\nI'm sorry for the inconvenience.",
-                    "", new(self.manager.rainWorld.options.ScreenSize.x * 0.5f - 240, 284), new(480, 180))
-                    );
+                Vector2 sSize = self.manager.rainWorld.options.ScreenSize;
+                self.popupAlert = new Menu.DialogBoxNotify(self, page,
+                    "Your device may not be compatible with the True Parallax mod.\nI recommend disabling the True Parallax mod since it likely will not function properly.\nI'm sorry for the inconvenience.",
+                    "ALERT", new(sSize.x * 0.5f - 240, sSize.y - 240), new(480, 180));
+                page.subObjects.Add(self.popupAlert);
             }
         } catch (Exception ex) { Error(ex); }
     }
