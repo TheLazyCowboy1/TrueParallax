@@ -302,15 +302,16 @@ public partial class Plugin : SimplerPlugin
     }
 
 
-
+    private static bool ShowedUnsupportedPopup = false;
     private void MainMenu_ctor(On.Menu.MainMenu.orig_ctor orig, Menu.MainMenu self, ProcessManager manager, bool showRegionSpecificBkg)
     {
         orig(self, manager, showRegionSpecificBkg);
 
         try
         {
-            if (self.popupAlert == null)//SystemInfo.supportedRandomWriteTargetCount < 1)
+            if (!ShowedUnsupportedPopup && self.popupAlert == null && SystemInfo.supportedRandomWriteTargetCount < 1)
             {
+                ShowedUnsupportedPopup = true;
                 Menu.Page page = self.pages[0];
                 Vector2 sSize = self.manager.rainWorld.options.ScreenSize;
                 self.popupAlert = new Menu.DialogBoxNotify(self, page,
