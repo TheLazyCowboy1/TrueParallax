@@ -57,11 +57,12 @@ public static class SBCameraScrollMod
     }
     private static void CalcRoomScaleFac(RoomCamera cam, CameraData data)
     {
-        string roomName = cam.room.abstractRoom.name;
+        Room room = cam.GetRoom();
+        string roomName = room.abstractRoom.name;
         if (roomName != LastRoomName) //only calculate this if it has changed
         {
             //calculate camera movement box
-            var roomFields = cam.room.abstractRoom.GetFields();
+            var roomFields = room.abstractRoom.GetFields();
 
             Vector2 roomSize = new(roomFields.total_width, roomFields.total_height);
             RoomCenter = roomFields.min_camera_position + 0.5f * roomSize;
@@ -110,7 +111,7 @@ public static class SBCameraScrollMod
             Vector2 origTargetPos = critPos.Value + data.critFollowOffset; //before borders and scaling and curves and whatnot
 
             //apply borders
-            var fields = cam.room.abstractRoom.GetFields();
+            var fields = cam.GetRoom().abstractRoom.GetFields();
             Vector2 roomSize = new(fields.total_width, fields.total_height - YBorderSize());
             Vector2 corner = fields.min_camera_position;
             Vector2 border = new(Options.CustomCameraXBorder, Options.CustomCameraYBorder);

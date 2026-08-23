@@ -33,7 +33,7 @@ public partial class Plugin
     {
         try
         {
-            BackgroundScene scene = self.room.updateList.FirstOrDefault(uad => uad is BackgroundScene) as BackgroundScene;
+            BackgroundScene scene = self.GetRoom().updateList.FirstOrDefault(uad => uad is BackgroundScene) as BackgroundScene;
             if (Options.RotateBackground == 0 || scene == null || !self.TryGetData(out CameraData data))
             {
                 orig();

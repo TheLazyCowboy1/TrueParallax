@@ -65,7 +65,7 @@ public partial class Plugin
         //layer 2 setup
         try
         {
-            if (Options.TwoLayers && self.TryGetData(out CameraData data) && data.layer2Dirty)
+            if (Options.TwoLayers && self.TryGetData(out CameraData data) && data.layer2Dirty && self.GetRoom() != null)
             {
                 data.layer2Textures.Resize(Options.CachedRenderTextures); //ensure it's the right size
 
@@ -177,7 +177,7 @@ public static bool ParallaxShouldBeInactive(CameraData data)
         var crit = self.followAbstractCreature?.realizedCreature;
         if (crit != null)
         {
-            critPos = (crit.inShortcut ? self.game.shortcuts.OnScreenPositionOfInShortCutCreature(self.room, crit) : crit.mainBodyChunk.pos);
+            critPos = (crit.inShortcut ? self.game.shortcuts.OnScreenPositionOfInShortCutCreature(self.GetRoom(), crit) : crit.mainBodyChunk.pos);
         }
 
         //Update offset
@@ -205,7 +205,7 @@ public static bool ParallaxShouldBeInactive(CameraData data)
     }
     private static Rect GetRoomCameraArea(RoomCamera self)
     {
-        Room room = self.room;
+        Room room = self.GetRoom();
         if (room == null)
             return new(-100000, -100000, 200000, 200000);
 
@@ -244,7 +244,7 @@ public static bool ParallaxShouldBeInactive(CameraData data)
             {
                 alwaysMove = true;
 
-                Rect camArea = Plugin.SBCameraScrollEnabled ? ModCompat.SBCameraScrollMod.GetRoomRect(self.room.abstractRoom) : GetRoomCameraArea(self);
+                Rect camArea = Plugin.SBCameraScrollEnabled ? ModCompat.SBCameraScrollMod.GetRoomRect(self.GetRoom().abstractRoom) : GetRoomCameraArea(self);
                 camArea.size -= self.sSize;// / self.SpriteLayers[0].scale;
                 float halfInvZoom = 0.5f * (1.0f / self.SpriteLayers[0].scale - 1); //crazy SBCameraScroll zoom calculation
                 Vector2 sSizeIncrease = self.sSize * halfInvZoom;
@@ -430,7 +430,8 @@ public static bool ParallaxShouldBeInactive(CameraData data)
             if (Options.BackDepthForScenesOnly)
             {
                 bool old = data.activeBackgroundScene;
-                data.activeBackgroundScene = self.room != null && self.room.updateList.Any(uad => uad is BackgroundScene);
+                Room room = self.GetRoom();
+                data.activeBackgroundScene = room != null && room.updateList.Any(uad => uad is BackgroundScene);
                 if (mat != null && old != data.activeBackgroundScene) //if it has changed
                 {
                     mat.SetFloat("LZC_Layer30Depth", data.activeBackgroundScene ? 1.0f / Options.BackgroundDepth : 1);

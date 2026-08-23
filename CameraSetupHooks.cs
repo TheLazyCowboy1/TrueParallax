@@ -184,28 +184,32 @@ public partial class Plugin
 
     public static void SetupScreenLevelTex()
     {
-        Vector2 sSize = Custom.rainWorld.screenSize;
-        int w = Mathf.RoundToInt(sSize.x), h = Mathf.RoundToInt(sSize.y); //idk when exactly this happens
-
-        RenderTextureFormat format = Options.TwoLayers ? RenderTextureFormat.ARGB32 : RenderTextureFormat.R8;
-
-        if (ScreenLevelTex == null || ScreenLevelTex.width != w || ScreenLevelTex.height != h || ScreenLevelTex.format != format)
+        try
         {
-            ScreenLevelTex?.Release();
-            ScreenLevelTex = new(w, h, 0, format)
+            Vector2 sSize = Custom.rainWorld.screenSize;
+            int w = Mathf.RoundToInt(sSize.x), h = Mathf.RoundToInt(sSize.y); //idk when exactly this happens
+
+            RenderTextureFormat format = Options.TwoLayers ? RenderTextureFormat.ARGB32 : RenderTextureFormat.R8;
+
+            if (ScreenLevelTex == null || ScreenLevelTex.width != w || ScreenLevelTex.height != h || ScreenLevelTex.format != format)
             {
-                filterMode = 0,
-                enableRandomWrite = true
-            };
-            ScreenLevelTex.Create();
+                ScreenLevelTex?.Release();
+                ScreenLevelTex = new(w, h, 0, format)
+                {
+                    filterMode = 0,
+                    enableRandomWrite = true
+                };
+                ScreenLevelTex.Create();
 
-            //Graphics.ClearRandomWriteTargets(); //I don't know if this is necessary or not...
-            Graphics.SetRandomWriteTarget(1, ScreenLevelTex);
+                //Graphics.ClearRandomWriteTargets(); //I don't know if this is necessary or not...
+                Graphics.SetRandomWriteTarget(1, ScreenLevelTex);
 
-            Log("Created ScreenLevelTex. System RandomWrite textures: " + SystemInfo.supportedRandomWriteTargetCount, 2);
+                Log("Created ScreenLevelTex. System RandomWrite textures: " + SystemInfo.supportedRandomWriteTargetCount, 1);
+            }
+
+            ClearRenderTexture(ScreenLevelTex);
         }
-
-        ClearRenderTexture(ScreenLevelTex);
+        catch (Exception ex) { Error(ex); }
     }
     private static void ClearRenderTexture(RenderTexture rt)
     {

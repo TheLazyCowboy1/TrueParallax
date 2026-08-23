@@ -91,4 +91,6 @@ public static class CameraEXT
     public static RenderTexture GetLayer2Tex(this RoomCamera cam)
         => TryGetData(cam, out CameraData data) ? data.layer2Textures.GetOrCreateTexture() : null;
 
+    public static Room GetRoom(this RoomCamera cam) => cam.room ?? cam.loadingRoom;
+
 }

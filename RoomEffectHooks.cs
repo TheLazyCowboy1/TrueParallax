@@ -106,7 +106,8 @@ public partial class Plugin
     {
         try //stupid LightAndSkyBloom stuff
         {
-            if (self.room == null)
+            Room room = self.GetRoom();
+            if (room == null)
                 return;
             if (!self.TryGetData(out CameraData data))
                 return;
@@ -119,7 +120,7 @@ public partial class Plugin
                     data.alteredLightAndSkyBloom.type = RoomSettings.RoomEffect.Type.SkyAndLightBloom;
                 }
 
-                RoomSettings settings = self.room.roomSettings;
+                RoomSettings settings = room.roomSettings;
                 var LSBloom = settings.GetEffect(RoomSettings.RoomEffect.Type.SkyAndLightBloom);
                 if (LSBloom != null)
                 {
@@ -165,7 +166,7 @@ public partial class Plugin
             if (mat == null)
                 return; //no material
 
-            if (camera.room.roomSettings.wetTerrain)
+            if (camera.GetRoom().roomSettings.wetTerrain)
                 mat.EnableKeyword("LZC_WETTERRAIN");
             else
                 mat.DisableKeyword("LZC_WETTERRAIN");

@@ -51,7 +51,7 @@ public class LayerTexCache
     //public RenderTexture GetTexture(string key, Texture levelTex)
     public RenderTexture GetOrCreateTexture()
     {
-        string key = cam.room.abstractRoom.name + ":" + cam.currentCameraPosition;
+        string key = cam.GetRoom().abstractRoom.name + ":" + cam.currentCameraPosition;
         Texture levelTex = LevTex(cam);
 
         //look for a texture with this key

@@ -20,7 +20,7 @@ namespace TrueParallax;
 [BepInDependency("com.henpemaz.splitscreencoop", BepInDependency.DependencyFlags.SoftDependency)]
 [BepInDependency("pjb3005.sharpener", BepInDependency.DependencyFlags.SoftDependency)]
 
-[BepInPlugin("LazyCowboy.TrueParallax", "True Parallax", "0.0.1")]
+[BepInPlugin("LazyCowboy.TrueParallax", "True Parallax", "0.0.2")]
 public partial class Plugin : SimplerPlugin
 {
 
@@ -193,6 +193,8 @@ public partial class Plugin : SimplerPlugin
 
         On.RoomCamera.ClearAllSprites += RoomCamera_ClearAllSprites;
 
+        On.Menu.MainMenu.ctor += MainMenu_ctor;
+
         if (SBCameraScrollEnabled)
             SBCameraScrollMod.ApplyHooks();
 
@@ -236,6 +238,8 @@ public partial class Plugin : SimplerPlugin
         On.RoomCamera.ApplyPositionChange -= RoomCamera_ApplyPositionChange;
 
         On.RoomCamera.ClearAllSprites -= RoomCamera_ClearAllSprites;
+
+        On.Menu.MainMenu.ctor -= MainMenu_ctor;
 
         if (SBCameraScrollEnabled)
             SBCameraScrollMod.RemoveHooks();
@@ -295,6 +299,26 @@ public partial class Plugin : SimplerPlugin
             }
         }
         catch (Exception ex) { Error(ex); }
+    }
+
+
+
+    private void MainMenu_ctor(On.Menu.MainMenu.orig_ctor orig, Menu.MainMenu self, ProcessManager manager, bool showRegionSpecificBkg)
+    {
+        orig(self, manager, showRegionSpecificBkg);
+
+        try
+        {
+            if (true)//SystemInfo.supportedRandomWriteTargetCount < 1)
+            {
+                Menu.Page page = self.pages[0];
+                page.subObjects.Add(
+                    new Menu.DialogBoxNotify(self, page,
+                    "Your device may not be compatible with the True Parallax mod.\nI'm sorry for the inconvenience.",
+                    "", new(self.manager.rainWorld.options.ScreenSize.x * 0.5f - 240, 284), new(480, 180))
+                    );
+            }
+        } catch (Exception ex) { Error(ex); }
     }
 
     #endregion
