@@ -122,7 +122,7 @@ public partial class Plugin
 
                 RoomSettings settings = room.roomSettings;
                 var LSBloom = settings.GetEffect(RoomSettings.RoomEffect.Type.SkyAndLightBloom);
-                if (LSBloom != null)
+                if (LSBloom != null && LSBloom.amount > 0f)
                 {
                     LSBloom.type = RoomSettings.RoomEffect.Type.LightBurn; //remove the "Sky" part of SkyAndLightBloom
                     data.alteredLightAndSkyBloom = LSBloom;
