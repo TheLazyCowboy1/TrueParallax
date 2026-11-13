@@ -20,7 +20,7 @@ namespace TrueParallax;
 [BepInDependency("com.henpemaz.splitscreencoop", BepInDependency.DependencyFlags.SoftDependency)]
 [BepInDependency("pjb3005.sharpener", BepInDependency.DependencyFlags.SoftDependency)]
 
-[BepInPlugin("LazyCowboy.TrueParallax", "True Parallax", "0.0.2")]
+[BepInPlugin("LazyCowboy.TrueParallax", "True Parallax", "0.0.3")]
 public partial class Plugin : SimplerPlugin
 {
 
@@ -71,6 +71,7 @@ public partial class Plugin : SimplerPlugin
         RemoveLevelHeatAndMelt();
     }
 
+    public static bool AssetsLoaded = false;
     public static FShader TrueParallaxFShader;
     public static Material ThicknessMapMaterial;
     public static FShader ForegroundCreatureFShader;
@@ -101,7 +102,17 @@ public partial class Plugin : SimplerPlugin
     {
         try
         {
+            if (AssetsLoaded) //don't load assets twice
+            {
+                Error("Plugin is attempting to load assets a second time?! This can cause crashes, so I'm skipping re-loading the assets.");
+                return;
+            }
+
             AssetBundle assetBundle = AssetBundle.LoadFromFile(AssetManager.ResolveFilePath("AssetBundles\\ParallaxEffect.assets"));
+
+            if (assetBundle == null)
+                return;
+            AssetsLoaded = true;
 
             //load true parallax shader
             TrueParallaxFShader = FShader.CreateShader("LZC_TrueParallax", LoadShader(assetBundle, "TrueParallax"));
